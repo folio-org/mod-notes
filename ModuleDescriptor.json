@@ -1,0 +1,16 @@
+{
+  "id": "mod-notes-0.1.0",
+  "name": "Notes",
+  "provides": [
+    {
+      "id": "notes",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET", "POST"],
+          "pathPattern": "/notes"
+        }
+      ]
+    }
+  ]
+}

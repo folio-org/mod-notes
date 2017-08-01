@@ -1,0 +1,8 @@
+{
+  "srvcId": "mod-notes-0.1.0",
+  "nodeId": "localhost",
+  "descriptor": {
+    "exec": "java -Dport=%p -jar ../mod-notes/target/mod-notes-fat.jar -Dhttp.port=%p"
+  }
+}
+
