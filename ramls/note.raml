@@ -1,0 +1,37 @@
+#%RAML 0.8
+
+title: Notes API
+baseUri: https://github.com/folio-org/mod-notes
+version: v1
+
+documentation:
+  - title: mod-notes API
+    content: This documents the API calls that can be made to query and manage notes about all kind of objects
+
+schemas:
+  - note.json: !include note.json
+  - errors: !include raml-util/schemas/errors.schema
+  - error.schema: !include raml-util/schemas/error.schema
+  - parameters.schema: !include raml-util/schemas/parameters.schema
+
+traits:
+  - validate: !include raml-util/traits/validation.raml
+  - secured: !include raml-util/traits/auth.raml
+  - language: !include raml-util/traits/language.raml
+
+resourceTypes:
+  - collection: !include raml-util/rtypes/collection.raml
+  - collection-item: !include raml-util/rtypes/item-collection.raml
+
+/notes:
+  type:
+    collection:
+       schemaCollection: !include noteCollection.json
+       schemaItem: !include note.json
+       exampleCollection: !include examples/noteCollection.sample
+       exampleItem: !include examples/note.sample
+
+  post:
+    is: [
+      validate
+    ]

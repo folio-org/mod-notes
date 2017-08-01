@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Notes about all kind of objects. TODO: Add metadata",
+  "properties": {
+    "id": {
+      "type": "string"
+      },
+    "link": {
+        "type": "string"
+      },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+  "link",
+  "text"
+  ]
+}
