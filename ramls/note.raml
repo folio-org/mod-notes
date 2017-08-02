@@ -10,6 +10,7 @@ documentation:
 
 schemas:
   - note.json: !include note.json
+  - noteCollection.json: !include noteCollection.json
   - errors: !include raml-util/schemas/errors.schema
   - error.schema: !include raml-util/schemas/error.schema
   - parameters.schema: !include raml-util/schemas/parameters.schema
@@ -26,8 +27,8 @@ resourceTypes:
 /notes:
   type:
     collection:
-       schemaCollection: !include noteCollection.json
-       schemaItem: !include note.json
+       schemaCollection: noteCollection.json
+       schemaItem:  note.json
        exampleCollection: !include examples/noteCollection.sample
        exampleItem: !include examples/note.sample
 

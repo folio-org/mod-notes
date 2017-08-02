@@ -4,6 +4,13 @@
 OKAPIURL="http://localhost:9130"
 CURL="curl -w\n -D - "
 
+# Check we have the fat jar
+if [ ! -f target/mod-notes-fat.jar ]
+then
+  echo No fat jar found, no point in trying to run
+  exit 1
+fi
+
 # Start Okapi (in dev mode, no database)
 OKAPIPATH="../okapi/okapi-core/target/okapi-core-fat.jar"
 java -jar $OKAPIPATH dev > okapi.log 2>&1 &
@@ -43,10 +50,19 @@ sleep 1
 
 
 # Various tests
-
+echo Test 1: get empty list
 $CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes
+echo
+
+echo Test 2: Post one
+$CURL \
+  -H "Content-type:application/json" \
+  -H "X-Okapi-Tenant:testlib" \
+  -X POST -d '{"id":"12345","link":"users/56789","text":"hello"}' \
+  $OKAPIURL/notes
 
 # Let it run
+echo
 echo "Hit enter to close"
 read
 
