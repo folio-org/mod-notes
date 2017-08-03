@@ -20,7 +20,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollectionJson;
+import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.resource.NotesResource;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
@@ -78,7 +78,7 @@ public class NotesResourceImpl implements NotesResource {
         reply -> {
           try {
             if (reply.succeeded()) {
-              NoteCollectionJson notes = new NoteCollectionJson();
+              NoteCollection notes = new NoteCollection();
               @SuppressWarnings("unchecked")
               List<Note> notelist = (List<Note>) reply.result()[0];
               notes.setNotes(notelist);
