@@ -58,8 +58,37 @@ echo Test 2: Post one
 $CURL \
   -H "Content-type:application/json" \
   -H "X-Okapi-Tenant:testlib" \
-  -X POST -d '{"link":"users/56789","text":"hello"}' \
+  -X POST -d '{"link":"users/56789","text":"hello there"}' \
   $OKAPIURL/notes
+
+echo Test 3: get a list with the new one
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes
+echo
+
+echo Test 4: Post another one
+$CURL \
+  -H "Content-type:application/json" \
+  -H "X-Okapi-Tenant:testlib" \
+  -X POST -d '{"link":"items/23456","text":"hello thing"}' \
+  $OKAPIURL/notes
+
+echo Test 5: get a list with both
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes
+echo
+
+echo Test 6: query the user note
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query=link=users
+echo
+
+echo Test 7: query both
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query=text=hello
+echo
+echo Test 8: query both
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='link=*56*'
+echo
+echo Test 9: Bad query
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='link='
+echo
 
 # Let it run
 echo
@@ -67,7 +96,8 @@ echo "Hit enter to close"
 read
 
 # Clean up
-echo "Cleaning up: Killing Okapi"
+echo "Cleaning up: Killing Okapi $PID"
 kill $PID
 rm -rf /tmp/postgresql-embed*
+echo bye
 

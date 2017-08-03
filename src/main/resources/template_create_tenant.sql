@@ -55,4 +55,5 @@ CREATE TRIGGER update_date BEFORE UPDATE ON note_data FOR EACH ROW EXECUTE PROCE
 -- give the user PRIVILEGES after everything is created by script
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA myuniversity_mymodule TO myuniversity_mymodule;
 
-COPY note_data (jsonb) FROM 'data/locales.data' ENCODING 'UTF8';
+-- We do not need initial data. Kept here as an example. Can copy what ever kind of data
+-- COPY note_data (jsonb) FROM 'data/locales.data' ENCODING 'UTF8';
