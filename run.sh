@@ -58,7 +58,7 @@ echo Test 2: Post one
 $CURL \
   -H "Content-type:application/json" \
   -H "X-Okapi-Tenant:testlib" \
-  -X POST -d '{"id":"12345","link":"users/56789","text":"hello"}' \
+  -X POST -d '{"link":"users/56789","text":"hello"}' \
   $OKAPIURL/notes
 
 # Let it run
@@ -69,4 +69,5 @@ read
 # Clean up
 echo "Cleaning up: Killing Okapi"
 kill $PID
+rm -rf /tmp/postgresql-embed*
 

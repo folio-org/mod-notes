@@ -8,6 +8,7 @@ package org.folio.rest.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -18,11 +19,23 @@ import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.resource.NotesResource;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.messages.MessageConsts;
+import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 
 public class NotesResourceImpl implements NotesResource {
   private final Logger logger = LoggerFactory.getLogger("okapi");
+  private final Messages messages = Messages.getInstance();
+  public static final String NOTE_TABLE = "note_data";
+  private static final String LOCATION_PREFIX = "/notes/";
+  private String idFieldName = "id";
+
+  public NotesResourceImpl(Vertx vertx, String tenantId) {
+    //if(CONFIG_SCHEMA == null){
+    //  initCQLValidation();
+    //}
+    PostgresClient.getInstance(vertx, tenantId).setIdField(idFieldName);
+  }
 
   @Override
   public void getNotes(String lang, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
@@ -37,41 +50,35 @@ public class NotesResourceImpl implements NotesResource {
     try {
       String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       logger.info("Trying to post a note for '" + tenantId + "' " + Json.encode(entity));
-      //PostgresClient.getInstance(context.owner(), tenantId).
-      /*
-       PostgresClient.getInstance(context.owner(), tenantId).save(
-       CONFIG_TABLE,
-       entity,
-       reply -> {
-       try {
-       if(reply.succeeded()){
-       Object ret = reply.result();
-       entity.setId((String) ret);
-       OutStream stream = new OutStream();
-       stream.setData(entity);
-       asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostConfigurationsEntriesResponse.withJsonCreated(
-       LOCATION_PREFIX + ret, stream)));
-       }
-       else{
-       log.error(reply.cause().getMessage(), reply.cause());
-       asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostConfigurationsEntriesResponse
-       .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
-       }
-       } catch (Exception e) {
-       log.error(e.getMessage(), e);
-       asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostConfigurationsEntriesResponse
-       .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
-       }
-       });
-       */
+      System.out.println("sending... postConfigurationsTables");
+      PostgresClient.getInstance(context.owner(), tenantId).save(NOTE_TABLE,
+        entity,
+        reply -> {
+          try {
+            if (reply.succeeded()) {
+              Object ret = reply.result();
+              entity.setId((String) ret);
+              OutStream stream = new OutStream();
+              stream.setData(entity);
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostNotesResponse.withJsonCreated(                    LOCATION_PREFIX + ret, stream)));
+            } else {
+              logger.error(reply.cause().getMessage(), reply.cause());
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostNotesResponse                  .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+            }
+          } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostNotesResponse                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+          }
+        });
+
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
-      /*
        asyncResultHandler.handle(
-         io.vertx.core.Future.succeededFuture(PostConfigurationsEntriesResponse
-          .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
-         */
+        io.vertx.core.Future.succeededFuture(
+          PostNotesResponse.withPlainInternalServerError(
+            messages.getMessage(lang, MessageConsts.InternalServerError)))
+      );
     }
-    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
   }
+
 }

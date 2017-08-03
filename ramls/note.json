@@ -14,8 +14,7 @@
     }
   },
   "required": [
-    "id",
-  "link",
-  "text"
+    "link",
+    "text"
   ]
 }
