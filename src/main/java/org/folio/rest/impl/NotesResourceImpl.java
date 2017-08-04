@@ -129,6 +129,7 @@ public class NotesResourceImpl implements NotesResource {
    * @throws Exception
    */
   @Override
+  @Validate
   public void postNotes(String lang,
     Note entity, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,

@@ -83,11 +83,17 @@ echo
 echo Test 7: query both
 $CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query=text=hello
 echo
+
 echo Test 8: query both
 $CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='link=*56*'
 echo
+
 echo Test 9: Bad query
 $CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='link='
+echo
+
+echo Test 10: limit
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?limit=1
 echo
 
 # Let it run
