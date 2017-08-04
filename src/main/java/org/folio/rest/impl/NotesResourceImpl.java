@@ -22,6 +22,8 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.resource.NotesResource;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
@@ -60,6 +62,18 @@ public class NotesResourceImpl implements NotesResource {
       initCQLValidation();
     }
     PostgresClient.getInstance(vertx, tenantId).setIdField(idFieldName);
+  }
+
+  private CQLWrapper getCQL(String query, int limit, int offset, String schema) throws Exception {
+    CQL2PgJSON cql2pgJson = null;
+    if (schema != null) {
+      cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb", schema);
+    } else {
+      cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb");
+    }
+    return new CQLWrapper(cql2pgJson, query)
+      .setLimit(new Limit(limit))
+      .setOffset(new Offset(offset));
   }
 
   @Override
@@ -137,8 +151,10 @@ public class NotesResourceImpl implements NotesResource {
     try {
       String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       logger.info("Trying to post a note for '" + tenantId + "' " + Json.encode(entity));
+      String id = entity.getId();
+      logger.info("  id = '" + id + "'");
       PostgresClient.getInstance(context.owner(), tenantId).save(NOTE_TABLE,
-        entity,
+        id, entity,
         reply -> {
           try {
             if (reply.succeeded()) {
@@ -167,16 +183,120 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
-  private CQLWrapper getCQL(String query, int limit, int offset, String schema) throws Exception {
-    CQL2PgJSON cql2pgJson = null;
-    if (schema != null) {
-      cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb", schema);
-    } else {
-      cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb");
+  @Override
+  public void getNotesById(String id,
+    String lang, Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> asyncResultHandler,
+    Context context) throws Exception {
+    try {
+      String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      logger.info("Get Note id=" + id);
+      Criterion c = new Criterion(
+        new Criteria().addField(idFieldName).setJSONB(false)
+        .setOperation("=").setValue("'" + id + "'"));
+
+      PostgresClient.getInstance(context.owner(), tenantId)
+        .get(NOTE_TABLE, Note.class, c, true,
+          reply -> {
+          try {
+            if (reply.succeeded()) {
+              @SuppressWarnings("unchecked")
+              List<Note> config = (List<Note>) reply.result()[0];
+              if (config.isEmpty()) {
+                asyncResultHandler.handle(io.vertx.core.Future
+                  .succeededFuture(GetNotesByIdResponse
+                    .withPlainNotFound(id)));
+              } else {
+                asyncResultHandler.handle(io.vertx.core.Future
+                  .succeededFuture(GetNotesByIdResponse
+                    .withJsonOK(config.get(0))));
+              }
+            } else {
+              logger.error(reply.cause().getMessage(), reply.cause());
+              asyncResultHandler.handle(io.vertx.core.Future
+                .succeededFuture(GetNotesByIdResponse
+                  .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError) + " "
+                    + reply.cause().getMessage())));
+            }
+          } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetNotesByIdResponse                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+          }
+        });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetNotesByIdResponse
+        .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
-    return new CQLWrapper(cql2pgJson, query)
-      .setLimit(new Limit(limit))
-      .setOffset(new Offset(offset));
+
+  }
+
+  @Override
+  public void deleteNotesById(String id,
+    String lang, Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> asyncResultHandler,
+    Context vertxContext) throws Exception {
+    String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    try {
+      PostgresClient.getInstance(vertxContext.owner(), tenantId).delete(NOTE_TABLE, id,
+        reply -> {
+          if (reply.succeeded()) {
+            if (reply.result().getUpdated() == 1) {
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(DeleteNotesByIdResponse
+                  .withNoContent()));
+            } else {
+              logger.error(messages.getMessage(lang, MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(DeleteNotesByIdResponse
+                  .withPlainNotFound(messages.getMessage(lang, MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
+            }
+          } else {
+            logger.error(reply.cause());
+            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(DeleteNotesByIdResponse
+                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+          }
+        });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(DeleteNotesByIdResponse
+        .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+    }
+  }
+
+  @Override
+  public void putNotesById(String id, String lang, Note entity,
+    Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
+    Context vertxContext) throws Exception {
+    try {
+      logger.info("PUT note " + id + " " + Json.encode(entity));
+      String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
+        NOTE_TABLE, entity, id,
+        reply -> {
+          try {
+            if (reply.succeeded()) {
+              if (reply.result().getUpdated() == 0) {
+                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
+                    .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
+              } else {
+                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
+                    .withNoContent()));
+              }
+            } else {
+              logger.error(reply.cause().getMessage());
+              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
+                  .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+            }
+          } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
+                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+          }
+        });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
+        .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+    }
   }
 
 }

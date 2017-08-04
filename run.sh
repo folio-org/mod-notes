@@ -96,6 +96,12 @@ echo Test 10: limit
 $CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?limit=1
 echo
 
+echo Test 11: sort
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.ascending
+echo
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.descending
+echo
+
 # Let it run
 echo
 echo "Hit enter to close"

@@ -7,8 +7,24 @@
       "version": "1.0",
       "handlers": [
         {
-          "methods": ["GET", "POST"],
+          "methods": ["GET"],
           "pathPattern": "/notes"
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/notes"
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/notes/{id}"
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/notes/{id}"
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/notes/{id}"
         }
       ]
     },

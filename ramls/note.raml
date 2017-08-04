@@ -27,6 +27,8 @@ resourceTypes:
   - collection-item: !include raml-util/rtypes/item-collection.raml
 
 /notes:
+  displayName: Notes
+  description: Notes collection
   type:
     collection:
        schemaCollection: noteCollection
@@ -44,3 +46,12 @@ resourceTypes:
       pageable,
       validate
     ]
+  /{id}:
+    displayName: Notes
+    description: Get, Delete or Update a specific note
+    type:
+      collection-item:
+        schema: note.json
+        exampleItem: !include examples/note.sample
+    put:
+      is: [validate]
