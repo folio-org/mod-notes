@@ -10,6 +10,8 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
+import io.vertx.core.Future;
+import static io.vertx.core.Future.succeededFuture;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.util.List;
@@ -44,7 +46,7 @@ public class NotesResourceImpl implements NotesResource {
   private final String idFieldName = "id";
   private static String NOTE_SCHEMA = null;
   private static final String NOTE_SCHEMA_NAME
-    = "apidocs/raml/_schemas/note.schema";
+    = "apidocs/raml/note.schema";
 
   private void initCQLValidation() {
     String path = NOTE_SCHEMA_NAME;
@@ -97,17 +99,17 @@ public class NotesResourceImpl implements NotesResource {
               List<Note> notelist = (List<Note>) reply.result()[0];
               notes.setNotes(notelist);
               notes.setTotalRecords((Integer) reply.result()[1]);
-              asyncResultHandler.handle(
-                io.vertx.core.Future.succeededFuture(
+              asyncResultHandler.handle(succeededFuture(
                   GetNotesResponse.withJsonOK(notes)));
             } else {
               logger.error(reply.cause().getMessage(), reply.cause());
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetNotesResponse                  .withPlainBadRequest(reply.cause().getMessage())));
+              asyncResultHandler.handle(succeededFuture(GetNotesResponse
+                .withPlainBadRequest(reply.cause().getMessage())));
             }
           } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetNotesResponse                .withPlainInternalServerError(messages.getMessage(
-                    lang, MessageConsts.InternalServerError))));
+            asyncResultHandler.handle(succeededFuture(GetNotesResponse
+              .withPlainInternalServerError(messages.getMessage(                    lang, MessageConsts.InternalServerError))));
           }
         });
     } catch (CQLQueryValidationException e1) {
@@ -118,15 +120,16 @@ public class NotesResourceImpl implements NotesResource {
         field = field.substring(start + 1, end);
       }
       Errors e = ValidationHelper.createValidationErrorMessage(field, "", e1.getMessage());
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetNotesResponse
+      asyncResultHandler.handle(succeededFuture(GetNotesResponse
         .withJsonUnprocessableEntity(e)));
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
       String message = messages.getMessage(lang, MessageConsts.InternalServerError);
-      if (e.getCause() != null && e.getCause().getClass().getSimpleName().endsWith("CQLParseException")) {
+      if (e.getCause() != null && e.getCause().getClass().getSimpleName()
+        .endsWith("CQLParseException")) {
         message = " CQL parse error " + e.getLocalizedMessage();
       }
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetNotesResponse
+      asyncResultHandler.handle(succeededFuture(GetNotesResponse
         .withPlainInternalServerError(message)));
     }
 
@@ -149,10 +152,9 @@ public class NotesResourceImpl implements NotesResource {
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context context) throws Exception {
     try {
-      String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      logger.info("Trying to post a note for '" + tenantId + "' " + Json.encode(entity));
+      String tenantId = TenantTool.calculateTenantId(
+        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       String id = entity.getId();
-      logger.info("  id = '" + id + "'");
       PostgresClient.getInstance(context.owner(), tenantId).save(NOTE_TABLE,
         id, entity,
         reply -> {
@@ -162,23 +164,35 @@ public class NotesResourceImpl implements NotesResource {
               entity.setId((String) ret);
               OutStream stream = new OutStream();
               stream.setData(entity);
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostNotesResponse.withJsonCreated(                    LOCATION_PREFIX + ret, stream)));
+              asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                .withJsonCreated(LOCATION_PREFIX + ret, stream)));
             } else {
-              logger.error(reply.cause().getMessage(), reply.cause());
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostNotesResponse                  .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+              String msg = reply.cause().getMessage();
+              if (msg.contains("duplicate key value violates unique constraint")) {
+                Errors valErr = ValidationHelper.createValidationErrorMessage(
+                  "id", id, "Duplicate id");
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                  .withJsonUnprocessableEntity(valErr)));
+              } else {
+                logger.error(msg, reply.cause());
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                  .withPlainInternalServerError(
+                    messages.getMessage(lang, MessageConsts.InternalServerError))));
+              }
             }
           } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PostNotesResponse                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+              .withPlainInternalServerError(
+                messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         });
 
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
        asyncResultHandler.handle(
-        io.vertx.core.Future.succeededFuture(
-          PostNotesResponse.withPlainInternalServerError(
-            messages.getMessage(lang, MessageConsts.InternalServerError)))
+         succeededFuture(PostNotesResponse.withPlainInternalServerError(
+             messages.getMessage(lang, MessageConsts.InternalServerError)))
       );
     }
   }
@@ -190,7 +204,6 @@ public class NotesResourceImpl implements NotesResource {
     Context context) throws Exception {
     try {
       String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      logger.info("Get Note id=" + id);
       Criterion c = new Criterion(
         new Criteria().addField(idFieldName).setJSONB(false)
         .setOperation("=").setValue("'" + id + "'"));
@@ -203,30 +216,31 @@ public class NotesResourceImpl implements NotesResource {
               @SuppressWarnings("unchecked")
               List<Note> config = (List<Note>) reply.result()[0];
               if (config.isEmpty()) {
-                asyncResultHandler.handle(io.vertx.core.Future
-                  .succeededFuture(GetNotesByIdResponse
+                asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
                     .withPlainNotFound(id)));
               } else {
-                asyncResultHandler.handle(io.vertx.core.Future
-                  .succeededFuture(GetNotesByIdResponse
+                asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
                     .withJsonOK(config.get(0))));
               }
             } else {
               logger.error(reply.cause().getMessage(), reply.cause());
-              asyncResultHandler.handle(io.vertx.core.Future
-                .succeededFuture(GetNotesByIdResponse
-                  .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError) + " "
-                    + reply.cause().getMessage())));
+              asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+                .withPlainInternalServerError(
+                  messages.getMessage(lang, MessageConsts.InternalServerError)
+                  + " " + reply.cause().getMessage())));
             }
           } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetNotesByIdResponse                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+              .withPlainInternalServerError(
+                messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         });
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(GetNotesByIdResponse
-        .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+      asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+        .withPlainInternalServerError(
+          messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
 
   }
@@ -236,29 +250,34 @@ public class NotesResourceImpl implements NotesResource {
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) throws Exception {
-    String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    String tenantId = TenantTool.calculateTenantId(
+      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
     try {
       PostgresClient.getInstance(vertxContext.owner(), tenantId).delete(NOTE_TABLE, id,
         reply -> {
           if (reply.succeeded()) {
             if (reply.result().getUpdated() == 1) {
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(DeleteNotesByIdResponse
-                  .withNoContent()));
+              asyncResultHandler.handle(succeededFuture(
+                DeleteNotesByIdResponse.withNoContent()));
             } else {
-              logger.error(messages.getMessage(lang, MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(DeleteNotesByIdResponse
-                  .withPlainNotFound(messages.getMessage(lang, MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
+              logger.error(messages.getMessage(lang,
+                MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
+              asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
+                .withPlainNotFound(messages.getMessage(lang,
+                    MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
             }
           } else {
             logger.error(reply.cause());
-            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(DeleteNotesByIdResponse
-                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
+              .withPlainInternalServerError(
+                messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         });
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(DeleteNotesByIdResponse
-        .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+      asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
+        .withPlainInternalServerError(
+          messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
 
@@ -271,40 +290,45 @@ public class NotesResourceImpl implements NotesResource {
       String noteId = entity.getId();
       if (noteId != null && !noteId.equals(id)) {
         logger.error("Trying to change note Id from " + id + " to " + noteId);
-        Errors valErr = ValidationHelper.createValidationErrorMessage("id", "noteId",
+        Errors valErr = ValidationHelper.createValidationErrorMessage("id", noteId,
           "Can not change the id");
-        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
+        asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
           .withJsonUnprocessableEntity(valErr)));
         return;
       }
-      String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      String tenantId = TenantTool.calculateTenantId(
+        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
         NOTE_TABLE, entity, id,
         reply -> {
           try {
             if (reply.succeeded()) {
               if (reply.result().getUpdated() == 0) {
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
-                    .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
+                asyncResultHandler.handle(succeededFuture(
+                  PutNotesByIdResponse.withPlainInternalServerError(
+                    messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
               } else {
-                asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
-                    .withNoContent()));
+                asyncResultHandler.handle(succeededFuture(
+                  PutNotesByIdResponse.withNoContent()));
               }
             } else {
               logger.error(reply.cause().getMessage());
-              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
-                  .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+              asyncResultHandler.handle(succeededFuture(
+                PutNotesByIdResponse.withPlainInternalServerError(
+                  messages.getMessage(lang, MessageConsts.InternalServerError))));
             }
           } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
-                .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+            asyncResultHandler.handle(succeededFuture(
+              PutNotesByIdResponse.withPlainInternalServerError(
+                messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         });
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
-      asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
-        .withPlainInternalServerError(messages.getMessage(lang, MessageConsts.InternalServerError))));
+      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
+        .withPlainInternalServerError(
+          messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
 
