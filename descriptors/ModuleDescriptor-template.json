@@ -1,0 +1,52 @@
+{
+  "id": "${artifactId}-${version}",
+  "name": "Notes",
+  "provides": [
+    {
+      "id": "notes",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/notes"
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/notes"
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/notes/{id}"
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/notes/{id}"
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/notes/{id}"
+        }
+      ]
+    },
+    {
+      "id": "_tenant",
+      "version": "1.0",
+      "interfaceType": "system",
+      "handlers": [
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/_/tenant"
+        },
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/_/tenant"
+        }
+      ]
+    }
+  ],
+  "requires": []
+}
