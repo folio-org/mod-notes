@@ -46,7 +46,7 @@ public class NotesResourceImpl implements NotesResource {
   private final String idFieldName = "id";
   private static String NOTE_SCHEMA = null;
   private static final String NOTE_SCHEMA_NAME
-    = "apidocs/raml/note.schema";
+    = "apidocs/raml/note.json";
 
   private void initCQLValidation() {
     String path = NOTE_SCHEMA_NAME;
