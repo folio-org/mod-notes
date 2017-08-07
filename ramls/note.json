@@ -11,6 +11,10 @@
       },
     "text": {
       "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "$ref": "metadata.schema"
     }
   },
   "required": [
