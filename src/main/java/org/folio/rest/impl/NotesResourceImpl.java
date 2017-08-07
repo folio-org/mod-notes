@@ -268,6 +268,15 @@ public class NotesResourceImpl implements NotesResource {
     Context vertxContext) throws Exception {
     try {
       logger.info("PUT note " + id + " " + Json.encode(entity));
+      String noteId = entity.getId();
+      if (noteId != null && !noteId.equals(id)) {
+        logger.error("Trying to change note Id from " + id + " to " + noteId);
+        Errors valErr = ValidationHelper.createValidationErrorMessage("id", "noteId",
+          "Can not change the id");
+        asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(PutNotesByIdResponse
+          .withJsonUnprocessableEntity(valErr)));
+        return;
+      }
       String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
         NOTE_TABLE, entity, id,
