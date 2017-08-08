@@ -33,8 +33,6 @@ SET search_path TO myuniversity_mymodule, public;
 CREATE TABLE IF NOT EXISTS note_data (
    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
    jsonb jsonb,
-   created_date date not null default current_timestamp,
-   updated_date date not null default current_timestamp,
    creation_date timestamp WITH TIME ZONE,
    created_by  text
 );
@@ -42,18 +40,6 @@ CREATE TABLE IF NOT EXISTS note_data (
 -- index to support @> ops, faster than jsonb_ops
 CREATE INDEX idxgin_conf ON note_data USING gin (jsonb jsonb_path_ops);
 
--- update the update_date column when record is updated
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
-BEGIN
--- NEW to indicate updating the new row value
-    NEW.updated_date = current_timestamp;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_date BEFORE UPDATE ON note_data
-  FOR EACH ROW EXECUTE PROCEDURE  update_modified_column();
 
 -- give the user PRIVILEGES after everything is created by script
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA myuniversity_mymodule TO myuniversity_mymodule;
