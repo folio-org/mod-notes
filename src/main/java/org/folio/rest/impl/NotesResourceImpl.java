@@ -22,7 +22,6 @@ import org.apache.commons.io.IOUtils;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.resource.NotesResource;

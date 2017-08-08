@@ -58,6 +58,7 @@ echo Test 2: Post one
 $CURL \
   -H "Content-type:application/json" \
   -H "X-Okapi-Tenant:testlib" \
+  -H "X-Okapi-User-Id: e037b68e-f202-4a04-9ce2-896a33152b52" \
   -X POST -d '{"link":"users/56789","text":"hello there"}' \
   $OKAPIURL/notes
 
@@ -69,6 +70,7 @@ echo Test 4: Post another one
 $CURL \
   -H "Content-type:application/json" \
   -H "X-Okapi-Tenant:testlib" \
+  -H "X-Okapi-User-Id: e037b68e-f202-4a04-9ce2-896a33152b52" \
   -X POST -d '{"link":"items/23456","text":"hello thing"}' \
   $OKAPIURL/notes
 
