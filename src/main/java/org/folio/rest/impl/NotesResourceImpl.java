@@ -5,11 +5,9 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
-import io.vertx.core.Future;
 import static io.vertx.core.Future.succeededFuture;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
@@ -62,7 +60,8 @@ public class NotesResourceImpl implements NotesResource {
     PostgresClient.getInstance(vertx, tenantId).setIdField(idFieldName);
   }
 
-  private CQLWrapper getCQL(String query, int limit, int offset, String schema) throws Exception {
+  private CQLWrapper getCQL(String query, int limit, int offset,
+    String schema) throws Exception {
     CQL2PgJSON cql2pgJson = null;
     if (schema != null) {
       cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb", schema);
@@ -82,12 +81,13 @@ public class NotesResourceImpl implements NotesResource {
     Context context) throws Exception {
     try {
       logger.info("Getting notes. " + offset + "+" + limit + " q=" + query);
-      String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      String tenantId = TenantTool.calculateTenantId(
+        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       CQLWrapper cql = getCQL(query, limit, offset, NOTE_SCHEMA);
 
-      PostgresClient.getInstance(context.owner(), tenantId).get(NOTE_TABLE, Note.class,
-        new String[]{"*"}, cql, true, true,
-        reply -> {
+      PostgresClient.getInstance(context.owner(), tenantId)
+        .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql, true, true,
+          reply -> {
           try {
             if (reply.succeeded()) {
               NoteCollection notes = new NoteCollection();
@@ -105,7 +105,8 @@ public class NotesResourceImpl implements NotesResource {
           } catch (Exception e) {
             logger.error(e.getMessage(), e);
             asyncResultHandler.handle(succeededFuture(GetNotesResponse
-              .withPlainInternalServerError(messages.getMessage(                    lang, MessageConsts.InternalServerError))));
+              .withPlainInternalServerError(messages.getMessage(
+                  lang, MessageConsts.InternalServerError))));
           }
         });
     } catch (CQLQueryValidationException e1) {
@@ -115,7 +116,8 @@ public class NotesResourceImpl implements NotesResource {
       if (start != -1 && end != -1) {
         field = field.substring(start + 1, end);
       }
-      Errors e = ValidationHelper.createValidationErrorMessage(field, "", e1.getMessage());
+      Errors e = ValidationHelper.createValidationErrorMessage(field,
+        "", e1.getMessage());
       asyncResultHandler.handle(succeededFuture(GetNotesResponse
         .withJsonUnprocessableEntity(e)));
     } catch (Exception e) {
@@ -199,7 +201,8 @@ public class NotesResourceImpl implements NotesResource {
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context context) throws Exception {
     try {
-      String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      String tenantId = TenantTool.calculateTenantId(
+        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       Criterion c = new Criterion(
         new Criteria().addField(idFieldName).setJSONB(false)
         .setOperation("=").setValue("'" + id + "'"));
@@ -249,8 +252,9 @@ public class NotesResourceImpl implements NotesResource {
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
     try {
-      PostgresClient.getInstance(vertxContext.owner(), tenantId).delete(NOTE_TABLE, id,
-        reply -> {
+      PostgresClient.getInstance(vertxContext.owner(), tenantId)
+        .delete(NOTE_TABLE, id,
+          reply -> {
           if (reply.succeeded()) {
             if (reply.result().getUpdated() == 1) {
               asyncResultHandler.handle(succeededFuture(
