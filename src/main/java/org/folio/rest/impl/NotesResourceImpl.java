@@ -55,7 +55,8 @@ public class NotesResourceImpl implements NotesResource {
 
   public NotesResourceImpl(Vertx vertx, String tenantId) {
     if (NOTE_SCHEMA == null) {
-      initCQLValidation();
+      //initCQLValidation();  // COmmented out, the validation fails a
+        // prerfectly valid query=metaData.createdByUserId=e037b...
     }
     PostgresClient.getInstance(vertx, tenantId).setIdField(idFieldName);
   }

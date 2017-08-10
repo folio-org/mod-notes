@@ -43,7 +43,7 @@ $CURL -d@/tmp/okapi.tenant.json $OKAPIURL/_/proxy/tenants
 echo
 echo "Enabliong it"
 $CURL -X POST \
-   -d'{"id":"mod-notes-0.1.0"}' \
+   -d'{"id":"mod-notes-0.1.1-SNAPSHOT"}' \
    $OKAPIURL/_/proxy/tenants/testlib/modules
 echo
 sleep 1
