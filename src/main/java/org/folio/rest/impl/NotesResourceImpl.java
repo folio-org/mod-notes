@@ -202,6 +202,10 @@ public class NotesResourceImpl implements NotesResource {
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context context) throws Exception {
     try {
+      if (id.equals("_self")) {
+        // The _self endpoint has already handled this request
+        return;
+      }
       String tenantId = TenantTool.calculateTenantId(
         okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       Criterion c = new Criterion(
@@ -242,7 +246,6 @@ public class NotesResourceImpl implements NotesResource {
         .withPlainInternalServerError(
           messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
-
   }
 
   @Override
@@ -331,6 +334,88 @@ public class NotesResourceImpl implements NotesResource {
         .withPlainInternalServerError(
           messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
+  }
+
+  @Override
+  public void getNotesSelf(String query, int offset, int limit,
+    String lang, Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> asyncResultHandler,
+    Context vertxContext) throws Exception {
+    try {
+      logger.info("Getting self notes. " + offset + "+" + limit + " q=" + query);
+      String tenantId = TenantTool.calculateTenantId(
+        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
+      if (userId == null || userId.isEmpty()) {
+        logger.error("No userId for getNotesSelf");
+        asyncResultHandler.handle(succeededFuture(GetNotesResponse
+          .withPlainBadRequest("No UserId")));
+        return;
+      }
+      if (query == null || query.isEmpty()) {
+        query = "metaData=" + userId;
+      } else {
+        query = "metaData=" + userId + " and (" + query + ")";
+      }
+      logger.info("Getting self notes. new query:" + query);
+      CQLWrapper cql = getCQL(query, limit, offset, NOTE_SCHEMA);
+
+      PostgresClient.getInstance(vertxContext.owner(), tenantId)
+        .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
+          true /*get count too*/, false /* set id */,
+          reply -> {
+            try {
+              if (reply.succeeded()) {
+                NoteCollection notes = new NoteCollection();
+                @SuppressWarnings("unchecked")
+                List<Note> notelist = (List<Note>) reply.result()[0];
+                notes.setNotes(notelist);
+                notes.setTotalRecords((Integer) reply.result()[1]);
+                asyncResultHandler.handle(succeededFuture(
+                    GetNotesResponse.withJsonOK(notes)));
+              } else {
+                logger.error(reply.cause().getMessage(), reply.cause());
+                asyncResultHandler.handle(succeededFuture(GetNotesResponse
+                    .withPlainBadRequest(reply.cause().getMessage())));
+              }
+            } catch (Exception e) {
+              logger.error(e.getMessage(), e);
+              asyncResultHandler.handle(succeededFuture(GetNotesResponse
+                  .withPlainInternalServerError(messages.getMessage(
+                      lang, MessageConsts.InternalServerError))));
+            }
+          });
+    } catch (CQLQueryValidationException e1) {
+      int start = e1.getMessage().indexOf("'");
+      int end = e1.getMessage().lastIndexOf("'");
+      String field = e1.getMessage();
+      if (start != -1 && end != -1) {
+        field = field.substring(start + 1, end);
+      }
+      Errors e = ValidationHelper.createValidationErrorMessage(field,
+        "", e1.getMessage());
+      asyncResultHandler.handle(succeededFuture(GetNotesResponse
+        .withJsonUnprocessableEntity(e)));
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      String message = messages.getMessage(lang, MessageConsts.InternalServerError);
+      if (e.getCause() != null && e.getCause().getClass().getSimpleName()
+        .endsWith("CQLParseException")) {
+        message = " CQL parse error " + e.getLocalizedMessage();
+      }
+      asyncResultHandler.handle(succeededFuture(GetNotesResponse
+        .withPlainInternalServerError(message)));
+    }
+  }
+
+  /**
+   * Post to _self is not supported. The RMB creates one anyway.
+   *
+   * @throws Exception
+   */
+  @Override
+  public void postNotesSelf(String lang, Note entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
   }
 
 }

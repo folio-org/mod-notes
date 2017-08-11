@@ -47,6 +47,20 @@ resourceTypes:
       pageable,
       validate
     ]
+  /_self:
+    displayName: Notes created by current user
+    type:
+      collection:
+        schemaCollection: noteCollection
+        schemaItem: note.json
+        exampleCollection: !include examples/noteCollection.sample
+        exampleItem: !include examples/note.sample
+    get:
+      is: [
+        searchable: {description: "with valid searchable fields: for example link = 1234", example: "link=/users/1234"},
+        pageable,
+        validate
+      ]
   /{id}:
     displayName: Notes
     description: Get, Delete or Update a specific note
