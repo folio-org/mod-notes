@@ -352,12 +352,23 @@ public class NotesResourceImpl implements NotesResource {
           .withPlainBadRequest("No UserId")));
         return;
       }
+      /*
+       if (query == null || query.isEmpty()) {
+        query = "metadata=" + userId;
+       } else {
+        query = "metadata=" + userId + " and (" + query + ")";
+       }
+       */
+      String userQuery = "metaData=" + userId + " or " + "metadata=" + userId;
       if (query == null || query.isEmpty()) {
-        query = "metaData=" + userId;
+        query = userQuery;
       } else {
-        query = "metaData=" + userId + " and (" + query + ")";
+        query = "(" + userQuery + ") and (" + query + ")";
       }
-      logger.info("Getting self notes. new query:" + query);
+      /* See RMB-52. Old code used to call it metaData, new should be metadata
+       Remove this hack once RMB-52 is resolved and released.
+       */
+       logger.info("Getting self notes. new query:" + query);
       CQLWrapper cql = getCQL(query, limit, offset, NOTE_SCHEMA);
 
       PostgresClient.getInstance(vertxContext.owner(), tenantId)
