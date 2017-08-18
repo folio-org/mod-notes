@@ -10,12 +10,12 @@
         "$ref": "note.json"
       }
     },
-    "total_records": {
+    "totalRecords": {
       "type": "integer"
     }
   },
   "required": [
     "notes",
-    "total_records"
+    "totalRecords"
   ]
 }

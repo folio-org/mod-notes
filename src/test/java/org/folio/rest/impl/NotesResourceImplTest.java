@@ -243,7 +243,7 @@ public class NotesResourceImplTest {
       .statusCode(200)
       .body(containsString("First note"))
       .body(containsString("-9999-")) // CreatedBy userid in metadata
-      .body(containsString("\"total_records\" : 1"));
+      .body(containsString("\"totalRecords\" : 1"));
 
     given()
       .header(TEN)
