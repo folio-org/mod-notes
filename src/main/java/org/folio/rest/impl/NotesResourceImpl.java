@@ -359,7 +359,8 @@ public class NotesResourceImpl implements NotesResource {
         query = "metadata=" + userId + " and (" + query + ")";
        }
        */
-      String userQuery = "metaData=" + userId + " or " + "metadata=" + userId;
+      String userQuery = "metaData.createdByUserId=" + userId
+        + " or " + "metadata.createdByUserId=" + userId;
       if (query == null || query.isEmpty()) {
         query = userQuery;
       } else {

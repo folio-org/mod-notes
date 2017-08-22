@@ -343,7 +343,6 @@ public class NotesResourceImplTest {
       .get("/notes/_self")
       .then()
       .log().all()
-      .body(containsString("with a comment")) // editedby matches
       .body(containsString("on a thing")); // createdby matches
 
     // delete them
