@@ -75,6 +75,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void getNotes(String query,
     int offset, int limit, String lang,
     Map<String, String> okapiHeaders,
@@ -197,6 +198,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void getNotesById(String id,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
@@ -249,6 +251,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void deleteNotesById(String id,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
@@ -286,6 +289,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void putNotesById(String id, String lang, Note entity,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) throws Exception {
@@ -337,6 +341,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void getNotesSelf(String query, int offset, int limit,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
