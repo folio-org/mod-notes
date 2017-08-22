@@ -22,6 +22,7 @@ import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
+import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLQueryValidationException;
 import org.folio.rest.persist.cql.CQLWrapper;
@@ -75,6 +76,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void getNotes(String query,
     int offset, int limit, String lang,
     Map<String, String> okapiHeaders,
@@ -173,10 +175,16 @@ public class NotesResourceImpl implements NotesResource {
                 asyncResultHandler.handle(succeededFuture(PostNotesResponse
                   .withJsonUnprocessableEntity(valErr)));
               } else {
+                String error = PgExceptionUtil.badRequestMessage(reply.cause());
                 logger.error(msg, reply.cause());
-                asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                  .withPlainInternalServerError(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
+                if (error == null) {
+                  asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                    .withPlainInternalServerError(
+                      messages.getMessage(lang, MessageConsts.InternalServerError))));
+                } else {
+                  asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                    .withPlainBadRequest(error)));
+                }
               }
             }
           } catch (Exception e) {
@@ -197,6 +205,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void getNotesById(String id,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
@@ -227,11 +236,16 @@ public class NotesResourceImpl implements NotesResource {
                     .withJsonOK(config.get(0))));
               }
             } else {
-              logger.error(reply.cause().getMessage(), reply.cause());
-              asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-                .withPlainInternalServerError(
-                  messages.getMessage(lang, MessageConsts.InternalServerError)
-                  + " " + reply.cause().getMessage())));
+              String error = PgExceptionUtil.badRequestMessage(reply.cause());
+              logger.error(error, reply.cause());
+              if (error == null) {
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                  .withPlainInternalServerError(
+                    messages.getMessage(lang, MessageConsts.InternalServerError))));
+              } else {
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                  .withPlainBadRequest(error)));
+              }
             }
           } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -249,6 +263,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void deleteNotesById(String id,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
@@ -271,11 +286,17 @@ public class NotesResourceImpl implements NotesResource {
                     MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
             }
           } else {
-            logger.error(reply.cause());
-            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .withPlainInternalServerError(
-                messages.getMessage(lang, MessageConsts.InternalServerError))));
-          }
+              String error = PgExceptionUtil.badRequestMessage(reply.cause());
+              logger.error(error, reply.cause());
+              if (error == null) {
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                  .withPlainInternalServerError(
+                    messages.getMessage(lang, MessageConsts.InternalServerError))));
+              } else {
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                  .withPlainBadRequest(error)));
+              }
+            }
         });
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
@@ -286,6 +307,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void putNotesById(String id, String lang, Note entity,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) throws Exception {
@@ -337,6 +359,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   @Override
+  @Validate
   public void getNotesSelf(String query, int offset, int limit,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
@@ -359,7 +382,8 @@ public class NotesResourceImpl implements NotesResource {
         query = "metadata=" + userId + " and (" + query + ")";
        }
        */
-      String userQuery = "metaData=" + userId + " or " + "metadata=" + userId;
+      String userQuery = "metaData.createdByUserId=" + userId
+        + " or " + "metadata.createdByUserId=" + userId;
       if (query == null || query.isEmpty()) {
         query = userQuery;
       } else {
