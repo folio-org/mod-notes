@@ -220,10 +220,8 @@ public class NotesResourceImplTest {
       .post("/notes")
       .then()
       .log().all()
-      .statusCode(500); // Why does it crash on this ??
-    // Files as RMB-53
-    //.statusCode(422)
-    //.body(containsString("invalid input syntax for uuid"));
+      .statusCode(400)
+      .body(containsString("invalid input syntax for uuid"));
 
     // Post a good note
     given()
@@ -256,7 +254,8 @@ public class NotesResourceImplTest {
       .header(TEN)
       .get("/notes/777")
       .then()
-      .statusCode(500);  // Another funny 500-error on invalid UUIDS.
+      .log().all()
+      .statusCode(400);
 
     given()
       .header(TEN)
@@ -316,6 +315,14 @@ public class NotesResourceImplTest {
     given()
       .header(TEN).header(USER2).header(JSON)
       .body(updated1)
+      .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
+      .then()
+      .log().ifError()
+      .statusCode(422);
+
+    given()
+      .header(TEN).header(USER2).header(JSON)
+      .body(updated1)
       .put("/notes/11111111-1111-1111-1111-111111111111")
       .then()
       .log().ifError()
@@ -345,17 +352,30 @@ public class NotesResourceImplTest {
       .log().all()
       .body(containsString("on a thing")); // createdby matches
 
+    // Failed deletes
+    given()
+      .header(TEN)
+      .delete("/notes/11111111-3-1111-333-111111111111") // Bad UUID
+      .then()
+      .log().all()
+      .statusCode(400);
+
+    given()
+      .header(TEN)
+      .delete("/notes/11111111-2222-3333-4444-555555555555") // not found
+      .then()
+      .statusCode(404);
+
     // delete them
     given()
       .header(TEN)
       .delete("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().all()
       .statusCode(204);
 
     given()
       .header(TEN)
-      .delete("/notes/11111111-1111-1111-1111-111111111111")
+      .delete("/notes/11111111-1111-1111-1111-111111111111") // no longer there
       .then()
       .statusCode(404);
 
@@ -363,7 +383,6 @@ public class NotesResourceImplTest {
       .header(TEN)
       .delete("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().all()
       .statusCode(204);
 
     given()
