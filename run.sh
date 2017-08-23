@@ -21,12 +21,12 @@ echo
 
 # Load mod-notes
 echo "Loading mod-notes"
-$CURL -X POST -d@ModuleDescriptor.json $OKAPIURL/_/proxy/modules
+$CURL -X POST -d@target/ModuleDescriptor.json $OKAPIURL/_/proxy/modules
 echo
 
 echo "Deploying it"
 $CURL -X POST \
-   -d@DeploymentDescriptor.json \
+   -d@target/DeploymentDescriptor.json \
    $OKAPIURL/_/discovery/modules
 echo
 
