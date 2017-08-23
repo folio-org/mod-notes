@@ -1,8 +1,0 @@
-{
-  "srvcId": "mod-notes-0.2.1-SNAPSHOT",
-  "nodeId": "localhost",
-  "descriptor": {
-    "exec": "java -Dport=%p -jar ../mod-notes/target/mod-notes-fat.jar -Dhttp.port=%p embed_postgres=true"
-  }
-}
-
