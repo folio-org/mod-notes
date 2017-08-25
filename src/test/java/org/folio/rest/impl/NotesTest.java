@@ -1,19 +1,14 @@
 package org.folio.rest.impl;
 
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
-import com.jayway.restassured.response.ValidatableResponse;
 import static com.jayway.restassured.RestAssured.given;
 import com.jayway.restassured.response.Header;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -21,8 +16,6 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import java.io.InputStream;
-import java.util.Properties;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 
@@ -39,7 +32,7 @@ import org.junit.After;
  * @author heikki
  */
 @RunWith(VertxUnitRunner.class)
-public class NotesResourceImplTest {
+public class NotesTest {
   private final Logger logger = LoggerFactory.getLogger("okapi");
   private final int port = Integer.parseInt(System.getProperty("port", "8081"));
   private static final String LS = System.lineSeparator();
@@ -59,7 +52,7 @@ public class NotesResourceImplTest {
   @Before
   public void setUp(TestContext context) {
     vertx = Vertx.vertx();
-    logger.info("NotesResourceImplTest: Setup starting");
+    logger.info("notesTest: Setup starting");
 
     /*
      // Get versions. Seems not to work.
@@ -76,10 +69,10 @@ public class NotesResourceImplTest {
       } catch (Exception e) {
         logger.warn(e);
       }
-      logger.info("NotesResourceImplTest: '" + moduleName + "' '" + moduleVersion + "'");
-    } else {
-      logger.warn("NotesResourceImplTest: Setup could not read the version number");
-    }
+      logger.info("NotesTest: '" + moduleName + "' '" + moduleVersion + "'");
+     } else {
+      logger.warn("NotesTest: Setup could not read the version number");
+     }
      */
     try {
       PostgresClient.setIsEmbedded(true);
@@ -93,7 +86,7 @@ public class NotesResourceImplTest {
     JsonObject conf = new JsonObject()
       .put("http.port", port);
 
-    logger.info("NotesResourceImplTest: Deploying "
+    logger.info("notesTest: Deploying "
       + RestVerticle.class.getName() + " "
       + Json.encode(conf));
     DeploymentOptions opt = new DeploymentOptions()
@@ -101,7 +94,7 @@ public class NotesResourceImplTest {
     vertx.deployVerticle(RestVerticle.class.getName(),
       opt, context.asyncAssertSuccess());
     RestAssured.port = port;
-    logger.info("NotesResourceImplTest: setup done. Using port " + port);
+    logger.info("notesTest: setup done. Using port " + port);
   }
 
   @After
@@ -121,7 +114,7 @@ public class NotesResourceImplTest {
    * @param context
    */
   @Test
-  public void notesTest(TestContext context) {
+  public void tests(TestContext context) {
     async = context.async();
     logger.info("notesTest starting");
 
