@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 
 import org.folio.rest.RestVerticle;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.PomReader;
 import org.junit.After;
 
 /**
@@ -43,37 +44,20 @@ public class NotesTest {
     "88888888-8888-8888-8888-888888888888");
 
   private final Header JSON = new Header("Content-Type", "application/json");
-  private String moduleName = "mod-notes";
-  private String moduleVersion = "0.1.2-SNAPSHOT";
-  private String moduleId = moduleName + "-" + moduleVersion;
+  private String moduleName; //  "mod-notes"
+  private String moduleVersion; // "0.1.2-SNAPSHOT"
+  private String moduleId; // "mod-notes-0.1.2-SNAPSHOT"
   Vertx vertx;
   Async async;
 
   @Before
   public void setUp(TestContext context) {
     vertx = Vertx.vertx();
-    logger.info("notesTest: Setup starting");
-
-    /*
-     // Get versions. Seems not to work.
-     InputStream in = getClass().getClassLoader().
-      //getResourceAsStream("META-INF/maven/org.folio.okapi/okapi-core/pom.properties");
-    getResourceAsStream("META-INF/maven/org.folio.rest/mod-notes/pom.properties");
-    if (in != null) {
-      try {
-        Properties prop = new Properties();
-        prop.load(in);
-        in.close();
-        moduleVersion = prop.getProperty("version");
-        moduleName = prop.getProperty("artifactId");
-      } catch (Exception e) {
-        logger.warn(e);
-      }
-      logger.info("NotesTest: '" + moduleName + "' '" + moduleVersion + "'");
-     } else {
-      logger.warn("NotesTest: Setup could not read the version number");
-     }
-     */
+    moduleName = PomReader.INSTANCE.getModuleName()
+      .replaceAll("_", "-");  // RMB normalizes the dash to underscore, fix back
+    moduleVersion = PomReader.INSTANCE.getVersion();
+    moduleId = moduleName + "-" + moduleVersion;
+    logger.info("Test setup starting for " + moduleId);
     try {
       PostgresClient.setIsEmbedded(true);
       PostgresClient.getInstance(vertx).startEmbeddedPostgres();
