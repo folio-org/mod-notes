@@ -38,9 +38,9 @@ public class NotesTest {
   private final int port = Integer.parseInt(System.getProperty("port", "8081"));
   private static final String LS = System.lineSeparator();
   private final Header TEN = new Header("X-Okapi-Tenant", "modnotestest");
-  private final Header USER1 = new Header("X-Okapi-USer-Id",
+  private final Header USER9 = new Header("X-Okapi-User-Id",
     "99999999-9999-9999-9999-999999999999");
-  private final Header USER2 = new Header("X-Okapi-USer-Id",
+  private final Header USER8 = new Header("X-Okapi-User-Id",
     "88888888-8888-8888-8888-888888888888");
 
   private final Header JSON = new Header("Content-Type", "application/json");
@@ -202,7 +202,7 @@ public class NotesTest {
 
     // Post a good note
     given()
-      .header(TEN).header(USER1).header(JSON)
+      .header(TEN).header(USER9).header(JSON)
       .body(note1)
       .post("/notes")
       .then()
@@ -248,7 +248,7 @@ public class NotesTest {
 
     // Post another note
     given()
-      .header(TEN).header(USER2).header(JSON)
+      .header(TEN).header(USER8).header(JSON)
       .body(note2)
       .post("/notes")
       .then()
@@ -272,7 +272,7 @@ public class NotesTest {
       + "\"text\" : \"First note with a comment\"}" + LS;
 
     given()
-      .header(TEN).header(USER2).header(JSON)
+      .header(TEN).header(USER8).header(JSON)
       .body(updated1)
       .put("/notes/22222222-2222-2222-2222-222222222222") // wrong one
       .then()
@@ -281,16 +281,7 @@ public class NotesTest {
       .body(containsString("Can not change the id"));
 
     given()
-      .header(TEN).header(USER2).header(JSON)
-      .body(updated1)
-      .put("/notes/55555555-5555-5555-5555-555555555555") // bad one
-      .then()
-      .log().ifError()
-      .statusCode(422)
-      .body(containsString("Can not change the id"));
-
-    given()
-      .header(TEN).header(USER2).header(JSON)
+      .header(TEN).header(USER8).header(JSON)
       .body(updated1)
       .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
       .then()
@@ -298,11 +289,11 @@ public class NotesTest {
       .statusCode(422);
 
     given()
-      .header(TEN).header(USER2).header(JSON)
+      .header(TEN).header(USER8).header(JSON)
       .body(updated1)
-      .put("/notes/11111111-1111-1111-1111-111111111111")
+      .put("/notes/11111111-1111-1111-1111-111111111111") // Ok update
       .then()
-      .log().ifError()
+      .log().all() //ifError()
       .statusCode(204);
 
     given()
@@ -314,16 +305,24 @@ public class NotesTest {
       .body(containsString("with a comment"))
       .body(containsString("-8888-"));   // updated by
 
+    given()
+      .header(TEN)
+      .get("/notes")
+      .then()
+      .log().all()
+      .statusCode(200);
+
     // _self
     given()
-      .header(TEN).header(USER1)
+      .header(TEN).header(USER9)
       .get("/notes/_self")
       .then()
       .statusCode(200)
+      .log().all()
       .body(containsString("with a comment"));
 
     given()
-      .header(TEN).header(USER2)
+      .header(TEN).header(USER8)
       .get("/notes/_self")
       .then()
       .log().all()

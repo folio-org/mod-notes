@@ -12,7 +12,7 @@
     "text": {
       "type": "string"
     },
-    "metaData": {
+    "metadata": {
       "type": "object",
       "$ref": "raml-util/schemas/metadata.schema"
     }
