@@ -94,11 +94,12 @@ public class NotesResourceImpl implements NotesResource {
             if (reply.succeeded()) {
               NoteCollection notes = new NoteCollection();
               @SuppressWarnings("unchecked")
-              List<Note> notelist = (List<Note>) reply.result()[0];
+              List<Note> notelist = (List<Note>) reply.result().getResults();
               notes.setNotes(notelist);
-              notes.setTotalRecords((Integer) reply.result()[1]);
+              Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
+              notes.setTotalRecords(totalRecords);
               asyncResultHandler.handle(succeededFuture(
-                  GetNotesResponse.withJsonOK(notes)));
+                GetNotesResponse.withJsonOK(notes)));
             } else {
               logger.error(reply.cause().getMessage(), reply.cause());
               asyncResultHandler.handle(succeededFuture(GetNotesResponse
@@ -226,7 +227,7 @@ public class NotesResourceImpl implements NotesResource {
           try {
             if (reply.succeeded()) {
               @SuppressWarnings("unchecked")
-              List<Note> config = (List<Note>) reply.result()[0];
+              List<Note> config = (List<Note>) reply.result().getResults();
               if (config.isEmpty()) {
                 asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
                     .withPlainNotFound(id)));
@@ -374,24 +375,13 @@ public class NotesResourceImpl implements NotesResource {
           .withPlainBadRequest("No UserId")));
         return;
       }
-      /*
-       if (query == null || query.isEmpty()) {
-        query = "metadata=" + userId;
-       } else {
-        query = "metadata=" + userId + " and (" + query + ")";
-       }
-       */
-      String userQuery = "metaData.createdByUserId=" + userId
-        + " or " + "metadata.createdByUserId=" + userId;
+      String userQuery = "metadata.createdByUserId=\"" + userId + "\"";
       if (query == null || query.isEmpty()) {
         query = userQuery;
       } else {
         query = "(" + userQuery + ") and (" + query + ")";
       }
-      /* See RMB-52. Old code used to call it metaData, new should be metadata
-       Remove this hack once RMB-52 is resolved and released.
-       */
-       logger.info("Getting self notes. new query:" + query);
+      logger.info("Getting self notes. new query:" + query);
       CQLWrapper cql = getCQL(query, limit, offset, NOTE_SCHEMA);
 
       PostgresClient.getInstance(vertxContext.owner(), tenantId)
@@ -402,11 +392,12 @@ public class NotesResourceImpl implements NotesResource {
               if (reply.succeeded()) {
                 NoteCollection notes = new NoteCollection();
                 @SuppressWarnings("unchecked")
-                List<Note> notelist = (List<Note>) reply.result()[0];
+                List<Note> notelist = (List<Note>) reply.result().getResults();
                 notes.setNotes(notelist);
-                notes.setTotalRecords((Integer) reply.result()[1]);
+                Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
+                notes.setTotalRecords(totalRecords);
                 asyncResultHandler.handle(succeededFuture(
-                    GetNotesResponse.withJsonOK(notes)));
+                  GetNotesResponse.withJsonOK(notes)));
               } else {
                 logger.error(reply.cause().getMessage(), reply.cause());
                 asyncResultHandler.handle(succeededFuture(GetNotesResponse
