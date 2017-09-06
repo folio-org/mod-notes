@@ -5,6 +5,7 @@ import org.junit.Test;
 import com.jayway.restassured.RestAssured;
 import static com.jayway.restassured.RestAssured.given;
 import com.jayway.restassured.response.Header;
+import com.jayway.restassured.response.ResponseBodyExtractionOptions;
 import static org.hamcrest.Matchers.containsString;
 
 import io.vertx.core.DeploymentOptions;
@@ -42,6 +43,8 @@ public class NotesTest {
     "99999999-9999-9999-9999-999999999999");
   private final Header USER8 = new Header("X-Okapi-User-Id",
     "88888888-8888-8888-8888-888888888888");
+  private final Header USER7 = new Header("X-Okapi-User-Id",
+    "77777777-7777-7777-7777-777777777777");
 
   private final Header JSON = new Header("Content-Type", "application/json");
   private String moduleName; //  "mod-notes"
@@ -241,12 +244,33 @@ public class NotesTest {
       .statusCode(200)
       .body(containsString("First note"));
 
+    given()
+      .header(TEN)
+      .get("/notes?query=metadata.createdByUserId=9999")
+      .then()
+      .statusCode(200)
+      .body(containsString("First note"));
+
+    given()
+      .header(TEN)
+      .get("/notes?query=metadata.createdByUserId=\"99999999-9999-9999-9999-999999999999\"")
+      .then()
+      .statusCode(200)
+      .body(containsString("First note"));
+
+    given()
+      .header(TEN)
+      .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
+      .then()
+      .statusCode(200)
+      .body(containsString("\"totalRecords\" : 0"));
+
+    // Post another note
     String note2 = "{"
       + "\"id\" : \"22222222-2222-2222-2222-222222222222\"," + LS
       + "\"link\" : \"things/23456\"," + LS
       + "\"text\" : \"Note on a thing\"}" + LS;
 
-    // Post another note
     given()
       .header(TEN).header(USER8).header(JSON)
       .body(note2)
@@ -293,17 +317,44 @@ public class NotesTest {
       .body(updated1)
       .put("/notes/11111111-1111-1111-1111-111111111111") // Ok update
       .then()
-      .log().all() //ifError()
+      .log().ifError()
       .statusCode(204);
 
     given()
       .header(TEN)
       .get("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().all()
+      .log().ifError()
       .statusCode(200)
       .body(containsString("with a comment"))
       .body(containsString("-8888-"));   // updated by
+
+    // Update the other one, by fetching and PUTting back
+    String body = given()
+      .header(TEN)
+      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .log().all() // .ifError()
+      .statusCode(200)
+      .extract().body().asString();
+    String newDoc = body
+      .replaceAll("8888", "9999") // createdBy
+      .replaceFirst("23456", "34567");  // link to the thing
+    given()
+      .header(TEN).header(USER7).header(JSON)
+      .body(newDoc)
+      .put("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .log().ifError()
+      .statusCode(204);
+    given()
+      .header(TEN)
+      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .log().all() // .ifError()
+      .body(containsString("-8888-"));   // createdBy, NOT CHANGED
+    //.body(containsString("-9999-"));   // createdBy
+    // The RMB will manage the metadata, and not change anything in it
 
     given()
       .header(TEN)
