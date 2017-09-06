@@ -48,8 +48,8 @@ public class NotesTest {
 
   private final Header JSON = new Header("Content-Type", "application/json");
   private String moduleName; //  "mod-notes"
-  private String moduleVersion; // "0.1.2-SNAPSHOT"
-  private String moduleId; // "mod-notes-0.1.2-SNAPSHOT"
+  private String moduleVersion; // "1.0.0" or "0.1.2-SNAPSHOT"
+  private String moduleId; // "mod-notes-1.0.1-SNAPSHOT"
   Vertx vertx;
   Async async;
 
