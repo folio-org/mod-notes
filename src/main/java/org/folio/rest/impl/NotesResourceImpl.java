@@ -79,38 +79,81 @@ public class NotesResourceImpl implements NotesResource {
     int offset, int limit, String lang,
     Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context context) throws Exception {
+    Context vertxContext) throws Exception {
+
+    getNotesBoth(false, query, offset, limit,
+      lang, okapiHeaders,
+      asyncResultHandler, vertxContext);
+  }
+  @Override
+  @Validate
+  public void getNotesSelf(String query, int offset, int limit,
+    String lang, Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> asyncResultHandler,
+    Context vertxContext) throws Exception {
+
+    getNotesBoth(true, query, offset, limit,
+      lang, okapiHeaders,
+      asyncResultHandler, vertxContext);
+  }
+
+  /*
+   * Combined handler for get _self and plain get
+   */
+  private void getNotesBoth(boolean self, String query, int offset, int limit,
+    String lang, Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> asyncResultHandler,
+    Context vertxContext) throws Exception {
     try {
-      logger.info("Getting notes. " + offset + "+" + limit + " q=" + query);
+      logger.info("Getting notes. self=" + self + " "
+        + offset + "+" + limit + " q=" + query);
       String tenantId = TenantTool.calculateTenantId(
         okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      if (self) {
+        String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
+        if (userId == null || userId.isEmpty()) {
+          logger.error("No userId for getNotesSelf");
+          asyncResultHandler.handle(succeededFuture(GetNotesResponse
+            .withPlainBadRequest("No UserId")));
+          return;
+        }
+        String userQuery = "metadata.createdByUserId=\"" + userId + "\"";
+        if (query == null || query.isEmpty()) {
+          query = userQuery;
+        } else {
+          query = "(" + userQuery + ") and (" + query + ")";
+        }
+      }
+
+      logger.info("Getting self notes. new query:" + query);
       CQLWrapper cql = getCQL(query, limit, offset, NOTE_SCHEMA);
 
-      PostgresClient.getInstance(context.owner(), tenantId)
-        .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql, true, true,
+      PostgresClient.getInstance(vertxContext.owner(), tenantId)
+        .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
+          true /*get count too*/, false /* set id */,
           reply -> {
-          try {
-            if (reply.succeeded()) {
-              NoteCollection notes = new NoteCollection();
-              @SuppressWarnings("unchecked")
-              List<Note> notelist = (List<Note>) reply.result().getResults();
-              notes.setNotes(notelist);
-              Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
-              notes.setTotalRecords(totalRecords);
-              asyncResultHandler.handle(succeededFuture(
-                GetNotesResponse.withJsonOK(notes)));
-            } else {
-              logger.error(reply.cause().getMessage(), reply.cause());
+            try {
+              if (reply.succeeded()) {
+                NoteCollection notes = new NoteCollection();
+                @SuppressWarnings("unchecked")
+                List<Note> notelist = (List<Note>) reply.result().getResults();
+                notes.setNotes(notelist);
+                Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
+                notes.setTotalRecords(totalRecords);
+                asyncResultHandler.handle(succeededFuture(
+                    GetNotesResponse.withJsonOK(notes)));
+              } else {
+                logger.error(reply.cause().getMessage(), reply.cause());
+                asyncResultHandler.handle(succeededFuture(GetNotesResponse
+                    .withPlainBadRequest(reply.cause().getMessage())));
+              }
+            } catch (Exception e) {
+              logger.error(e.getMessage(), e);
               asyncResultHandler.handle(succeededFuture(GetNotesResponse
-                .withPlainBadRequest(reply.cause().getMessage())));
+                  .withPlainInternalServerError(messages.getMessage(
+                      lang, MessageConsts.InternalServerError))));
             }
-          } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            asyncResultHandler.handle(succeededFuture(GetNotesResponse
-              .withPlainInternalServerError(messages.getMessage(
-                  lang, MessageConsts.InternalServerError))));
-          }
-        });
+          });
     } catch (CQLQueryValidationException e1) {
       int start = e1.getMessage().indexOf("'");
       int end = e1.getMessage().lastIndexOf("'");
@@ -132,7 +175,6 @@ public class NotesResourceImpl implements NotesResource {
       asyncResultHandler.handle(succeededFuture(GetNotesResponse
         .withPlainInternalServerError(message)));
     }
-
   }
 
   /**
@@ -357,80 +399,6 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
-  @Override
-  @Validate
-  public void getNotesSelf(String query, int offset, int limit,
-    String lang, Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) throws Exception {
-    try {
-      logger.info("Getting self notes. " + offset + "+" + limit + " q=" + query);
-      String tenantId = TenantTool.calculateTenantId(
-        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
-      if (userId == null || userId.isEmpty()) {
-        logger.error("No userId for getNotesSelf");
-        asyncResultHandler.handle(succeededFuture(GetNotesResponse
-          .withPlainBadRequest("No UserId")));
-        return;
-      }
-      String userQuery = "metadata.createdByUserId=\"" + userId + "\"";
-      if (query == null || query.isEmpty()) {
-        query = userQuery;
-      } else {
-        query = "(" + userQuery + ") and (" + query + ")";
-      }
-      logger.info("Getting self notes. new query:" + query);
-      CQLWrapper cql = getCQL(query, limit, offset, NOTE_SCHEMA);
-
-      PostgresClient.getInstance(vertxContext.owner(), tenantId)
-        .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
-          true /*get count too*/, false /* set id */,
-          reply -> {
-            try {
-              if (reply.succeeded()) {
-                NoteCollection notes = new NoteCollection();
-                @SuppressWarnings("unchecked")
-                List<Note> notelist = (List<Note>) reply.result().getResults();
-                notes.setNotes(notelist);
-                Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
-                notes.setTotalRecords(totalRecords);
-                asyncResultHandler.handle(succeededFuture(
-                  GetNotesResponse.withJsonOK(notes)));
-              } else {
-                logger.error(reply.cause().getMessage(), reply.cause());
-                asyncResultHandler.handle(succeededFuture(GetNotesResponse
-                    .withPlainBadRequest(reply.cause().getMessage())));
-              }
-            } catch (Exception e) {
-              logger.error(e.getMessage(), e);
-              asyncResultHandler.handle(succeededFuture(GetNotesResponse
-                  .withPlainInternalServerError(messages.getMessage(
-                      lang, MessageConsts.InternalServerError))));
-            }
-          });
-    } catch (CQLQueryValidationException e1) {
-      int start = e1.getMessage().indexOf("'");
-      int end = e1.getMessage().lastIndexOf("'");
-      String field = e1.getMessage();
-      if (start != -1 && end != -1) {
-        field = field.substring(start + 1, end);
-      }
-      Errors e = ValidationHelper.createValidationErrorMessage(field,
-        "", e1.getMessage());
-      asyncResultHandler.handle(succeededFuture(GetNotesResponse
-        .withJsonUnprocessableEntity(e)));
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      String message = messages.getMessage(lang, MessageConsts.InternalServerError);
-      if (e.getCause() != null && e.getCause().getClass().getSimpleName()
-        .endsWith("CQLParseException")) {
-        message = " CQL parse error " + e.getLocalizedMessage();
-      }
-      asyncResultHandler.handle(succeededFuture(GetNotesResponse
-        .withPlainInternalServerError(message)));
-    }
-  }
 
   /**
    * Post to _self is not supported. The RMB creates one anyway.
