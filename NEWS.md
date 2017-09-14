@@ -1,3 +1,6 @@
+## 1.0.1
+ * FOLIO-834
+
 ## 1.0.0
  * 'metaData' renamed to 'metadata', due to RMB 14.0.0. This is a BREAKING CHANGE!
    Changes the way records are returned, and what queries are accepted.
