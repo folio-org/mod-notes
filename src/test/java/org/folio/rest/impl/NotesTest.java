@@ -258,12 +258,34 @@ public class NotesTest {
       .statusCode(200)
       .body(containsString("First note"));
 
+    logger.info("XXX Bad query tests");
+    given()
+      .header(TEN)
+      .get("/notes?query=VERYBADQUERY")
+      .then()
+      .log().all()
+      .statusCode(422)
+      .body(containsString("QueryValidationException"));
+
+    // TODO - Why do the next two not fail with a QueryValidationException ??
+    // When run manually (run.sh), they return a 422 all right
     given()
       .header(TEN)
       .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
       .then()
       .statusCode(200)
+      .log().all()
       .body(containsString("\"totalRecords\" : 0"));
+
+    given()
+      .header(TEN)
+      .get("/notes?query=UNKNOWNFIELD=foobar")
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body(containsString("\"totalRecords\" : 0"));
+
+    logger.info("XXX Bad query tests done");
 
     // Post another note
     String note2 = "{"

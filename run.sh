@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Parameters
 OKAPIURL="http://localhost:9130"
 CURL="curl -w\n -D - "
@@ -90,8 +91,12 @@ echo Test 8: query both
 $CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='link=*56*'
 echo
 
-echo Test 9: Bad query
-$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='link='
+echo Test 9: Bad queries. Should fail with 422
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='BADQUERY'
+echo
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='BADFIELD=foo'
+echo
+$CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query='metadata.BADFIELD=foo'
 echo
 
 echo Test 10: limit
@@ -103,6 +108,7 @@ $CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query=text=hello+sortby+link%2
 echo
 $CURL -H "X-Okapi-Tenant:testlib" $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.descending
 echo
+
 
 # Let it run
 echo
