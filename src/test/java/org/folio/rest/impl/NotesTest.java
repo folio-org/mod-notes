@@ -5,7 +5,6 @@ import org.junit.Test;
 import com.jayway.restassured.RestAssured;
 import static com.jayway.restassured.RestAssured.given;
 import com.jayway.restassured.response.Header;
-import com.jayway.restassured.response.ResponseBodyExtractionOptions;
 import static org.hamcrest.Matchers.containsString;
 
 import io.vertx.core.DeploymentOptions;
@@ -39,13 +38,13 @@ public class NotesTest {
   private final int port = Integer.parseInt(System.getProperty("port", "8081"));
   private static final String LS = System.lineSeparator();
   private final Header TEN = new Header("X-Okapi-Tenant", "modnotestest");
+  private final Header ALLPERM = new Header("X-Okapi-Permissions", "notes.domain.all");
   private final Header USER9 = new Header("X-Okapi-User-Id",
     "99999999-9999-9999-9999-999999999999");
   private final Header USER8 = new Header("X-Okapi-User-Id",
     "88888888-8888-8888-8888-888888888888");
   private final Header USER7 = new Header("X-Okapi-User-Id",
     "77777777-7777-7777-7777-777777777777");
-
   private final Header JSON = new Header("Content-Type", "application/json");
   private String moduleName; //  "mod-notes"
   private String moduleVersion; // "1.0.0" or "0.1.2-SNAPSHOT"
@@ -120,11 +119,21 @@ public class NotesTest {
       .statusCode(400)
       .body(containsString("Tenant"));
 
+    // Simpel GET without note4s.domains.* permissions
+    given()
+      .header(TEN)
+      .get("/notes")
+      .then()
+      .log().all()
+      .statusCode(401)
+      .body(containsString("notes.domain"));
+
     // Simple GET request with a tenant, but before
     // we have invoked the tenant interface, so the
     // call will fail (with lots of traces in the log)
     given()
       .header(TEN)
+      .header(ALLPERM)
       .get("/notes")
       .then()
       .log().all()
@@ -144,7 +153,7 @@ public class NotesTest {
 
     // Empty list of notes
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes")
       .then()
       .log().ifError()
@@ -173,6 +182,8 @@ public class NotesTest {
       + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
       + "\"text\" : \"First note\"}" + LS;
+    // no domain, we add that when updating. This will break when we make
+    // the domain required, just add the field here.
 
     String bad2 = note1.replaceFirst("}", ")"); // make it invalid json
     given()
@@ -214,7 +225,7 @@ public class NotesTest {
 
     // Fetch the note in various ways
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes")
       .then()
       .log().all()
@@ -224,35 +235,35 @@ public class NotesTest {
       .body(containsString("\"totalRecords\" : 1"));
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes/11111111-1111-1111-1111-111111111111")
       .then()
       .statusCode(200)
       .body(containsString("First note"));
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes/777")
       .then()
       .log().all()
       .statusCode(400);
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes?query=text=fiRST")
       .then()
       .statusCode(200)
       .body(containsString("First note"));
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes?query=metadata.createdByUserId=9999")
       .then()
       .statusCode(200)
       .body(containsString("First note"));
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes?query=metadata.createdByUserId=\"99999999-9999-9999-9999-999999999999\"")
       .then()
       .statusCode(200)
@@ -260,7 +271,7 @@ public class NotesTest {
 
     logger.info("XXX Bad query tests");
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes?query=VERYBADQUERY")
       .then()
       .log().all()
@@ -270,7 +281,7 @@ public class NotesTest {
     // TODO - Why do the next two not fail with a QueryValidationException ??
     // When run manually (run.sh), they return a 422 all right
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
       .then()
       .statusCode(200)
@@ -278,7 +289,7 @@ public class NotesTest {
       .body(containsString("\"totalRecords\" : 0"));
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes?query=UNKNOWNFIELD=foobar")
       .then()
       .log().all()
@@ -291,6 +302,7 @@ public class NotesTest {
     String note2 = "{"
       + "\"id\" : \"22222222-2222-2222-2222-222222222222\"," + LS
       + "\"link\" : \"things/23456\"," + LS
+      + "\"domain\" : \"things\"," + LS
       + "\"text\" : \"Note on a thing\"}" + LS;
 
     given()
@@ -303,7 +315,7 @@ public class NotesTest {
 
     // Get both notes a few different ways
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes?query=text=note")
       .then()
       .log().all()
@@ -315,6 +327,7 @@ public class NotesTest {
     String updated1 = "{"
       + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
+      + "\"domain\" : \"users\"," + LS
       + "\"text\" : \"First note with a comment\"}" + LS;
 
     given()
@@ -343,7 +356,7 @@ public class NotesTest {
       .statusCode(204);
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes/11111111-1111-1111-1111-111111111111")
       .then()
       .log().ifError()
@@ -353,7 +366,7 @@ public class NotesTest {
 
     // Update the other one, by fetching and PUTting back
     String body = given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .log().all() // .ifError()
@@ -370,7 +383,7 @@ public class NotesTest {
       .log().ifError()
       .statusCode(204);
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .log().all() // .ifError()
@@ -379,7 +392,7 @@ public class NotesTest {
     // The RMB will manage the metadata, and not change anything in it
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes")
       .then()
       .log().all()
@@ -387,7 +400,7 @@ public class NotesTest {
 
     // _self
     given()
-      .header(TEN).header(USER9)
+      .header(TEN).header(USER9).header(ALLPERM)
       .get("/notes/_self")
       .then()
       .statusCode(200)
@@ -395,11 +408,25 @@ public class NotesTest {
       .body(containsString("with a comment"));
 
     given()
-      .header(TEN).header(USER8)
+      .header(TEN).header(USER8).header(ALLPERM)
       .get("/notes/_self")
       .then()
       .log().all()
       .body(containsString("on a thing")); // createdby matches
+
+    // Permission tests
+    // Normally Okapi and mod-auth would provide the X-Okapi-Permissions
+    // header. Here we run without Okapi, so we can set them up as needed.
+    // Note that we are only testing permissionsDesired, which come through
+    // as X-Okapi-Permissions. Required permissions are always filtered out
+    // the hard way, and if not there, the module will never see the request.
+    given()
+      .header(TEN)
+      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.thing")
+      .get("/notes")
+      .then()
+      .log().all()
+      .statusCode(200);
 
     // Failed deletes
     given()
@@ -435,7 +462,7 @@ public class NotesTest {
       .statusCode(204);
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .get("/notes")
       .then()
       .log().ifError()
