@@ -44,7 +44,7 @@ public class NotesResourceImpl implements NotesResource {
   private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
     // TODO - Get this from teh restVerticle, like the rest, when it gets defined there.
 
-  private void initCQLValidation() {
+  private void initCQLValidation() {  //NOSONAR
     String path = NOTE_SCHEMA_NAME;
     try {
       NOTE_SCHEMA = IOUtils.toString(
@@ -57,7 +57,7 @@ public class NotesResourceImpl implements NotesResource {
 
   public NotesResourceImpl(Vertx vertx, String tenantId) {
     if (NOTE_SCHEMA == null) {
-      //initCQLValidation();
+      //initCQLValidation();  // NOSONAR
       // Commented out, because it fails a perfectly valid query
       // like metadata.createdDate=2017
     }
@@ -139,7 +139,7 @@ public class NotesResourceImpl implements NotesResource {
       if (perms.contains("notes.domain.all")) {
         logger.debug("notes.domain.all found, not modifying the query");
       } else {
-        
+
       }
 
       logger.info("Getting self notes. new query:" + query);

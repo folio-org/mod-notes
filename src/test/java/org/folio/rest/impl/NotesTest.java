@@ -269,7 +269,6 @@ public class NotesTest {
       .statusCode(200)
       .body(containsString("First note"));
 
-    logger.info("XXX Bad query tests");
     given()
       .header(TEN).header(ALLPERM)
       .get("/notes?query=VERYBADQUERY")
@@ -295,8 +294,6 @@ public class NotesTest {
       .log().all()
       .statusCode(200)
       .body(containsString("\"totalRecords\" : 0"));
-
-    logger.info("XXX Bad query tests done");
 
     // Post another note
     String note2 = "{"
@@ -399,6 +396,14 @@ public class NotesTest {
       .statusCode(200);
 
     // _self
+    given()
+      .header(TEN).header(ALLPERM)
+      .get("/notes/_self")
+      .then()
+      .statusCode(400)
+      .log().all()
+      .body(containsString("No UserId"));
+
     given()
       .header(TEN).header(USER9).header(ALLPERM)
       .get("/notes/_self")
