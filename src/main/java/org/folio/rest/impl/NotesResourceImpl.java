@@ -38,7 +38,7 @@ public class NotesResourceImpl implements NotesResource {
   private final Messages messages = Messages.getInstance();
   public static final String NOTE_TABLE = "note_data";
   private static final String LOCATION_PREFIX = "/notes/";
-  private static final String idFieldName = "id";
+  private static final String IDFIELDNAME = "id";
   private static String NOTE_SCHEMA = null;
   private static final String NOTE_SCHEMA_NAME = "apidocs/raml/note.json";
   private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
@@ -61,7 +61,7 @@ public class NotesResourceImpl implements NotesResource {
       // Commented out, because it fails a perfectly valid query
       // like metadata.createdDate=2017
     }
-    PostgresClient.getInstance(vertx, tenantId).setIdField(idFieldName);
+    PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset,
@@ -75,6 +75,26 @@ public class NotesResourceImpl implements NotesResource {
     return new CQLWrapper(cql2pgJson, query)
       .setLimit(new Limit(limit))
       .setOffset(new Offset(offset));
+  }
+
+  /**
+   * Helper to check if the user has a given notes.domain permission. For domain
+   * "things", checks that X-Okapi-Headers contains "notes.domains.things" or
+   * "notes.domains.all"
+   *
+   * @param domain
+   * @param okapiHeaders
+   * @return
+   */
+  private boolean noteDomainPermission(String domain,
+    Map<String, String> okapiHeaders) {
+    String perms = okapiHeaders.get(OKAPI_PERM_HEADER);
+    if (perms == null || perms.isEmpty()) {
+      logger.error("No " + OKAPI_PERM_HEADER + " - check notes.domain.* permissions");
+      return false;
+    }
+    return perms.contains("notes.domain." + domain)
+      || perms.contains("notes.domain.all");
   }
 
   @Override
@@ -221,16 +241,23 @@ public class NotesResourceImpl implements NotesResource {
         okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       String id = entity.getId();
       String domain = entity.getDomain();
+      if (domain == null || domain.isEmpty()) {
+        domain = entity.getLink().replaceFirst("^/([^/]+):*$", "$1");
+        entity.setDomain(domain);
+        logger.warn("Note has no domain. "
+          + "That is DEPRECATED and will stop working soon!"
+          + " For now, defaulting to '" + domain + "'");
+      }
+      if (!noteDomainPermission(domain, okapiHeaders)) {
+        asyncResultHandler.handle(succeededFuture(PostNotesResponse
+          .withPlainUnauthorized("No permission notes.domain." + domain)));
+        return;
+      }
       PostgresClient.getInstance(context.owner(), tenantId).save(NOTE_TABLE,
         id, entity,
         reply -> {
           try {
             if (reply.succeeded()) {
-              if (domain == null || domain.isEmpty()) {
-                logger.warn("Note has no domain. "
-                  + "That is DEPRECATED and will stop working soon!");
-                // TODO - Make it required when releasing 2.0
-              }
               Object ret = reply.result();
               entity.setId((String) ret);
               OutStream stream = new OutStream();
@@ -274,25 +301,6 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
-  /**
-   * Helper to check if the user has a given notes.domain permission. For domain
-   * "things", checks that X-Okapi-Headers contains "notes.domains.things" or
-   * "notes.domains.all"
-   *
-   * @param domain
-   * @param okapiHeaders
-   * @return
-   */
-  private boolean noteDomainPermission(String domain,
-    Map<String, String> okapiHeaders) {
-    String perms = okapiHeaders.get(OKAPI_PERM_HEADER);
-    if (perms == null || perms.isEmpty()) {
-      logger.error("No " + OKAPI_PERM_HEADER + " - check notes.domain.* permissions");
-      return false;
-    }
-    return perms.contains("notes.domain." + domain)
-      || perms.contains("notes.domain.all");
-  }
 
   @Override
   @Validate
@@ -308,7 +316,7 @@ public class NotesResourceImpl implements NotesResource {
       String tenantId = TenantTool.calculateTenantId(
         okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       Criterion c = new Criterion(
-        new Criteria().addField(idFieldName).setJSONB(false)
+        new Criteria().addField(IDFIELDNAME).setJSONB(false)
         .setOperation("=").setValue("'" + id + "'"));
 
       PostgresClient.getInstance(context.owner(), tenantId)
@@ -328,7 +336,7 @@ public class NotesResourceImpl implements NotesResource {
                   asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
                     .withJsonOK(notes.get(0))));
                 } else {
-                  asyncResultHandler.handle(succeededFuture(GetNotesResponse
+                  asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
                     .withPlainUnauthorized("No permission notes.domain." + domain)));
                 }
               }

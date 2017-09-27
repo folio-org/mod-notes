@@ -68,5 +68,11 @@ resourceTypes:
       collection-item:
         schema: note.json
         exampleItem: !include examples/note.sample
+    get:
+      responses:
+        401:
+          description: "Not authorized to perform requested action"
+          body:
+            text/plain:
     put:
       is: [validate]

@@ -119,7 +119,7 @@ public class NotesTest {
       .statusCode(400)
       .body(containsString("Tenant"));
 
-    // Simpel GET without note4s.domains.* permissions
+    // Simpel GET without notes.domains.* permissions
     given()
       .header(TEN)
       .get("/notes")
@@ -206,7 +206,7 @@ public class NotesTest {
 
     String bad4 = note1.replaceAll("-1111-", "-2-");  // make bad UUID
     given()
-      .header(TEN).header(JSON)
+      .header(TEN).header(JSON).header(ALLPERM)
       .body(bad4)
       .post("/notes")
       .then()
@@ -216,7 +216,7 @@ public class NotesTest {
 
     // Post a good note
     given()
-      .header(TEN).header(USER9).header(JSON)
+      .header(TEN).header(USER9).header(JSON).header(ALLPERM)
       .body(note1)
       .post("/notes")
       .then()
@@ -231,6 +231,7 @@ public class NotesTest {
       .log().all()
       .statusCode(200)
       .body(containsString("First note"))
+      .body(containsString("domain")) // Default created from link
       .body(containsString("-9999-")) // CreatedBy userid in metadata
       .body(containsString("\"totalRecords\" : 1"));
 
@@ -302,8 +303,21 @@ public class NotesTest {
       + "\"domain\" : \"things\"," + LS
       + "\"text\" : \"Note on a thing\"}" + LS;
 
+    // Wrong permissions, should fail
     given()
       .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.users")
+      .body(note2)
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .body(containsString("notes.domain.things"))
+      .statusCode(401);
+
+    // good permission, this should work
+    given()
+      .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.things")
       .body(note2)
       .post("/notes")
       .then()
