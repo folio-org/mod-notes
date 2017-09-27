@@ -38,11 +38,13 @@ public class NotesResourceImpl implements NotesResource {
   private final Messages messages = Messages.getInstance();
   public static final String NOTE_TABLE = "note_data";
   private static final String LOCATION_PREFIX = "/notes/";
-  private final String idFieldName = "id";
+  private static final String idFieldName = "id";
   private static String NOTE_SCHEMA = null;
   private static final String NOTE_SCHEMA_NAME = "apidocs/raml/note.json";
+  private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
+    // TODO - Get this from teh restVerticle, like the rest, when it gets defined there.
 
-  private void initCQLValidation() {
+  private void initCQLValidation() {  //NOSONAR
     String path = NOTE_SCHEMA_NAME;
     try {
       NOTE_SCHEMA = IOUtils.toString(
@@ -55,7 +57,7 @@ public class NotesResourceImpl implements NotesResource {
 
   public NotesResourceImpl(Vertx vertx, String tenantId) {
     if (NOTE_SCHEMA == null) {
-      //initCQLValidation();
+      //initCQLValidation();  // NOSONAR
       // Commented out, because it fails a perfectly valid query
       // like metadata.createdDate=2017
     }
@@ -87,6 +89,7 @@ public class NotesResourceImpl implements NotesResource {
       lang, okapiHeaders,
       asyncResultHandler, vertxContext);
   }
+
   @Override
   @Validate
   public void getNotesSelf(String query, int offset, int limit,
@@ -125,6 +128,18 @@ public class NotesResourceImpl implements NotesResource {
         } else {
           query = "(" + userQuery + ") and (" + query + ")";
         }
+      }
+      String perms = okapiHeaders.get(OKAPI_PERM_HEADER);
+      if (perms == null || perms.isEmpty()) {
+        logger.error("No " + OKAPI_PERM_HEADER + " - check notes.domain.* permissions");
+        asyncResultHandler.handle(succeededFuture(GetNotesResponse
+          .withPlainUnauthorized("No notes.domain.* permissions")));
+        return;
+      }
+      if (perms.contains("notes.domain.all")) {
+        logger.debug("notes.domain.all found, not modifying the query");
+      } else {
+
       }
 
       logger.info("Getting self notes. new query:" + query);
@@ -199,11 +214,17 @@ public class NotesResourceImpl implements NotesResource {
       String tenantId = TenantTool.calculateTenantId(
         okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       String id = entity.getId();
+      String domain = entity.getDomain();
       PostgresClient.getInstance(context.owner(), tenantId).save(NOTE_TABLE,
         id, entity,
         reply -> {
           try {
             if (reply.succeeded()) {
+              if (domain == null || domain.isEmpty()) {
+                logger.warn("Note has no domain. "
+                  + "That is DEPRECATED and will stop working soon!");
+                // TODO - Make it required when releasing 2.0
+              }
               Object ret = reply.result();
               entity.setId((String) ret);
               OutStream stream = new OutStream();

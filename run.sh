@@ -72,7 +72,7 @@ $CURL \
   -H "Content-type:application/json" \
   -H "X-Okapi-Tenant:testlib" \
   -H "X-Okapi-User-Id: e037b68e-f202-4a04-9ce2-896a33152b52" \
-  -X POST -d '{"link":"items/23456","text":"hello thing"}' \
+  -X POST -d '{"link":"items/23456","text":"hello thing", "domain":"items"}' \
   $OKAPIURL/notes
 
 echo Test 5: get a list with both
