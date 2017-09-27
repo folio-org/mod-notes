@@ -103,7 +103,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   /*
-   * Combined handler for get _self and plain get
+   * Combined handler for get _self and plain get (collection)
    */
   private void getNotesBoth(boolean self, String query, int offset, int limit,
     String lang, Map<String, String> okapiHeaders,
@@ -112,6 +112,7 @@ public class NotesResourceImpl implements NotesResource {
     try {
       logger.info("Getting notes. self=" + self + " "
         + offset + "+" + limit + " q=" + query);
+
       String tenantId = TenantTool.calculateTenantId(
         okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
       if (self) {
@@ -123,7 +124,7 @@ public class NotesResourceImpl implements NotesResource {
           return;
         }
         String userQuery = "metadata.createdByUserId=\"" + userId + "\"";
-        if (query == null || query.isEmpty()) {
+        if (query == null) {
           query = userQuery;
         } else {
           query = "(" + userQuery + ") and (" + query + ")";
@@ -136,13 +137,18 @@ public class NotesResourceImpl implements NotesResource {
           .withPlainUnauthorized("No notes.domain.* permissions")));
         return;
       }
-      if (perms.contains("notes.domain.all")) {
-        logger.debug("notes.domain.all found, not modifying the query");
-      } else {
-
+      if (!perms.contains("notes.domain.all")) {
+        String p = perms.replaceAll("notes\\.domain\\.", "domain=");
+        String[] pa = p.split(",");
+        String pq = String.join(" OR ", pa);
+        if (query == null) {
+          query = pq;
+        } else {
+          query = "(" + query + ") and ( " + pq + ")";
+        }
       }
 
-      logger.info("Getting self notes. new query:" + query);
+      logger.info("Getting notes. new query:" + query);
       CQLWrapper cql = getCQL(query, limit, offset, NOTE_SCHEMA);
 
       PostgresClient.getInstance(vertxContext.owner(), tenantId)
@@ -268,6 +274,26 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
+  /**
+   * Helper to check if the user has a given notes.domain permission. For domain
+   * "things", checks that X-Okapi-Headers contains "notes.domains.things" or
+   * "notes.domains.all"
+   *
+   * @param domain
+   * @param okapiHeaders
+   * @return
+   */
+  private boolean noteDomainPermission(String domain,
+    Map<String, String> okapiHeaders) {
+    String perms = okapiHeaders.get(OKAPI_PERM_HEADER);
+    if (perms == null || perms.isEmpty()) {
+      logger.error("No " + OKAPI_PERM_HEADER + " - check notes.domain.* permissions");
+      return false;
+    }
+    return perms.contains("notes.domain." + domain)
+      || perms.contains("notes.domain.all");
+  }
+
   @Override
   @Validate
   public void getNotesById(String id,
@@ -291,13 +317,20 @@ public class NotesResourceImpl implements NotesResource {
           try {
             if (reply.succeeded()) {
               @SuppressWarnings("unchecked")
-              List<Note> config = (List<Note>) reply.result().getResults();
-              if (config.isEmpty()) {
+              List<Note> notes = (List<Note>) reply.result().getResults();
+              if (notes.isEmpty()) {
                 asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
                     .withPlainNotFound(id)));
               } else {
-                asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-                    .withJsonOK(config.get(0))));
+                Note n = notes.get(0);
+                String domain = n.getDomain();
+                if (noteDomainPermission(domain, okapiHeaders)) {
+                  asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+                    .withJsonOK(notes.get(0))));
+                } else {
+                  asyncResultHandler.handle(succeededFuture(GetNotesResponse
+                    .withPlainUnauthorized("No permission notes.domain." + domain)));
+                }
               }
             } else {
               String error = PgExceptionUtil.badRequestMessage(reply.cause());

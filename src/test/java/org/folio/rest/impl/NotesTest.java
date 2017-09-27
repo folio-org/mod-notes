@@ -427,11 +427,40 @@ public class NotesTest {
     // the hard way, and if not there, the module will never see the request.
     given()
       .header(TEN)
-      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.thing")
+      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.things")
       .get("/notes")
       .then()
       .log().all()
-      .statusCode(200);
+      .statusCode(200)
+      .body(containsString("\"totalRecords\" : 1"))
+      .body(containsString("things"));  // no users note!
+
+    given()
+      .header(TEN)
+      .header("X-Okapi-Permissions", "notes.domain.meetingrooms,notes.domain.users")
+      .get("/notes/11111111-1111-1111-1111-111111111111")
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body(containsString("users/1234"));
+
+    given()
+      .header(TEN)
+      .header("X-Okapi-Permissions", "notes.domain.all")
+      .get("/notes/11111111-1111-1111-1111-111111111111")
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body(containsString("users/1234"));
+
+    given()
+      .header(TEN)
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .get("/notes/11111111-1111-1111-1111-111111111111")
+      .then()
+      .log().all()
+      .statusCode(401)
+      .body(containsString("notes.domain.users"));
 
     // Failed deletes
     given()
