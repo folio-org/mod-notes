@@ -565,6 +565,39 @@ public class NotesTest {
       .statusCode(200)
       .body(containsString("\"notes\" : [ ]"));
 
+    // Test that we create the id if missing
+    String note3 = "{"
+      + "\"link\" : \"users/1234\"," + LS
+      + "\"text\" : \"Note with no id\"}" + LS;
+
+    final String location = given()
+      .header(TEN).header(USER9).header(JSON).header(ALLPERM)
+      .body(note3)
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .statusCode(201)
+      .extract().header("Location");
+
+    // Fetch the note in various ways
+    given()
+      .header(TEN).header(ALLPERM)
+      .get("/notes")
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body(containsString("\"id\" :")) // one given by the module
+      .body(containsString("no id"))
+      .body(containsString("-9999-")) // CreatedBy userid in metadata
+      .body(containsString("\"totalRecords\" : 1"));
+
+    given()
+      .header(TEN).header(ALLPERM)
+      .delete(location)
+      .then()
+      .log().ifError()
+      .statusCode(204);
+
     // All done
     logger.info("notesTest done");
     async.complete();

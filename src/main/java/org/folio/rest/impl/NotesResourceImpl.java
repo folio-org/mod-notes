@@ -11,6 +11,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
 import static org.folio.okapi.common.ErrorType.*;
@@ -244,7 +245,11 @@ public class NotesResourceImpl implements NotesResource {
     try {
       String tenantId = TenantTool.calculateTenantId(
         okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      String id = entity.getId();
+      String idt = entity.getId();
+      if (idt == null || idt.isEmpty()) {
+        entity.setId(UUID.randomUUID().toString());
+      }
+      final String id = entity.getId();
       String domain = entity.getDomain();
       if (domain == null || domain.isEmpty()) {
         domain = entity.getLink().replaceFirst("^/?([^/]+).*$", "$1");
