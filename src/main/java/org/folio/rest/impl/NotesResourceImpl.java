@@ -1,5 +1,6 @@
 package org.folio.rest.impl;
 
+import io.netty.util.concurrent.FailedFuture;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -12,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
+import static org.folio.okapi.common.ErrorType.*;
+import org.folio.okapi.common.ExtendedAsyncResult;
+import org.folio.okapi.common.Failure;
+import org.folio.okapi.common.Success;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Errors;
@@ -301,6 +306,63 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
+  /**
+   * Helper to get a note and check permissions. Fetches the record from the
+   * database, and verifies that the user has permissions to access its domain.
+   *
+   * @param id
+   * @param okapiHeaders
+   * @param resp a callback that returns the note, or an error
+   */
+  private void getOneNote(String id, Map<String, String> okapiHeaders,
+    Context context, Handler<ExtendedAsyncResult<Note>> resp) {
+    try {
+
+      String tenantId = TenantTool.calculateTenantId(
+        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      Criterion c = new Criterion(
+        new Criteria().addField(IDFIELDNAME).setJSONB(false)
+        .setOperation("=").setValue("'" + id + "'"));
+
+      PostgresClient.getInstance(context.owner(), tenantId)
+        .get(NOTE_TABLE, Note.class, c, true,
+          reply -> {
+            try {
+              if (reply.succeeded()) {
+                @SuppressWarnings("unchecked")
+                List<Note> notes = (List<Note>) reply.result().getResults();
+                if (notes.isEmpty()) {
+                  resp.handle(new Failure<>(NOT_FOUND, "Note " + id + " not found"));
+                } else {
+                  Note n = notes.get(0);
+                  String domain = n.getDomain();
+                  if (noteDomainPermission(domain, okapiHeaders)) {
+                    resp.handle(new Success<>(n));
+                  } else {
+                    resp.handle(new Failure<>(ANY,
+                      "No permission notes.domain." + domain));
+                  }  // TODO - Use FORBIDDEN once we have that defined
+                }
+              } else {
+                String error = PgExceptionUtil.badRequestMessage(reply.cause());
+                logger.error(error, reply.cause());
+                if (error == null) {
+                  resp.handle(new Failure<>(INTERNAL, ""));
+                } else {
+                  resp.handle(new Failure<>(USER, error));
+                }
+              }
+            } catch (Exception e) {
+              logger.error(e.getMessage(), e);
+              resp.handle(new Failure<>(INTERNAL, ""));
+            }
+          });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      resp.handle(new Failure<>(INTERNAL, ""));
+    }
+
+  }
 
   @Override
   @Validate
@@ -313,52 +375,37 @@ public class NotesResourceImpl implements NotesResource {
         // The _self endpoint has already handled this request
         return;
       }
-      String tenantId = TenantTool.calculateTenantId(
-        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      Criterion c = new Criterion(
-        new Criteria().addField(IDFIELDNAME).setJSONB(false)
-        .setOperation("=").setValue("'" + id + "'"));
-
-      PostgresClient.getInstance(context.owner(), tenantId)
-        .get(NOTE_TABLE, Note.class, c, true,
-          reply -> {
-          try {
-            if (reply.succeeded()) {
-              @SuppressWarnings("unchecked")
-              List<Note> notes = (List<Note>) reply.result().getResults();
-              if (notes.isEmpty()) {
-                asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-                    .withPlainNotFound(id)));
-              } else {
-                Note n = notes.get(0);
-                String domain = n.getDomain();
-                if (noteDomainPermission(domain, okapiHeaders)) {
-                  asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-                    .withJsonOK(notes.get(0))));
-                } else {
-                  asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-                    .withPlainUnauthorized("No permission notes.domain." + domain)));
-                }
+      getOneNote(id, okapiHeaders, context, res -> {
+        if (res.succeeded()) {
+          asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+            .withJsonOK(res.result())));
+        } else {
+          switch (res.getType()) {
+            case NOT_FOUND:
+              asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+                .withPlainNotFound(res.cause().getMessage())));
+              break;
+            case USER: // bad request
+              asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                .withPlainBadRequest(res.cause().getMessage())));
+              break;
+            case ANY: // means FORBIDDEN
+              asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+                .withPlainUnauthorized(res.cause().getMessage())));
+              break;
+            default: // typically INTERNAL
+              String msg = res.cause().getMessage();
+              if (msg.isEmpty()) {
+                msg = messages.getMessage(lang, MessageConsts.InternalServerError);
               }
-            } else {
-              String error = PgExceptionUtil.badRequestMessage(reply.cause());
-              logger.error(error, reply.cause());
-              if (error == null) {
-                asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                  .withPlainInternalServerError(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-              } else {
-                asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                  .withPlainBadRequest(error)));
-              }
-            }
-          } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .withPlainInternalServerError(
-                messages.getMessage(lang, MessageConsts.InternalServerError))));
+              asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                .withPlainInternalServerError(msg)));
+              break;
           }
-        });
+        }
+      });
+
+
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
       asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
@@ -410,6 +457,7 @@ public class NotesResourceImpl implements NotesResource {
           messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
+
 
   @Override
   @Validate

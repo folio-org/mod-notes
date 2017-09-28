@@ -64,7 +64,8 @@ echo
 
 echo Test 2: Post one
 $CURL $TEN $PERM $JSON \
-  -X POST -d '{"link":"users/56789","text":"hello there","domain":"users"}' \
+  -X POST -d '{"id":"44444444-4444-4444-4444-444444444444",
+    "link":"users/56789","text":"hello there","domain":"users"}' \
   $OKAPIURL/notes
 
 
