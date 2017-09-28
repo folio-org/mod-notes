@@ -9,7 +9,8 @@
         {
           "methods": ["GET"],
           "pathPattern": "/notes",
-          "permissionsRequired": ["notes.collection.get"]
+          "permissionsRequired": ["notes.collection.get"],
+          "permissionsDesired": ["notes.domain.*.get"]
         },
         {
           "methods": ["POST"],
@@ -19,7 +20,8 @@
         {
           "methods": ["GET"],
           "pathPattern": "/notes/{id}",
-          "permissionsRequired": ["notes.item.get"]
+          "permissionsRequired": ["notes.item.get"],
+          "permissionsDesired": ["notes.domain.*.get"]
         },
         {
           "methods": ["PUT"],
