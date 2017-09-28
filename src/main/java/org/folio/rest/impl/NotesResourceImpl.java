@@ -49,7 +49,7 @@ public class NotesResourceImpl implements NotesResource {
   public static final String NOTE_TABLE = "note_data";
   private static final String LOCATION_PREFIX = "/notes/";
   private static final String IDFIELDNAME = "id";
-  private String NOTE_SCHEMA = null;
+  private String NOTE_SCHEMA = null;  // NOSONAR
   private static final String NOTE_SCHEMA_NAME = "apidocs/raml/note.json";
   private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
   // Get this from the restVerticle, like the rest, when it gets defined there.
@@ -435,13 +435,13 @@ public class NotesResourceImpl implements NotesResource {
             break;
         }
       } else {    // all well, try to delete it
-        deleteNotesById_2(id, tenantId, lang,
+        deleteNotesById2(id, tenantId, lang,
           vertxContext, asyncResultHandler);
       }
     }); // getOneNote
   }
 
-  private void deleteNotesById_2(String id, String tenantId, String lang,
+  private void deleteNotesById2(String id, String tenantId, String lang,
     Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
     try {
       PostgresClient.getInstance(vertxContext.owner(), tenantId)
@@ -528,13 +528,13 @@ public class NotesResourceImpl implements NotesResource {
             break;
         }
       } else {
-        putNotesById_2(id, lang, entity,
+        putNotesById2(id, lang, entity,
           okapiHeaders, vertxContext, asyncResultHandler);
       }
     });
   }
 
-  private void putNotesById_2(String id, String lang, Note entity,
+  private void putNotesById2(String id, String lang, Note entity,
     Map<String, String> okapiHeaders, Context vertxContext,
     Handler<AsyncResult<Response>> asyncResultHandler) {
     try {
