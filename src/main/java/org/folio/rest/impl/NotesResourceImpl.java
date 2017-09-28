@@ -8,11 +8,13 @@ import io.vertx.core.json.Json;
 import static io.vertx.core.Future.succeededFuture;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
+import org.folio.okapi.common.ErrorType;
 import static org.folio.okapi.common.ErrorType.*;
 import org.folio.okapi.common.ExtendedAsyncResult;
 import org.folio.okapi.common.Failure;
@@ -37,8 +39,9 @@ import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
+import org.z3950.zing.cql.cql2pgjson.FieldException;
+import org.z3950.zing.cql.cql2pgjson.SchemaException;
 
-@java.lang.SuppressWarnings({"squid:S1192"}) // duplicate string constants
 
 public class NotesResourceImpl implements NotesResource {
   private final Logger logger = LoggerFactory.getLogger("okapi");
@@ -46,10 +49,12 @@ public class NotesResourceImpl implements NotesResource {
   public static final String NOTE_TABLE = "note_data";
   private static final String LOCATION_PREFIX = "/notes/";
   private static final String IDFIELDNAME = "id";
-  private static String NOTE_SCHEMA = null;
+  private String NOTE_SCHEMA = null;  // NOSONAR
   private static final String NOTE_SCHEMA_NAME = "apidocs/raml/note.json";
   private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
   // Get this from the restVerticle, like the rest, when it gets defined there.
+  private static final ErrorType FORBIDDEN = ANY;
+  // Remove this when Okapi supports FORBIDDEN
 
   private void initCQLValidation() {  //NOSONAR
     String path = NOTE_SCHEMA_NAME;
@@ -72,7 +77,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset,
-    String schema) throws Exception {
+    String schema) throws IOException, FieldException, SchemaException  {
     CQL2PgJSON cql2pgJson = null;
     if (schema != null) {
       cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb", schema);
@@ -205,8 +210,8 @@ public class NotesResourceImpl implements NotesResource {
             }
           });
     } catch (CQLQueryValidationException e1) {
-      int start = e1.getMessage().indexOf("'");
-      int end = e1.getMessage().lastIndexOf("'");
+      int start = e1.getMessage().indexOf('\'');
+      int end = e1.getMessage().lastIndexOf('\'');
       String field = e1.getMessage();
       if (start != -1 && end != -1) {
         field = field.substring(start + 1, end);
@@ -267,42 +272,34 @@ public class NotesResourceImpl implements NotesResource {
       PostgresClient.getInstance(context.owner(), tenantId).save(NOTE_TABLE,
         id, entity,
         reply -> {
-          try {
-            if (reply.succeeded()) {
-              Object ret = reply.result();
-              entity.setId((String) ret);
-              OutStream stream = new OutStream();
-              stream.setData(entity);
+          if (reply.succeeded()) {
+            Object ret = reply.result();
+            entity.setId((String) ret);
+            OutStream stream = new OutStream();
+            stream.setData(entity);
+            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+              .withJsonCreated(LOCATION_PREFIX + ret, stream)));
+          } else {
+            String msg = reply.cause().getMessage();
+            if (msg.contains("duplicate key value violates unique constraint")) {
+              Errors valErr = ValidationHelper.createValidationErrorMessage(
+                "id", id, "Duplicate id");
               asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                .withJsonCreated(LOCATION_PREFIX + ret, stream)));
+                .withJsonUnprocessableEntity(valErr)));
             } else {
-              String msg = reply.cause().getMessage();
-              if (msg.contains("duplicate key value violates unique constraint")) {
-                Errors valErr = ValidationHelper.createValidationErrorMessage(
-                  "id", id, "Duplicate id");
+              String error = PgExceptionUtil.badRequestMessage(reply.cause());
+              logger.error(msg, reply.cause());
+              if (error == null) {
                 asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                  .withJsonUnprocessableEntity(valErr)));
+                  .withPlainInternalServerError(
+                    messages.getMessage(lang, MessageConsts.InternalServerError))));
               } else {
-                String error = PgExceptionUtil.badRequestMessage(reply.cause());
-                logger.error(msg, reply.cause());
-                if (error == null) {
-                  asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                    .withPlainInternalServerError(
-                      messages.getMessage(lang, MessageConsts.InternalServerError))));
-                } else {
-                  asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                    .withPlainBadRequest(error)));
-                }
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                  .withPlainBadRequest(error)));
               }
             }
-          } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
-              .withPlainInternalServerError(
-                messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         });
-
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
        asyncResultHandler.handle(
@@ -343,7 +340,7 @@ public class NotesResourceImpl implements NotesResource {
                 if (noteDomainPermission(domain, okapiHeaders)) {
                   resp.handle(new Success<>(n));
                 } else {
-                  resp.handle(new Failure<>(ANY,
+                  resp.handle(new Failure<>(FORBIDDEN,
                     "No permission notes.domain." + domain));
                 }  // TODO - Use FORBIDDEN once we have that defined
               }
@@ -437,43 +434,49 @@ public class NotesResourceImpl implements NotesResource {
               .withPlainInternalServerError(msg)));
             break;
         }
-      } else { // all well, try to delete it
-        try { // There is some duplicate error handling. Can't help.
-          PostgresClient.getInstance(vertxContext.owner(), tenantId)
-            .delete(NOTE_TABLE, id,
-              reply -> {
-                if (reply.succeeded()) {
-                  if (reply.result().getUpdated() == 1) {
-                    asyncResultHandler.handle(succeededFuture(
-                        DeleteNotesByIdResponse.withNoContent()));
-                  } else {
-                    logger.error(messages.getMessage(lang,
-                        MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
-                    asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-                        .withPlainNotFound(messages.getMessage(lang,
-                            MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
-                  }
-                } else {
-                  String error = PgExceptionUtil.badRequestMessage(reply.cause());
-                  logger.error(error, reply.cause());
-                  if (error == null) {
-                    asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                        .withPlainInternalServerError(
-                          messages.getMessage(lang, MessageConsts.InternalServerError))));
-                  } else {
-                    asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                        .withPlainBadRequest(error)));
-                  }
-                }
-              });
-        } catch (Exception e) {
-          logger.error(e.getMessage(), e);
-          asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-            .withPlainInternalServerError(
-              messages.getMessage(lang, MessageConsts.InternalServerError))));
-        }
+      } else {    // all well, try to delete it
+        deleteNotesById2(id, tenantId, lang,
+          vertxContext, asyncResultHandler);
       }
     }); // getOneNote
+  }
+
+  private void deleteNotesById2(String id, String tenantId, String lang,
+    Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
+    try {
+      PostgresClient.getInstance(vertxContext.owner(), tenantId)
+        .delete(NOTE_TABLE, id,
+          reply -> {
+            if (reply.succeeded()) {
+              if (reply.result().getUpdated() == 1) {
+                asyncResultHandler.handle(succeededFuture(
+                    DeleteNotesByIdResponse.withNoContent()));
+              } else {
+                logger.error(messages.getMessage(lang,
+                    MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
+                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
+                    .withPlainNotFound(messages.getMessage(lang,
+                        MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
+              }
+            } else {
+              String error = PgExceptionUtil.badRequestMessage(reply.cause());
+              logger.error(error, reply.cause());
+              if (error == null) {
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                    .withPlainInternalServerError(
+                      messages.getMessage(lang, MessageConsts.InternalServerError))));
+              } else {
+                asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                    .withPlainBadRequest(error)));
+              }
+            }
+          });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
+        .withPlainInternalServerError(
+          messages.getMessage(lang, MessageConsts.InternalServerError))));
+    }
   }
 
 
@@ -481,7 +484,7 @@ public class NotesResourceImpl implements NotesResource {
   @Validate
   public void putNotesById(String id, String lang, Note entity,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) throws Exception {
+    Context vertxContext) {
     logger.info("PUT note " + id + " " + Json.encode(entity));
     String noteId = entity.getId();
     if (noteId != null && !noteId.equals(id)) {
@@ -525,36 +528,43 @@ public class NotesResourceImpl implements NotesResource {
             break;
         }
       } else {
-        try {
-          String tenantId = TenantTool.calculateTenantId(
-            okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-          PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
-            NOTE_TABLE, entity, id,
-            reply -> {
-                if (reply.succeeded()) {
-                  if (reply.result().getUpdated() == 0) {
-                    asyncResultHandler.handle(succeededFuture(
-                        PutNotesByIdResponse.withPlainInternalServerError(
-                          messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
-                  } else {
-                    asyncResultHandler.handle(succeededFuture(
-                        PutNotesByIdResponse.withNoContent()));
-                  }
-                } else {
-                  logger.error(reply.cause().getMessage());
-                  asyncResultHandler.handle(succeededFuture(
-                      PutNotesByIdResponse.withPlainInternalServerError(
-                        messages.getMessage(lang, MessageConsts.InternalServerError))));
-                }
-            });
-        } catch (Exception e) {
-          logger.error(e.getMessage(), e);
-          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-            .withPlainInternalServerError(
-              messages.getMessage(lang, MessageConsts.InternalServerError))));
-        }
+        putNotesById2(id, lang, entity,
+          okapiHeaders, vertxContext, asyncResultHandler);
       }
     });
+  }
+
+  private void putNotesById2(String id, String lang, Note entity,
+    Map<String, String> okapiHeaders, Context vertxContext,
+    Handler<AsyncResult<Response>> asyncResultHandler) {
+    try {
+      String tenantId = TenantTool.calculateTenantId(
+        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+      PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
+        NOTE_TABLE, entity, id,
+        reply -> {
+          if (reply.succeeded()) {
+            if (reply.result().getUpdated() == 0) {
+              asyncResultHandler.handle(succeededFuture(
+                  PutNotesByIdResponse.withPlainInternalServerError(
+                    messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
+            } else {
+              asyncResultHandler.handle(succeededFuture(
+                  PutNotesByIdResponse.withNoContent()));
+            }
+          } else {
+            logger.error(reply.cause().getMessage());
+            asyncResultHandler.handle(succeededFuture(
+                PutNotesByIdResponse.withPlainInternalServerError(
+                  messages.getMessage(lang, MessageConsts.InternalServerError))));
+          }
+        });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
+        .withPlainInternalServerError(
+          messages.getMessage(lang, MessageConsts.InternalServerError))));
+    }
   }
 
 
