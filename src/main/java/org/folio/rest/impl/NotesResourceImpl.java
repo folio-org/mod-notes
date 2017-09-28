@@ -38,6 +38,8 @@ import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 
+@java.lang.SuppressWarnings({"squid:S1192"}) // duplicate string constants
+
 public class NotesResourceImpl implements NotesResource {
   private final Logger logger = LoggerFactory.getLogger("okapi");
   private final Messages messages = Messages.getInstance();
@@ -47,7 +49,7 @@ public class NotesResourceImpl implements NotesResource {
   private static String NOTE_SCHEMA = null;
   private static final String NOTE_SCHEMA_NAME = "apidocs/raml/note.json";
   private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
-  // TODO - Get this from the restVerticle, like the rest, when it gets defined there.
+  // Get this from the restVerticle, like the rest, when it gets defined there.
 
   private void initCQLValidation() {  //NOSONAR
     String path = NOTE_SCHEMA_NAME;
