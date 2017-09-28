@@ -358,10 +358,30 @@ public class NotesTest {
       .log().ifError()
       .statusCode(422);
 
-    given()
+    given() // no domain permission
       .header(TEN).header(USER8).header(JSON)
       .body(updated1)
-      .put("/notes/11111111-1111-1111-1111-111111111111") // Ok update
+      .put("/notes/11111111-1111-1111-1111-111111111111")
+      .then()
+      .log().ifError()
+      .body(containsString("notes.domain.users"))
+      .statusCode(401);
+
+    given() // wrong domain permission
+      .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .body(updated1)
+      .put("/notes/11111111-1111-1111-1111-111111111111")
+      .then()
+      .log().ifError()
+      .body(containsString("notes.domain.users"))
+      .statusCode(401);
+
+    given() // This should work
+      .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.users")
+      .body(updated1)
+      .put("/notes/11111111-1111-1111-1111-111111111111")
       .then()
       .log().ifError()
       .statusCode(204);
@@ -385,9 +405,29 @@ public class NotesTest {
       .extract().body().asString();
     String newDoc = body
       .replaceAll("8888", "9999") // createdBy
-      .replaceFirst("23456", "34567");  // link to the thing
-    given()
-      .header(TEN).header(USER7).header(JSON)
+      .replaceFirst("23456", "34567") // link to the thing
+      .replaceFirst("\"things\"", "\"rooms\""); // new domain
+
+    given() // no perm for rooms
+      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .body(newDoc)
+      .put("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .log().ifError()
+      .body(containsString("rooms"))
+      .statusCode(401);
+    given() // no perm for things
+      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
+      .header("X-Okapi-Permissions", "notes.domain.rooms")
+      .body(newDoc)
+      .put("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .log().ifError()
+      .statusCode(401);
+
+    given() // ok update
+      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
       .body(newDoc)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
@@ -441,13 +481,13 @@ public class NotesTest {
     // the hard way, and if not there, the module will never see the request.
     given()
       .header(TEN)
-      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.things")
+      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.rooms")
       .get("/notes")
       .then()
       .log().all()
       .statusCode(200)
       .body(containsString("\"totalRecords\" : 1"))
-      .body(containsString("things"));  // no users note!
+      .body(containsString("rooms"));  // no users note!
 
     given()
       .header(TEN)
@@ -477,22 +517,30 @@ public class NotesTest {
       .body(containsString("notes.domain.users"));
 
     // Failed deletes
-    given()
+    given() // Bad UUID
       .header(TEN)
-      .delete("/notes/11111111-3-1111-333-111111111111") // Bad UUID
+      .delete("/notes/11111111-3-1111-333-111111111111")
       .then()
       .log().all()
       .statusCode(400);
 
-    given()
+    given() // not found
       .header(TEN)
-      .delete("/notes/11111111-2222-3333-4444-555555555555") // not found
+      .delete("/notes/11111111-2222-3333-4444-555555555555")
       .then()
       .statusCode(404);
+
+    given() // wrong perm
+      .header(TEN)
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .delete("/notes/11111111-1111-1111-1111-111111111111")
+      .then()
+      .statusCode(401);
 
     // delete them
     given()
       .header(TEN)
+      .header("X-Okapi-Permissions", "notes.domain.users")
       .delete("/notes/11111111-1111-1111-1111-111111111111")
       .then()
       .statusCode(204);
@@ -504,7 +552,7 @@ public class NotesTest {
       .statusCode(404);
 
     given()
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .delete("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .statusCode(204);
