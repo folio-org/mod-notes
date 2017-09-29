@@ -72,6 +72,7 @@ public class NotesResourceImpl implements NotesResource {
       //initCQLValidation();  // NOSONAR
       // Commented out, because it fails a perfectly valid query
       // like metadata.createdDate=2017
+      // See RMB-54
     }
     PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
   }
