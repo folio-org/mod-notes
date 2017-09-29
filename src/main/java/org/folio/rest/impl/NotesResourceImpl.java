@@ -43,6 +43,7 @@ import org.z3950.zing.cql.cql2pgjson.FieldException;
 import org.z3950.zing.cql.cql2pgjson.SchemaException;
 
 
+@java.lang.SuppressWarnings({"squid:S1192"}) // This can be removed once John sets SQ up properly
 public class NotesResourceImpl implements NotesResource {
   private final Logger logger = LoggerFactory.getLogger("okapi");
   private final Messages messages = Messages.getInstance();
@@ -72,6 +73,7 @@ public class NotesResourceImpl implements NotesResource {
       //initCQLValidation();  // NOSONAR
       // Commented out, because it fails a perfectly valid query
       // like metadata.createdDate=2017
+      // See RMB-54
     }
     PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
   }
@@ -136,11 +138,11 @@ public class NotesResourceImpl implements NotesResource {
   /*
    * Combined handler for get _self and plain get (collection)
    */
+  @java.lang.SuppressWarnings({"squid::S00107"}) // 8 parameters, I know
   private void getNotesBoth(boolean self, String query, int offset, int limit,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) { // NOSONAR
-    // I know there are 8 parameters, can't be helped
+    Context vertxContext) {
     try {
       logger.info("Getting notes. self=" + self + " "
         + offset + "+" + limit + " q=" + query);
