@@ -342,7 +342,7 @@ public class NotesResourceImpl implements NotesResource {
                 } else {
                   resp.handle(new Failure<>(FORBIDDEN,
                     "No permission notes.domain." + domain));
-                }  // TODO - Use FORBIDDEN once we have that defined
+                }
               }
             } else {
               String error = PgExceptionUtil.badRequestMessage(reply.cause());
@@ -382,7 +382,7 @@ public class NotesResourceImpl implements NotesResource {
               .withPlainNotFound(res.cause().getMessage())));
             break;
           case USER: // bad request
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
               .withPlainBadRequest(res.cause().getMessage())));
             break;
           case ANY: // means FORBIDDEN
@@ -394,7 +394,7 @@ public class NotesResourceImpl implements NotesResource {
             if (msg.isEmpty()) {
               msg = messages.getMessage(lang, MessageConsts.InternalServerError);
             }
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
               .withPlainInternalServerError(msg)));
             break;
         }
@@ -414,15 +414,15 @@ public class NotesResourceImpl implements NotesResource {
       if (res.failed()) {
         switch (res.getType()) {
           case NOT_FOUND:
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
               .withPlainNotFound(res.cause().getMessage())));
             break;
           case USER: // bad request
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
               .withPlainBadRequest(res.cause().getMessage())));
             break;
           case ANY: // means FORBIDDEN
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
               .withPlainUnauthorized(res.cause().getMessage())));
             break;
           default: // typically INTERNAL
@@ -430,7 +430,7 @@ public class NotesResourceImpl implements NotesResource {
             if (msg.isEmpty()) {
               msg = messages.getMessage(lang, MessageConsts.InternalServerError);
             }
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
               .withPlainInternalServerError(msg)));
             break;
         }
@@ -462,12 +462,10 @@ public class NotesResourceImpl implements NotesResource {
               String error = PgExceptionUtil.badRequestMessage(reply.cause());
               logger.error(error, reply.cause());
               if (error == null) {
-                asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                    .withPlainInternalServerError(
+                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse                    .withPlainInternalServerError(
                       messages.getMessage(lang, MessageConsts.InternalServerError))));
               } else {
-                asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                    .withPlainBadRequest(error)));
+                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse                    .withPlainBadRequest(error)));
               }
             }
           });
@@ -499,7 +497,7 @@ public class NotesResourceImpl implements NotesResource {
     // later we also check the perm for the domain as it is in the db
     String newDomain = entity.getDomain();
     if (!noteDomainPermission(newDomain, okapiHeaders)) {
-      asyncResultHandler.handle(succeededFuture(PostNotesResponse
+      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
         .withPlainUnauthorized("No permission notes.domain." + newDomain)));
       return;
     }
@@ -507,15 +505,15 @@ public class NotesResourceImpl implements NotesResource {
       if (res.failed()) {
         switch (res.getType()) {
           case NOT_FOUND:
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
               .withPlainNotFound(res.cause().getMessage())));
             break;
           case USER: // bad request
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
               .withPlainBadRequest(res.cause().getMessage())));
             break;
           case ANY: // means FORBIDDEN
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
               .withPlainUnauthorized(res.cause().getMessage())));
             break;
           default: // typically INTERNAL
@@ -523,7 +521,7 @@ public class NotesResourceImpl implements NotesResource {
             if (msg.isEmpty()) {
               msg = messages.getMessage(lang, MessageConsts.InternalServerError);
             }
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
               .withPlainInternalServerError(msg)));
             break;
         }
