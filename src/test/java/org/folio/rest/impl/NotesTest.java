@@ -244,6 +244,14 @@ public class NotesTest {
 
     given()
       .header(TEN).header(ALLPERM)
+      .get("/notes/99111111-1111-1111-1111-111111111199")
+      .then()
+      .log().all()
+      .statusCode(404)
+      .body(containsString("not found"));
+
+    given()
+      .header(TEN).header(ALLPERM)
       .get("/notes/777")
       .then()
       .log().all()
@@ -324,6 +332,17 @@ public class NotesTest {
       .log().ifError()
       .statusCode(201);
 
+    // Post the same id again
+    given()
+      .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .body(note2)
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .statusCode(422)
+      .body(containsString("Duplicate id"));
+
     // Get both notes a few different ways
     given()
       .header(TEN).header(ALLPERM)
@@ -376,6 +395,16 @@ public class NotesTest {
       .log().ifError()
       .body(containsString("notes.domain.users"))
       .statusCode(401);
+
+    given() // not found
+      .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.users")
+      .body(updated1.replaceAll("1", "3"))
+      .put("/notes/33333333-3333-3333-3333-333333333333")
+      .then()
+      .log().ifError()
+      .body(containsString("333 not found"))
+      .statusCode(404);
 
     given() // This should work
       .header(TEN).header(USER8).header(JSON)
@@ -468,7 +497,7 @@ public class NotesTest {
 
     given()
       .header(TEN).header(USER8).header(ALLPERM)
-      .get("/notes/_self")
+      .get("/notes/_self?query=text=note")
       .then()
       .log().all()
       .body(containsString("on a thing")); // createdby matches

@@ -115,7 +115,7 @@ public class NotesResourceImpl implements NotesResource {
     int offset, int limit, String lang,
     Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) throws Exception {
+    Context vertxContext) {
 
     getNotesBoth(false, query, offset, limit,
       lang, okapiHeaders,
@@ -127,8 +127,7 @@ public class NotesResourceImpl implements NotesResource {
   public void getNotesSelf(String query, int offset, int limit,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) throws Exception {
-
+    Context vertxContext) {
     getNotesBoth(true, query, offset, limit,
       lang, okapiHeaders,
       asyncResultHandler, vertxContext);
@@ -140,7 +139,8 @@ public class NotesResourceImpl implements NotesResource {
   private void getNotesBoth(boolean self, String query, int offset, int limit,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) throws Exception {
+    Context vertxContext) { // NOSONAR
+    // I know there are 8 parameters, can't be helped
     try {
       logger.info("Getting notes. self=" + self + " "
         + offset + "+" + limit + " q=" + query);
@@ -187,26 +187,19 @@ public class NotesResourceImpl implements NotesResource {
         .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
           true /*get count too*/, false /* set id */,
           reply -> {
-            try {
-              if (reply.succeeded()) {
-                NoteCollection notes = new NoteCollection();
-                @SuppressWarnings("unchecked")
-                List<Note> notelist = (List<Note>) reply.result().getResults();
-                notes.setNotes(notelist);
-                Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
-                notes.setTotalRecords(totalRecords);
-                asyncResultHandler.handle(succeededFuture(
-                    GetNotesResponse.withJsonOK(notes)));
-              } else {
-                logger.error(reply.cause().getMessage(), reply.cause());
-                asyncResultHandler.handle(succeededFuture(GetNotesResponse
-                    .withPlainBadRequest(reply.cause().getMessage())));
-              }
-            } catch (Exception e) {
-              logger.error(e.getMessage(), e);
+            if (reply.succeeded()) {
+              NoteCollection notes = new NoteCollection();
+              @SuppressWarnings("unchecked")
+              List<Note> notelist = (List<Note>) reply.result().getResults();
+              notes.setNotes(notelist);
+              Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
+              notes.setTotalRecords(totalRecords);
+              asyncResultHandler.handle(succeededFuture(
+                  GetNotesResponse.withJsonOK(notes)));
+            } else {
+              logger.error(reply.cause().getMessage(), reply.cause());
               asyncResultHandler.handle(succeededFuture(GetNotesResponse
-                  .withPlainInternalServerError(messages.getMessage(
-                      lang, MessageConsts.InternalServerError))));
+                  .withPlainBadRequest(reply.cause().getMessage())));
             }
           });
     } catch (CQLQueryValidationException e1) {
@@ -235,19 +228,13 @@ public class NotesResourceImpl implements NotesResource {
   /**
    * Post a note to the system.
    *
-   * @param lang
-   * @param entity
-   * @param okapiHeaders
-   * @param asyncResultHandler
-   * @param context
-   * @throws Exception
    */
   @Override
   @Validate
   public void postNotes(String lang,
     Note entity, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context context) throws Exception {
+    Context context) {
     try {
       String tenantId = TenantTool.calculateTenantId(
         okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
@@ -366,7 +353,7 @@ public class NotesResourceImpl implements NotesResource {
   public void getNotesById(String id,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context context) throws Exception {
+    Context context) {
     if (id.equals("_self")) {
       // The _self endpoint has already handled this request
       return;
@@ -407,7 +394,7 @@ public class NotesResourceImpl implements NotesResource {
   public void deleteNotesById(String id,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) throws Exception {
+    Context vertxContext) {
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
     getOneNote(id, okapiHeaders, vertxContext, res -> {
@@ -462,10 +449,12 @@ public class NotesResourceImpl implements NotesResource {
               String error = PgExceptionUtil.badRequestMessage(reply.cause());
               logger.error(error, reply.cause());
               if (error == null) {
-                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse                    .withPlainInternalServerError(
-                      messages.getMessage(lang, MessageConsts.InternalServerError))));
+                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
+                  .withPlainInternalServerError(
+                    messages.getMessage(lang, MessageConsts.InternalServerError))));
               } else {
-                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse                    .withPlainBadRequest(error)));
+                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
+                  .withPlainBadRequest(error)));
               }
             }
           });
@@ -569,11 +558,13 @@ public class NotesResourceImpl implements NotesResource {
   /**
    * Post to _self is not supported. The RMB creates one anyway.
    *
-   * @throws Exception
    */
   @Override
-  public void postNotesSelf(String lang, Note entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
-    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+  public void postNotesSelf(String lang, Note entity,
+    Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> asyncResultHandler,
+    Context vertxContext) throws Exception {
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
 }
