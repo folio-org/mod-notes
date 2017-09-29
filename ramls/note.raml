@@ -47,6 +47,7 @@ resourceTypes:
       pageable,
       validate
     ]
+    responses:
   /_self:
     displayName: Notes created by current user
     type:
@@ -70,9 +71,32 @@ resourceTypes:
         exampleItem: !include examples/note.sample
     get:
       responses:
+        400:
+          description: "Bad request"
+          body:
+            text/plain:
         401:
           description: "Not authorized to perform requested action"
           body:
             text/plain:
     put:
       is: [validate]
+      responses:
+        400:
+          description: "Bad request"
+          body:
+            text/plain:
+        401:
+          description: "Not authorized to perform requested action"
+          body:
+            text/plain:
+    delete:
+      responses:
+        400:
+          description: "Bad request"
+          body:
+            text/plain:
+        401:
+          description: "Not authorized to perform requested action"
+          body:
+            text/plain:
