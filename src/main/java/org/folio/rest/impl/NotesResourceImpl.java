@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.ErrorType;
@@ -24,6 +25,8 @@ import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.jaxrs.model.Personal;
+import org.folio.rest.jaxrs.model.User;
 import org.folio.rest.jaxrs.resource.NotesResource;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -33,6 +36,8 @@ import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLQueryValidationException;
 import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.tools.client.HttpClientFactory;
+import org.folio.rest.tools.client.interfaces.HttpClientInterface;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.OutStream;
@@ -234,38 +239,107 @@ public class NotesResourceImpl implements NotesResource {
   @Override
   @Validate
   public void postNotes(String lang,
-    Note entity, Map<String, String> okapiHeaders,
+    Note note, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context context) {
-    try {
-      String tenantId = TenantTool.calculateTenantId(
-        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      String idt = entity.getId();
-      if (idt == null || idt.isEmpty()) {
-        entity.setId(UUID.randomUUID().toString());
-      }
-      final String id = entity.getId();
-      String domain = entity.getDomain();
-      if (domain == null || domain.isEmpty()) {
-        domain = entity.getLink().replaceFirst("^/?([^/]+).*$", "$1");
-        entity.setDomain(domain);
-        logger.warn("Note has no domain. "
-          + "That is DEPRECATED and will stop working soon!"
-          + " For now, defaulting to '" + domain + "'");
-      }
-      if (!noteDomainPermission(domain, okapiHeaders)) {
+
+    String tenantId = TenantTool.calculateTenantId(
+      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    String idt = note.getId();
+    if (idt == null || idt.isEmpty()) {
+      note.setId(UUID.randomUUID().toString());
+    }
+    final String id = note.getId();
+    String domain = note.getDomain();
+    if (domain == null || domain.isEmpty()) {
+      domain = note.getLink().replaceFirst("^/?([^/]+).*$", "$1");
+      note.setDomain(domain);
+      logger.warn("Note has no domain. "
+        + "That is DEPRECATED and will stop working soon!"
+        + " For now, defaulting to '" + domain + "'");
+    }
+    if (!noteDomainPermission(domain, okapiHeaders)) {
+      asyncResultHandler.handle(succeededFuture(PostNotesResponse
+        .withPlainUnauthorized("No permission notes.domain." + domain)));
+      return;
+    }
+    // Get the creator names, if not there
+    if (note.getCreatorUserName() == null
+      || note.getCreatorLastName() == null) {
+      String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
+      if (userId == null) {
+        logger.error("No userid header");
         asyncResultHandler.handle(succeededFuture(PostNotesResponse
-          .withPlainUnauthorized("No permission notes.domain." + domain)));
+          .withPlainBadRequest("No " + RestVerticle.OKAPI_USERID_HEADER
+            + ". Can not look up user")));
         return;
       }
+      String okapiURL = okapiHeaders.get("X-Okapi-Url");
+      HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
+      String url = "/users/" + userId;
+      try {
+        CompletableFuture<org.folio.rest.tools.client.Response> response
+          = client.request(url, okapiHeaders);
+        logger.debug("Looking up user " + url);
+        response.whenComplete((resp, ex) -> {
+          try {
+            if (resp.getCode() == 200) {
+              logger.debug("Received user " + resp.getBody());
+              User usr = (User) resp.convertToPojo(User.class);
+              if (note.getCreatorUserName() == null) {
+                note.setCreatorUserName(usr.getUsername());
+              }
+              if (note.getCreatorLastName() == null) {
+                Personal p = usr.getPersonal();
+                note.setCreatorFirstName(p.getFirstName());
+                note.setCreatorMiddleName(p.getMiddleName());
+                note.setCreatorLastName(p.getLastName());
+              }
+              postNotes2(context, tenantId, note, asyncResultHandler, lang);
+            } else if (resp.getCode() == 404) {
+              logger.error("User lookup failed for " + userId);
+              asyncResultHandler.handle(succeededFuture(PostNotesResponse
+                .withPlainBadRequest("User lookup failed. "
+                  + "Can not find user " + userId)));
+            } else {
+              logger.error("User lookup failed with " + resp.getCode());
+              logger.error(Json.encodePrettily(resp));
+              asyncResultHandler.handle(
+                succeededFuture(PostNotesResponse.withPlainInternalServerError(
+                    messages.getMessage(lang, MessageConsts.InternalServerError))));
+            }
+          } catch (Exception e) {
+
+            logger.error(e.getMessage(), e);
+            asyncResultHandler.handle(
+              succeededFuture(PostNotesResponse.withPlainInternalServerError(
+                  messages.getMessage(lang, MessageConsts.InternalServerError))));
+          }
+        });
+      } catch (Exception e) {
+        logger.error(e.getMessage(), e);
+        asyncResultHandler.handle(
+          succeededFuture(PostNotesResponse.withPlainInternalServerError(
+              messages.getMessage(lang, MessageConsts.InternalServerError))));
+      }
+    } else { // no need to look anything up, proceed to actual post
+      postNotes2(context, tenantId, note, asyncResultHandler, lang);
+    }
+  }
+
+  private void postNotes2(Context context, String tenantId, Note note,
+    Handler<AsyncResult<Response>> asyncResultHandler, String lang) {
+
+    try {
+      String id = note.getId();
       PostgresClient.getInstance(context.owner(), tenantId).save(NOTE_TABLE,
-        id, entity,
+        id, note,
         reply -> {
           if (reply.succeeded()) {
             Object ret = reply.result();
-            entity.setId((String) ret);
+            note.setId((String) ret);
             OutStream stream = new OutStream();
-            stream.setData(entity);
+            stream.setData(note);
             asyncResultHandler.handle(succeededFuture(PostNotesResponse
               .withJsonCreated(LOCATION_PREFIX + ret, stream)));
           } else {
@@ -291,9 +365,9 @@ public class NotesResourceImpl implements NotesResource {
         });
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
-       asyncResultHandler.handle(
-         succeededFuture(PostNotesResponse.withPlainInternalServerError(
-             messages.getMessage(lang, MessageConsts.InternalServerError)))
+      asyncResultHandler.handle(
+        succeededFuture(PostNotesResponse.withPlainInternalServerError(
+            messages.getMessage(lang, MessageConsts.InternalServerError)))
       );
     }
   }
