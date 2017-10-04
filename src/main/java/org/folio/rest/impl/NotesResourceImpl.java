@@ -1,11 +1,13 @@
 package org.folio.rest.impl;
 
+import io.netty.util.concurrent.FailedFuture;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import static io.vertx.core.Future.succeededFuture;
+import static io.vertx.core.Future.failedFuture;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.io.IOException;
@@ -266,64 +268,84 @@ public class NotesResourceImpl implements NotesResource {
     // Get the creator names, if not there
     if (note.getCreatorUserName() == null
       || note.getCreatorLastName() == null) {
-      String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
-      if (userId == null) {
-        logger.error("No userid header");
-        asyncResultHandler.handle(succeededFuture(PostNotesResponse
-          .withPlainBadRequest("No " + RestVerticle.OKAPI_USERID_HEADER
-            + ". Can not look up user")));
-        return;
-      }
-      String okapiURL = okapiHeaders.get("X-Okapi-Url");
-      HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
-      String url = "/users/" + userId;
-      try {
-        CompletableFuture<org.folio.rest.tools.client.Response> response
-          = client.request(url, okapiHeaders);
-        logger.debug("Looking up user " + url);
-        response.whenComplete((resp, ex) -> {
-          try {
-            if (resp.getCode() == 200) {
-              logger.debug("Received user " + resp.getBody());
-              User usr = (User) resp.convertToPojo(User.class);
-              if (note.getCreatorUserName() == null) {
-                note.setCreatorUserName(usr.getUsername());
-              }
-              if (note.getCreatorLastName() == null) {
-                Personal p = usr.getPersonal();
-                note.setCreatorFirstName(p.getFirstName());
-                note.setCreatorMiddleName(p.getMiddleName());
-                note.setCreatorLastName(p.getLastName());
-              }
-              postNotes2(context, tenantId, note, asyncResultHandler, lang);
-            } else if (resp.getCode() == 404) {
-              logger.error("User lookup failed for " + userId);
-              asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                .withPlainBadRequest("User lookup failed. "
-                  + "Can not find user " + userId)));
-            } else {
-              logger.error("User lookup failed with " + resp.getCode());
-              logger.error(Json.encodePrettily(resp));
-              asyncResultHandler.handle(
-                succeededFuture(PostNotesResponse.withPlainInternalServerError(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-            }
-          } catch (Exception e) {
+      lookupUser(okapiHeaders, tenantId, note, context, lang, res -> {
+        if (res.succeeded()) {
+          if (res.result() != null) { // we have a result already, pass it on
+            asyncResultHandler.handle(res);
+          } else { // null indicates successfull lookup
+            postNotes2(context, tenantId, note, asyncResultHandler, lang);
+          }
+        } else { // should not happen
+          asyncResultHandler.handle(
+            succeededFuture(PostNotesResponse.withPlainInternalServerError(
+                messages.getMessage(lang, MessageConsts.InternalServerError))));
+        }
+      });
+    } else { // no need to look anything up, proceed to actual post
+      postNotes2(context, tenantId, note, asyncResultHandler, lang);
+    }
+  }
 
-            logger.error(e.getMessage(), e);
+  private void lookupUser(Map<String, String> okapiHeaders,
+    String tenantId, Note note, Context context, String lang,
+    Handler<AsyncResult<Response>> asyncResultHandler) {
+
+    String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
+    if (userId == null) {
+      logger.error("No userid header");
+      asyncResultHandler.handle(succeededFuture(PostNotesResponse
+        .withPlainBadRequest("No " + RestVerticle.OKAPI_USERID_HEADER
+          + ". Can not look up user")));
+      return;
+    }
+    String okapiURL = okapiHeaders.get("X-Okapi-Url");
+    HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
+    String url = "/users/" + userId;
+    try {
+      CompletableFuture<org.folio.rest.tools.client.Response> response
+        = client.request(url, okapiHeaders);
+      logger.debug("Looking up user " + url);
+      response.whenComplete((resp, ex) -> {
+        try {
+          if (resp.getCode() == 200) {
+            logger.debug("Received user " + resp.getBody());
+            User usr = (User) resp.convertToPojo(User.class);
+            if (note.getCreatorUserName() == null) {
+              note.setCreatorUserName(usr.getUsername());
+            }
+            if (note.getCreatorLastName() == null) {
+              Personal p = usr.getPersonal();
+              note.setCreatorFirstName(p.getFirstName());
+              note.setCreatorMiddleName(p.getMiddleName());
+              note.setCreatorLastName(p.getLastName());
+            }
+            // null indicates all is well, and we can proceed
+            asyncResultHandler.handle(succeededFuture(null));
+          } else if (resp.getCode() == 404) {
+            logger.error("User lookup failed for " + userId);
+            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+              .withPlainBadRequest("User lookup failed. "
+                + "Can not find user " + userId)));
+          } else {
+            logger.error("User lookup failed with " + resp.getCode());
+            logger.error(Json.encodePrettily(resp));
             asyncResultHandler.handle(
               succeededFuture(PostNotesResponse.withPlainInternalServerError(
                   messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
-        });
-      } catch (Exception e) {
-        logger.error(e.getMessage(), e);
-        asyncResultHandler.handle(
-          succeededFuture(PostNotesResponse.withPlainInternalServerError(
-              messages.getMessage(lang, MessageConsts.InternalServerError))));
-      }
-    } else { // no need to look anything up, proceed to actual post
-      postNotes2(context, tenantId, note, asyncResultHandler, lang);
+        } catch (Exception e) {
+
+          logger.error(e.getMessage(), e);
+          asyncResultHandler.handle(
+            succeededFuture(PostNotesResponse.withPlainInternalServerError(
+                messages.getMessage(lang, MessageConsts.InternalServerError))));
+        }
+      });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      asyncResultHandler.handle(
+        succeededFuture(PostNotesResponse.withPlainInternalServerError(
+            messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
 
