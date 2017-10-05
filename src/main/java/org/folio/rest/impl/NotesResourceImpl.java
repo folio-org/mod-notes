@@ -98,8 +98,8 @@ public class NotesResourceImpl implements NotesResource {
 
   /**
    * Helper to check if the user has a given notes.domain permission. For domain
-   * "things", checks that X-Okapi-Headers contains "notes.domains.things" or
-   * "notes.domains.all"
+   * "things", checks that X-Okapi-Headers contains "notes.domain.things" or
+   * "notes.domain.all"
    *
    * @param domain
    * @param okapiHeaders
