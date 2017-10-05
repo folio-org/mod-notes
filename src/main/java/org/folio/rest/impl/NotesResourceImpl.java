@@ -1,13 +1,11 @@
 package org.folio.rest.impl;
 
-import io.netty.util.concurrent.FailedFuture;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import static io.vertx.core.Future.succeededFuture;
-import static io.vertx.core.Future.failedFuture;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.io.IOException;
