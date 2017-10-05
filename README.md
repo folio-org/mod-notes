@@ -21,6 +21,30 @@ The GET interfaces accept a query as usual, for example `notes/?query=link=users
 Querying on the link is practical to limit to notes on given types of items,
 querying on the text is good for searching.
 
+For ease of use, the notes contain the username and human readable name (first,
+middle, and last) of the creating user. These get automatically populated when
+a note is created, if necessary. They can be changed later with a PUT request,
+in case the user changes his name.
+
+## Permissions
+The module declares the usual permission bits for the CRUD operations, but it
+also makes use of the DesiredPermissions feature, using one wildcard pattern
+'notes.domains.*' for all endpoints. The idea is that each UI module that makes
+use of notes, will have to decide on a name for its domain (for example 'items')
+and use that on all notes they operate on. They should also define a permission
+set that includes the 'notes.domains.items' permission in some permission set,
+and enable that for the users who will have access to the permissions on that
+domain, together with the CRUD permissions telling what kind of operations the
+user is allowed to perform.
+
+There is also a overall permission 'notes.domains.all' that grants permission to
+all possible domains.
+
+The way this is designed, the notes module does not need to know or care about
+which domains we end up having in the system. Unfortunately it requires
+mod-permissions to support wildcards in the DesiredPermissions, which it does
+quite do yet.
+
 ## Additional information
 
 ### Other documentation
