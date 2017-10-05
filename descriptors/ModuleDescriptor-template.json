@@ -10,31 +10,31 @@
           "methods": ["GET"],
           "pathPattern": "/notes",
           "permissionsRequired": ["notes.collection.get"],
-          "permissionsDesired": ["notes.domain.*"]
+          "permissionsDesired": ["notes.domain.*", "notes.domain.all"]
         },
         {
           "methods": ["POST"],
           "pathPattern": "/notes",
           "permissionsRequired": ["notes.item.post"],
-          "permissionsDesired": ["notes.domain.*"]
+          "permissionsDesired": ["notes.domain.*", "notes.domain.all"]
         },
         {
           "methods": ["GET"],
           "pathPattern": "/notes/{id}",
           "permissionsRequired": ["notes.item.get"],
-          "permissionsDesired": ["notes.domain.*"]
+          "permissionsDesired": ["notes.domain.*", "notes.domain.all"]
         },
         {
           "methods": ["PUT"],
           "pathPattern": "/notes/{id}",
           "permissionsRequired": ["notes.item.put"],
-          "permissionsDesired": ["notes.domain.*"]
+          "permissionsDesired": ["notes.domain.*", "notes.domain.all"]
         },
         {
           "methods": ["DELETE"],
           "pathPattern": "/notes/{id}",
           "permissionsRequired": ["notes.item.delete"],
-          "permissionsDesired": ["notes.domain.*"]
+          "permissionsDesired": ["notes.domain.*", "notes.domain.all"]
         }
       ]
     },
