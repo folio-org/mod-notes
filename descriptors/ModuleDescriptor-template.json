@@ -85,7 +85,7 @@
       "description": "Delete note"
     },
     {
-      "permissionName": "notes.domains.all",
+      "permissionName": "notes.domain.all",
       "displayName": "Notes - allow access to all domains",
       "description": "All domains"
     },
@@ -99,7 +99,7 @@
         "notes.item.post",
         "notes.item.put",
         "notes.item.delete",
-        "notes.domains.all"
+        "notes.domain.all"
       ],
       "visible": false
     }
