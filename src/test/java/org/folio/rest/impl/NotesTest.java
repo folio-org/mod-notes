@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.PomReader;
+import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.junit.After;
 
 /**
@@ -41,6 +42,8 @@ public class NotesTest {
   private final Header ALLPERM = new Header("X-Okapi-Permissions", "notes.domain.all");
   private final Header USER9 = new Header("X-Okapi-User-Id",
     "99999999-9999-9999-9999-999999999999");
+  private final Header USER19 = new Header("X-Okapi-User-Id",
+    "11999999-9999-9999-9999-999999999911");  // One that is not found in the mock data
   private final Header USER8 = new Header("X-Okapi-User-Id",
     "88888888-8888-8888-8888-888888888888");
   private final Header USER7 = new Header("X-Okapi-User-Id",
@@ -70,8 +73,8 @@ public class NotesTest {
     }
 
     JsonObject conf = new JsonObject()
-      .put("http.port", port);
-
+      .put("http.port", port)
+      .put(HttpClientMock2.MOCK_MODE, "true");
     logger.info("notesTest: Deploying "
       + RestVerticle.class.getName() + " "
       + Json.encode(conf));
@@ -204,9 +207,18 @@ public class NotesTest {
       .body(containsString("may not be null"))
       .body(containsString("\"link\","));
 
+    // Post by an unknown user 19, lookup fails
+    given()
+      .header(TEN).header(USER19).header(JSON).header(ALLPERM)
+      .body(note1)
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .statusCode(400);
+
     String bad4 = note1.replaceAll("-1111-", "-2-");  // make bad UUID
     given()
-      .header(TEN).header(JSON).header(ALLPERM)
+      .header(TEN).header(USER9).header(JSON).header(ALLPERM)
       .body(bad4)
       .post("/notes")
       .then()
@@ -233,6 +245,9 @@ public class NotesTest {
       .body(containsString("First note"))
       .body(containsString("domain")) // Default created from link
       .body(containsString("-9999-")) // CreatedBy userid in metadata
+      .body(containsString("Mockerson")) // CreatedByLastName
+      .body(containsString("Mockey")) // CreatedByFirstName
+      .body(containsString("M.")) // CreatedByMiddleName
       .body(containsString("\"totalRecords\" : 1"));
 
     given()

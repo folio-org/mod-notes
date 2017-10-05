@@ -7,13 +7,38 @@
       "type": "string"
     },
     "link": {
-      "type": "string"
+      "type": "string",
+      "description": "Link to the item the note refers to",
+      "example": "/items/1234-567890"
     },
     "text": {
-      "type": "string"
+      "type": "string",
+      "description": "The text of the note"
     },
     "domain": {
-      "type": "string"
+      "type": "string",
+      "description": "Domain the note belongs to. Used for permissions like notes.domain.items",
+      "example": "items"
+    },
+    "creatorUserName": {
+      "type": "string",
+      "description": "username of the user who created the note",
+      "example": "johndoe17"
+    },
+    "creatorLastName": {
+      "type": "string",
+      "description": "Last name of the user who created the note",
+      "example": "Doe"
+    },
+    "creatorFirstName": {
+      "type": "string",
+      "description": "Fisrt name of the user who created the note",
+      "example": "John"
+    },
+    "creatorMiddleName": {
+      "type": "string",
+      "description": "Middle name or initial of the user who created the note",
+      "example": "X."
     },
     "metadata": {
       "type": "object",
