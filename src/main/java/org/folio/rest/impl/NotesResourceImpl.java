@@ -334,9 +334,16 @@ public class NotesResourceImpl implements NotesResource {
             asyncResultHandler.handle(succeededFuture(null));
           } else if (resp.getCode() == 404) {
             logger.error("User lookup failed for " + userId);
+            logger.error(Json.encodePrettily(resp));
             asyncResultHandler.handle(succeededFuture(PostNotesResponse
               .withPlainBadRequest("User lookup failed. "
                 + "Can not find user " + userId)));
+          } else if (resp.getCode() == 403) {
+            logger.error("User lookup failed for " + userId);
+            logger.error(Json.encodePrettily(resp));
+            asyncResultHandler.handle(succeededFuture(PostNotesResponse
+              .withPlainBadRequest("User lookup failed with 403. "
+                + Json.encode(resp.getError()))));
           } else {
             logger.error("User lookup failed with " + resp.getCode());
             logger.error(Json.encodePrettily(resp));

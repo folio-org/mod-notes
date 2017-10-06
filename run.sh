@@ -8,11 +8,12 @@
 
 # Parameters
 OKAPIURL="http://localhost:9130"
+OKAPILOG="-Dloglevel=DEBUG"   # comment out if you don't want debug logs
 CURL="curl -w\n -D - "
 
 # Most often used headers
-PERM="-HX-Okapi-Permissions:notes.domain.all"
-TEN="-HX-Okapi-Tenant:testlib"
+PERM="-HX-Okapi-Permissions:notes.domain.all,notes.all,users.all"
+TEN="-HX-Okapi-Tenant:testlib22"
 JSON="-HContent-type:application/json"
 USER="-HX-Okapi-User-Id:99999999-9999-9999-9999-999999999999"
 
@@ -58,7 +59,7 @@ function mod {
   echo "Enabling $MODNAME"
   $CURL -X POST \
    -d"{\"id\":\"$EM\"}" \
-   $OKAPIURL/_/proxy/tenants/testlib/modules
+   $OKAPIURL/_/proxy/tenants/testlib22/modules
 echo
 }
 
@@ -66,7 +67,7 @@ echo
 
 # Start Okapi (in dev mode, no database)
 OKAPIPATH="../okapi/okapi-core/target/okapi-core-fat.jar"
-java -jar $OKAPIPATH dev > okapi.log 2>&1 &
+java $OKAPILOG -jar $OKAPIPATH dev > okapi.log 2>&1 &
 PID=$!
 echo Started okapi PID=$PID
 sleep 1 # give it time to start
@@ -76,7 +77,7 @@ echo
 echo "Creating test tenant"
 cat > /tmp/okapi.tenant.json <<END
 {
-  "id": "testlib",
+  "id": "testlib22",
   "name": "Test Library",
   "description": "Our Own Test Library"
 }
@@ -87,6 +88,7 @@ echo
 
 #####################
 # Users
+# Starts the embedded postgres
 mod mod-users
 echo Post our test user
 cat > /tmp/user.json <<END
@@ -123,7 +125,7 @@ mod mod-permissions \
 echo Post perm user
 cat >/tmp/permuser.json << END
 { "userId":"99999999-9999-9999-9999-999999999999",
-  "permissions":["notes.domain.all","notes.all", "perms.all", "users.item.get"] }
+  "permissions":["notes.domain.all","notes.all","perms.all","users.all", "users.item.get"] }
 END
 
 $CURL $TEN $JSON \
@@ -188,9 +190,6 @@ TOK=-H`grep -i x-okapi-token /tmp/loginresp.json | sed 's/ //' `
 echo Received a token $TOK
 
 
-##################
-# TODO Actual login
-# TODO Verify perms are checked
 
 
 ###################
@@ -202,7 +201,7 @@ sleep 1
 # Various tests
 
 echo Test 0: no permission
-$CURL $TEN $PERM $OKAPIURL/notes
+$CURL $TEN $OKAPIURL/notes
 echo
 
 
@@ -215,6 +214,7 @@ $CURL $TOK $JSON \
   -X POST -d '{"id":"44444444-4444-4444-4444-444444444444",
     "link":"users/56789","text":"hello there","domain":"users"}' \
   $OKAPIURL/notes
+echo
 
 
 
@@ -275,11 +275,14 @@ echo "Hit enter to close"
 read
 
 # Clean up
-echo "Cleaning up: stopping modules"
-$CURL -X DELETE $OKAPIURL/_/discovery/modules/mod-users-14.2.2-SNAPSHOT/localhost-9131
-$CURL -X DELETE $OKAPIURL/_/discovery/modules/permissions-module-4.0.4/localhost-9132
-$CURL -X DELETE $OKAPIURL/_/discovery/modules/login-module-3.0.3/localhost-9133
+echo "Cleaning up: stopping authtoken"
 $CURL -X DELETE $OKAPIURL/_/discovery/modules/authtoken-module-0.6.0/localhost-9134
+echo "Cleaning up: stopping login"
+$CURL -X DELETE $OKAPIURL/_/discovery/modules/login-module-3.0.3/localhost-9133
+echo "Cleaning up: stopping permissions"
+$CURL -X DELETE $OKAPIURL/_/discovery/modules/permissions-module-4.0.4/localhost-9132
+echo "Cleaning up: stopping users"
+$CURL -X DELETE $OKAPIURL/_/discovery/modules/mod-users-14.2.2-SNAPSHOT/localhost-9131
 
 echo "Cleaning up: Killing Okapi $PID"
 kill $PID
