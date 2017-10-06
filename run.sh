@@ -23,12 +23,46 @@ then
   exit 1
 fi
 
-# Check we have mod-users
-if [ ! -f ../mod-users/target/mod-users-fat.jar ]
-then
-  echo No mod-users fat jar found in ../mod-users/target, no point in trying to run
-  exit 1
-fi
+
+# Helper function to load, deploy, and enable a module
+function mod {
+  MODNAME=$1  # name of the module, when enabling it, "mod-users"
+  MD=${2:-../$MODNAME/target/ModuleDescriptor.json}
+  DD=${3:-../$MODNAME/target/DeploymentDescriptor.json}
+  EM=${4:-$MODNAME}
+  if [ ! -f ../$MODNAME/target/*-fat.jar ]
+  then
+    echo "Module ../$MODNAME/target/*-fat.jar not found. No point in going on."
+    exit 1
+  fi
+  echo "###"
+  echo "### Loading $MODNAME"
+  echo "###"
+  if [ ! -f $MD ]
+  then
+    echo No ModuleDescritpor found for $MODNAME: $MD
+    exit 1
+  fi
+  if [ ! -f $DD ]
+  then
+    echo "No DeploymentDesriptor for $MODNAME: $DD"
+    exit 1
+  fi
+  $CURL -X POST -d@$MD $OKAPIURL/_/proxy/modules
+  echo
+  echo "Deploying $MODNAME"
+  $CURL -X POST \
+     -d@$DD \
+     $OKAPIURL/_/discovery/modules
+  echo
+  echo "Enabling $MODNAME"
+  $CURL -X POST \
+   -d"{\"id\":\"$EM\"}" \
+   $OKAPIURL/_/proxy/tenants/testlib/modules
+echo
+}
+
+
 
 # Start Okapi (in dev mode, no database)
 OKAPIPATH="../okapi/okapi-core/target/okapi-core-fat.jar"
@@ -37,28 +71,6 @@ PID=$!
 echo Started okapi PID=$PID
 sleep 1 # give it time to start
 echo
-
-# Load mod-users
-$CURL -X POST -d@../mod-users/target/ModuleDescriptor.json $OKAPIURL/_/proxy/modules
-echo
-echo "Deploying it"
-$CURL -X POST \
-   -d@../mod-users/target/DeploymentDescriptor.json \
-   $OKAPIURL/_/discovery/modules
-echo
-
-
-# Load mod-notes
-echo "Loading mod-notes"
-$CURL -X POST -d@target/ModuleDescriptor.json $OKAPIURL/_/proxy/modules
-echo
-
-echo "Deploying it"
-$CURL -X POST \
-   -d@target/DeploymentDescriptor.json \
-   $OKAPIURL/_/discovery/modules
-echo
-
 
 # Test tenant
 echo "Creating test tenant"
@@ -72,23 +84,14 @@ END
 $CURL -d@/tmp/okapi.tenant.json $OKAPIURL/_/proxy/tenants
 echo
 
-echo "Enable mod-users"
-$CURL -X POST \
-   -d'{"id":"mod-users"}' \
-   $OKAPIURL/_/proxy/tenants/testlib/modules
-echo
 
-echo "Enable mod-notes"
-$CURL -X POST \
-   -d'{"id":"mod-notes"}' \
-   $OKAPIURL/_/proxy/tenants/testlib/modules
-echo
-sleep 1
-
+#####################
+# Users
+mod mod-users
 echo Post our test user
 cat > /tmp/user.json <<END
 { "id":"99999999-9999-9999-9999-999999999999",
-  "username":"Test user for notes",
+  "username":"testuser",
   "personal": {
      "lastName": "User",
      "firstName": "Test"
@@ -101,61 +104,162 @@ $CURL $TEN $JSON \
    $OKAPIURL/users
 echo
 
+######################
+# Perms has different MD location, and no good depl desc...
+cat >/tmp/depl.perm.json << END
+{
+  "srvcId": "permissions-module-4.0.4",
+  "nodeId": "localhost",
+  "descriptor": {
+    "exec": "java -Dport=%p -jar ../mod-permissions/target/permissions-module-fat.jar -Dhttp.port=%p embed_postgres=true"
+  }
+}
+END
+mod mod-permissions \
+  ../mod-permissions/ModuleDescriptor.json \
+  /tmp/depl.perm.json \
+  permissions-module
+
+echo Post perm user
+cat >/tmp/permuser.json << END
+{ "userId":"99999999-9999-9999-9999-999999999999",
+  "permissions":["notes.domain.all","notes.all", "perms.all", "users.item.get"] }
+END
+
+$CURL $TEN $JSON \
+   -X POST \
+   -d@/tmp/permuser.json\
+   $OKAPIURL/perms/users
+
+#################
+# mod-login is quite like mod-permissions
+cat >/tmp/depl.login.json << END
+{
+  "srvcId": "login-module-3.0.3",
+  "nodeId": "localhost",
+  "descriptor": {
+    "exec": "java -Dport=%p -jar ../mod-login/target/login-module-fat.jar -Dhttp.port=%p embed_postgres=true"
+  }
+}
+END
+
+mod mod-login \
+  ../mod-login/ModuleDescriptor.json \
+  /tmp/depl.login.json \
+  login-module
+
+echo Post login user
+cat >/tmp/loginuser.json << END
+{ "userId":"99999999-9999-9999-9999-999999999999",
+  "password":"secretpassword" }
+END
+
+$CURL $TEN $JSON \
+   -X POST \
+   -d@/tmp/loginuser.json\
+   $OKAPIURL/authn/credentials
+
+###################
+# mod-authtoken
+cat >/tmp/depl.auth.json << END
+{
+  "srvcId": "authtoken-module-0.6.0",
+  "nodeId": "localhost",
+  "descriptor": {
+    "exec": "java -Dport=%p -jar ../mod-authtoken/target/authtoken_module-fat.jar -Dhttp.port=%p embed_postgres=true"
+  }
+}
+END
+
+mod mod-authtoken \
+  ../mod-authtoken/ModuleDescriptor.json  \
+  /tmp/depl.auth.json \
+  authtoken-module
+
+###################
+# Actual login
+# We can reuse the record from when we set the login user
+$CURL $TEN $JSON \
+   -X POST \
+   -d@/tmp/loginuser.json\
+   $OKAPIURL/authn/login > /tmp/loginresp.json
+TOK=-H`grep -i x-okapi-token /tmp/loginresp.json | sed 's/ //' `
+
+echo Received a token $TOK
+
+
+##################
+# TODO Actual login
+# TODO Verify perms are checked
+
+
+###################
+mod mod-notes
+
+sleep 1
+
+#############
 # Various tests
-echo Test 1: get empty list
-echo $CURL $TEN $PERM $OKAPIURL/notes
+
+echo Test 0: no permission
 $CURL $TEN $PERM $OKAPIURL/notes
 echo
 
+
+echo Test 1: get empty list
+$CURL $TOK $OKAPIURL/notes
+echo
+
 echo Test 2: Post one
-$CURL $TEN $PERM $USER $JSON \
+$CURL $TOK $JSON \
   -X POST -d '{"id":"44444444-4444-4444-4444-444444444444",
     "link":"users/56789","text":"hello there","domain":"users"}' \
   $OKAPIURL/notes
 
-# Skip the tests
+
+
 
 echo Test 3: get a list with the new one
-$CURL $TEN $PERM  $OKAPIURL/notes
+$CURL $TOK  $OKAPIURL/notes
 echo
 
 echo Test 4: Post another one
-$CURL $TEN $PERM $JSON $USER\
+$CURL $TOK $JSON $USER\
   -X POST -d '{"link":"items/23456","text":"hello thing", "domain":"items"}' \
   $OKAPIURL/notes
 
 echo Test 5: get a list with both
-$CURL $TEN $PERM $OKAPIURL/notes
+$CURL $TOK $OKAPIURL/notes
 echo
 
 echo Test 6: query the user note
-$CURL $TEN $PERM $OKAPIURL/notes?query=link=users
+$CURL $TOK $OKAPIURL/notes?query=link=users
 echo
 
 echo Test 7: query both
-$CURL $TEN $PERM $OKAPIURL/notes?query=text=hello
+$CURL $TOK $OKAPIURL/notes?query=text=hello
 echo
 
 echo Test 8: query both
-$CURL $TEN $PERM $OKAPIURL/notes?query='link=*56*'
+$CURL $TOK $OKAPIURL/notes?query='link=*56*'
 echo
 
 echo Test 9: Bad queries. Should fail with 422
-$CURL $TEN $PERM $OKAPIURL/notes?query='BADQUERY'
+$CURL $TOK $OKAPIURL/notes?query='BADQUERY'
 echo
-$CURL $TEN $PERM $OKAPIURL/notes?query='BADFIELD=foo'
+$CURL $TOK $OKAPIURL/notes?query='BADFIELD=foo'
 echo
-$CURL $TEN $PERM $OKAPIURL/notes?query='metadata.BADFIELD=foo'
+$CURL $TOK $OKAPIURL/notes?query='metadata.BADFIELD=foo'
 echo
 
 echo Test 10: limit
-$CURL $TEN $PERM $OKAPIURL/notes?limit=1
+$CURL $TOK $OKAPIURL/notes?limit=1
 echo
 
 echo Test 11: sort
-$CURL $TEN $PERM $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.ascending
+$CURL $TOK $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.ascending
 echo
-$CURL $TEN $PERM $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.descending
+$CURL $TOK $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.descending
 echo
 
 echo Test 12: permissions
@@ -171,6 +275,12 @@ echo "Hit enter to close"
 read
 
 # Clean up
+echo "Cleaning up: stopping modules"
+$CURL -X DELETE $OKAPIURL/_/discovery/modules/mod-users-14.2.2-SNAPSHOT/localhost-9131
+$CURL -X DELETE $OKAPIURL/_/discovery/modules/permissions-module-4.0.4/localhost-9132
+$CURL -X DELETE $OKAPIURL/_/discovery/modules/login-module-3.0.3/localhost-9133
+$CURL -X DELETE $OKAPIURL/_/discovery/modules/authtoken-module-0.6.0/localhost-9134
+
 echo "Cleaning up: Killing Okapi $PID"
 kill $PID
 ps | grep java && ( echo ... ; sleep 2 )
