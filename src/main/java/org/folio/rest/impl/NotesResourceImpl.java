@@ -9,11 +9,14 @@ import static io.vertx.core.Future.succeededFuture;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import javax.ws.rs.core.Response;
+import jersey.repackaged.com.google.common.collect.Collections2;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.ErrorType;
 import static org.folio.okapi.common.ErrorType.*;
@@ -176,10 +179,20 @@ public class NotesResourceImpl implements NotesResource {
           .withPlainUnauthorized("No notes.domain.* permissions")));
         return;
       }
-      if (!perms.contains("notes.domain.all")) {
-        String p = perms.replaceAll("notes\\.domain\\.", "domain=");
-        String[] pa = p.split(",");
-        String pq = String.join(" OR ", pa);
+      boolean allseen = false;
+      String pq = "";
+      String delim = "";
+      for (String p : perms.split(",")) {
+        if (p.equals("notes.domain.all")) {
+          allseen = true;
+          break;
+        }
+        if (p.startsWith("notes.domain.")) {
+          pq += delim + "domain=" + p.replaceFirst("^notes\\.domain\\.", "");
+          delim = " OR ";
+        }
+      }
+      if (!allseen && !pq.isEmpty()) {
         if (query == null) {
           query = pq;
         } else {

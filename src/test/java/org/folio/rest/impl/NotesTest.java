@@ -486,8 +486,21 @@ public class NotesTest {
     //.body(containsString("-9999-"));   // createdBy
     // The RMB will manage the metadata, and not change anything in it
 
+    // check with extra permissions and all
     given()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
+      .header("X-Okapi-Permissions", "notes.domain.all,notes.domain.extra")
+      .get("/notes")
+      .then()
+      .log().all()
+      .statusCode(200);
+
+    // Check with extra permissions
+    String perms = "notes.domain.users,notes.domain.rooms,notes.collection.get,"
+      + "some.other.perm,privatenotes.domain.all";
+    given()
+      .header(TEN)
+      .header("X-Okapi-Permissions", perms)
       .get("/notes")
       .then()
       .log().all()
