@@ -86,28 +86,10 @@ $CURL -d@/tmp/okapi.tenant.json $OKAPIURL/_/proxy/tenants
 echo
 
 
-#####################
-# Users
-# Starts the embedded postgres
-mod mod-users
-echo Post our test user
-cat > /tmp/user.json <<END
-{ "id":"99999999-9999-9999-9999-999999999999",
-  "username":"testuser",
-  "personal": {
-     "lastName": "User",
-     "firstName": "Test"
-  }
-}
-END
-$CURL $TEN $JSON \
-   -X POST \
-   -d@/tmp/user.json\
-   $OKAPIURL/users
-echo
 
 ######################
 # Perms has different MD location, and no good depl desc...
+# Starts the embedded postgres
 cat >/tmp/depl.perm.json << END
 {
   "srvcId": "permissions-module-4.0.4",
@@ -132,6 +114,25 @@ $CURL $TEN $JSON \
    -X POST \
    -d@/tmp/permuser.json\
    $OKAPIURL/perms/users
+
+#####################
+# Users
+mod mod-users
+echo Post our test user
+cat > /tmp/user.json <<END
+{ "id":"99999999-9999-9999-9999-999999999999",
+  "username":"testuser",
+  "personal": {
+     "lastName": "User",
+     "firstName": "Test"
+  }
+}
+END
+$CURL $TEN $JSON \
+   -X POST \
+   -d@/tmp/user.json\
+   $OKAPIURL/users
+echo
 
 #################
 # mod-login is quite like mod-permissions
