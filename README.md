@@ -42,7 +42,7 @@ all possible domains.
 
 The way this is designed, the notes module does not need to know or care about
 which domains we end up having in the system. Unfortunately it requires
-mod-permissions to support wildcards in the DesiredPermissions, which it does
+mod-permissions to support wildcards in the DesiredPermissions, which it does not
 quite do yet.
 
 ## Additional information
