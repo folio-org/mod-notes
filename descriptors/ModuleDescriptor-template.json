@@ -104,5 +104,10 @@
       "visible": false
     }
   ],
-  "requires": []
+  "requires": [
+    {
+      "id": "users",
+      "version": "14.0"
+    }
+  ]
 }
