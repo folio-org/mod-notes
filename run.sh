@@ -88,8 +88,7 @@ echo
 
 
 ######################
-# Perms has different MD location, and no good depl desc...
-# Starts the embedded postgres
+# Start mod-perms first, so we can get out TenantPermissions to work
 cat >/tmp/depl.perm.json << END
 {
   "srvcId": "permissions-module-4.0.4",
@@ -276,15 +275,6 @@ echo "Hit enter to close"
 read
 
 # Clean up
-echo "Cleaning up: stopping authtoken"
-$CURL -X DELETE $OKAPIURL/_/discovery/modules/authtoken-module-0.6.0/localhost-9134
-echo "Cleaning up: stopping login"
-$CURL -X DELETE $OKAPIURL/_/discovery/modules/login-module-3.0.3/localhost-9133
-echo "Cleaning up: stopping permissions"
-$CURL -X DELETE $OKAPIURL/_/discovery/modules/permissions-module-4.0.4/localhost-9132
-echo "Cleaning up: stopping users"
-$CURL -X DELETE $OKAPIURL/_/discovery/modules/mod-users-14.2.2-SNAPSHOT/localhost-9131
-
 echo "Cleaning up: Killing Okapi $PID"
 kill $PID
 ps | grep java && ( echo ... ; sleep 2 )
@@ -296,6 +286,6 @@ ps | grep java && ( echo ... ; sleep 2 )
 ps | grep java && ( echo ... ; sleep 2 )
 ps | grep java && ( echo ... ; sleep 2 )
 rm -rf /tmp/postgresql-embed*
-ps | grep java && echo "OOPS - Still some processes running"
+ps | grep java && echo "OOPS - Still some java processes running"
 echo bye
 
