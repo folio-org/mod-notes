@@ -277,6 +277,7 @@ read
 # Clean up
 echo "Cleaning up: Killing Okapi $PID"
 kill $PID
+# Wait for all the modules to stop working
 ps | grep java && ( echo ... ; sleep 2 )
 ps | grep java && ( echo ... ; sleep 2 )
 ps | grep java && ( echo ... ; sleep 2 )
