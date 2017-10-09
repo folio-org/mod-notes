@@ -32,7 +32,7 @@
     },
     "creatorFirstName": {
       "type": "string",
-      "description": "Fisrt name of the user who created the note",
+      "description": "First name of the user who created the note",
       "example": "John"
     },
     "creatorMiddleName": {
