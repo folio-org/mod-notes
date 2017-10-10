@@ -55,9 +55,15 @@
         }
       }
     }, {
+      "description": "A user that is not found",
       "url": "/users/11999999-9999-9999-9999-999999999911",
       "method": "get",
       "status": 404
+    }, {
+      "description": "simulate a post where user lookup fails",
+      "url": "/users/22999999-9999-9999-9999-999999999922",
+      "method": "get",
+      "status": 403
     }
   ]
 }

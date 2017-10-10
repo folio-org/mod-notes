@@ -301,7 +301,7 @@ public class NotesTest {
       .statusCode(422)
       .body(containsString("QueryValidationException"));
 
-    // TODO - Why do the next two not fail with a QueryValidationException ??
+    // Why do the next two not fail with a QueryValidationException ??
     // When run manually (run.sh), they return a 422 all right
     given()
       .header(TEN).header(ALLPERM)
@@ -324,7 +324,8 @@ public class NotesTest {
       + "\"id\" : \"22222222-2222-2222-2222-222222222222\"," + LS
       + "\"link\" : \"things/23456\"," + LS
       + "\"domain\" : \"things\"," + LS
-      + "\"text\" : \"Note on a thing\"}" + LS;
+      + "\"text\" : \"Note on a thing\"," + LS
+      + "\"creatorUserName\" : \"user88\" }" + LS;  // Different from mock
 
     // Wrong permissions, should fail
     given()
@@ -336,6 +337,41 @@ public class NotesTest {
       .log().ifError()
       .body(containsString("notes.domain.things"))
       .statusCode(401);
+
+    // No userid, should fail
+    given()
+      .header(TEN).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .body(note2)
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .body(containsString("Can not look up user"))
+      .statusCode(400);
+
+    // Simulate user lookup failure
+    given()
+      .header(TEN).header(JSON)
+      .header("X-Okapi-User-Id", "11999999-9999-9999-9999-999999999911")
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .body(note2)
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .statusCode(400)
+      .body(containsString("Can not find user 119999"));
+
+    // Simulate permission problem in user lookup
+    given()
+      .header(TEN).header(JSON)
+      .header("X-Okapi-User-Id", "22999999-9999-9999-9999-999999999922")
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .body(note2)
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .statusCode(400)
+      .body(containsString("User lookup failed with 403. 229999"));
 
     // good permission, this should work
     given()
@@ -366,6 +402,7 @@ public class NotesTest {
       .log().all()
       .statusCode(200)
       .body(containsString("First note"))
+      .body(containsString("user88")) // the creator username we posted
       .body(containsString("things/23456"));
 
     // Update a note
@@ -530,6 +567,14 @@ public class NotesTest {
       .log().all()
       .body(containsString("on a thing")); // createdby matches
 
+    given()
+      .header(TEN).header(USER8)
+      .header("X-Okapi-Permissions", "notes.domain.things,notes.domain.rooms")
+      .get("/notes/_self?query=text=note")
+      .then()
+      .log().all()
+      .body(containsString("on a thing")); // createdby matches
+
     // Permission tests
     // Normally Okapi and mod-auth would provide the X-Okapi-Permissions
     // header. Here we run without Okapi, so we can set them up as needed.
@@ -582,7 +627,7 @@ public class NotesTest {
       .statusCode(400);
 
     given() // not found
-      .header(TEN)
+      .header(TEN).header(ALLPERM)
       .delete("/notes/11111111-2222-3333-4444-555555555555")
       .then()
       .statusCode(404);

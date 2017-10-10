@@ -9,14 +9,11 @@ import static io.vertx.core.Future.succeededFuture;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import javax.ws.rs.core.Response;
-import jersey.repackaged.com.google.common.collect.Collections2;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.ErrorType;
 import static org.folio.okapi.common.ErrorType.*;
@@ -146,11 +143,12 @@ public class NotesResourceImpl implements NotesResource {
   /*
    * Combined handler for get _self and plain get (collection)
    */
-  @java.lang.SuppressWarnings({"squid::S00107"}) // 8 parameters, I know
+  @java.lang.SuppressWarnings({"squid:S00107"}) // 8 parameters, I know
   private void getNotesBoth(boolean self, String query, int offset, int limit,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
+
     try {
       logger.info("Getting notes. self=" + self + " "
         + offset + "+" + limit + " q=" + query);
@@ -180,18 +178,21 @@ public class NotesResourceImpl implements NotesResource {
         return;
       }
       boolean allseen = false;
-      String pq = "";
       String delim = "";
+      StringBuilder pqb = new StringBuilder();
       for (String p : perms.split(",")) {
         if (p.equals("notes.domain.all")) {
           allseen = true;
           break;
         }
         if (p.startsWith("notes.domain.")) {
-          pq += delim + "domain=" + p.replaceFirst("^notes\\.domain\\.", "");
+          pqb.append(delim)
+            .append("domain=")
+            .append(p.replaceFirst("^notes\\.domain\\.", ""));
           delim = " OR ";
         }
       }
+      String pq = pqb.toString();
       if (!allseen && !pq.isEmpty()) {
         if (query == null) {
           query = pq;
@@ -262,7 +263,6 @@ public class NotesResourceImpl implements NotesResource {
     if (idt == null || idt.isEmpty()) {
       note.setId(UUID.randomUUID().toString());
     }
-    final String id = note.getId();
     String domain = note.getDomain();
     if (domain == null || domain.isEmpty()) {
       domain = note.getLink().replaceFirst("^/?([^/]+).*$", "$1");
@@ -279,7 +279,7 @@ public class NotesResourceImpl implements NotesResource {
     // Get the creator names, if not there
     if (note.getCreatorUserName() == null
       || note.getCreatorLastName() == null) {
-      lookupUser(okapiHeaders, tenantId, note, context, lang, res -> {
+      lookupUser(okapiHeaders, tenantId, note, lang, res -> {
         if (res.succeeded()) {
           if (res.result() != null) { // we have a result already, pass it on
             asyncResultHandler.handle(res);
@@ -298,7 +298,7 @@ public class NotesResourceImpl implements NotesResource {
   }
 
   private void lookupUser(Map<String, String> okapiHeaders,
-    String tenantId, Note note, Context context, String lang,
+    String tenantId, Note note, String lang,
     Handler<AsyncResult<Response>> asyncResultHandler) {
 
     String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
@@ -313,52 +313,58 @@ public class NotesResourceImpl implements NotesResource {
     HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
     String url = "/users/" + userId;
     try {
+      logger.debug("Looking up user " + url);
       CompletableFuture<org.folio.rest.tools.client.Response> response
         = client.request(url, okapiHeaders);
-      logger.debug("Looking up user " + url);
       response.whenComplete((resp, ex) -> {
-        try {
-          if (resp.getCode() == 200) {
-            logger.debug("Received user " + resp.getBody());
-            User usr = (User) resp.convertToPojo(User.class);
-            if (note.getCreatorUserName() == null) {
-              note.setCreatorUserName(usr.getUsername());
-            }
-            if (note.getCreatorLastName() == null) {
-              Personal p = usr.getPersonal();
-              note.setCreatorFirstName(p.getFirstName());
-              note.setCreatorMiddleName(p.getMiddleName());
-              note.setCreatorLastName(p.getLastName());
-            }
-            // null indicates all is well, and we can proceed
-            asyncResultHandler.handle(succeededFuture(null));
-          } else if (resp.getCode() == 404) {
-            logger.error("User lookup failed for " + userId);
-            logger.error(Json.encodePrettily(resp));
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
-              .withPlainBadRequest("User lookup failed. "
-                + "Can not find user " + userId)));
-          } else if (resp.getCode() == 403) {
-            logger.error("User lookup failed for " + userId);
-            logger.error(Json.encodePrettily(resp));
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
-              .withPlainBadRequest("User lookup failed with 403. "
-                + Json.encode(resp.getError()))));
-          } else {
-            logger.error("User lookup failed with " + resp.getCode());
-            logger.error(Json.encodePrettily(resp));
-            asyncResultHandler.handle(
-              succeededFuture(PostNotesResponse.withPlainInternalServerError(
-                  messages.getMessage(lang, MessageConsts.InternalServerError))));
-          }
-        } catch (Exception e) {
-
-          logger.error(e.getMessage(), e);
-          asyncResultHandler.handle(
-            succeededFuture(PostNotesResponse.withPlainInternalServerError(
-                messages.getMessage(lang, MessageConsts.InternalServerError))));
-        }
+        handleLookupUserResponse(resp, note, asyncResultHandler, userId, lang);
       });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      asyncResultHandler.handle(
+        succeededFuture(PostNotesResponse.withPlainInternalServerError(
+            messages.getMessage(lang, MessageConsts.InternalServerError))));
+    }
+  }
+
+  private void handleLookupUserResponse(org.folio.rest.tools.client.Response resp,
+    Note note, Handler<AsyncResult<Response>> asyncResultHandler,
+    String userId, String lang) {
+
+    try {
+      if (resp.getCode() == 200) {
+        logger.debug("Received user " + resp.getBody());
+        User usr = (User) resp.convertToPojo(User.class);
+        if (note.getCreatorUserName() == null) {
+          note.setCreatorUserName(usr.getUsername());
+        }
+        if (note.getCreatorLastName() == null) {
+          Personal p = usr.getPersonal();
+          note.setCreatorFirstName(p.getFirstName());
+          note.setCreatorMiddleName(p.getMiddleName());
+          note.setCreatorLastName(p.getLastName());
+        }
+        // null indicates all is well, and we can proceed
+        asyncResultHandler.handle(succeededFuture(null));
+      } else if (resp.getCode() == 404) {
+        logger.error("User lookup failed for " + userId);
+        logger.error(Json.encodePrettily(resp));
+        asyncResultHandler.handle(succeededFuture(PostNotesResponse
+          .withPlainBadRequest("User lookup failed. "
+            + "Can not find user " + userId)));
+      } else if (resp.getCode() == 403) {
+        logger.error("User lookup failed for " + userId);
+        logger.error(Json.encodePrettily(resp));
+        asyncResultHandler.handle(succeededFuture(PostNotesResponse
+          .withPlainBadRequest("User lookup failed with 403. " + userId
+            + " " + Json.encode(resp.getError()))));
+      } else {
+        logger.error("User lookup failed with " + resp.getCode());
+        logger.error(Json.encodePrettily(resp));
+        asyncResultHandler.handle(
+          succeededFuture(PostNotesResponse.withPlainInternalServerError(
+              messages.getMessage(lang, MessageConsts.InternalServerError))));
+      }
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
       asyncResultHandler.handle(
