@@ -316,9 +316,9 @@ public class NotesResourceImpl implements NotesResource {
       logger.debug("Looking up user " + url);
       CompletableFuture<org.folio.rest.tools.client.Response> response
         = client.request(url, okapiHeaders);
-      response.whenComplete((resp, ex) -> {
-        handleLookupUserResponse(resp, note, asyncResultHandler, userId, lang);
-      });
+      response.whenComplete((resp, ex) ->
+        handleLookupUserResponse(resp, note, asyncResultHandler, userId, lang)
+      );
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
       asyncResultHandler.handle(
