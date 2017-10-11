@@ -413,21 +413,21 @@ public class NotesTest {
       + "\"text\" : \"First note with a comment\"}" + LS;
 
     given()
-      .header(TEN).header(USER8).header(JSON)
+      .header(TEN).header(USER8).header(JSON).header(ALLPERM)
       .body(updated1)
       .put("/notes/22222222-2222-2222-2222-222222222222") // wrong one
       .then()
-      .log().ifError()
+      .log().all()
       .statusCode(422)
       .body(containsString("Can not change the id"));
 
     given()
-      .header(TEN).header(USER8).header(JSON)
+      .header(TEN).header(USER8).header(JSON).header(ALLPERM)
       .body(updated1)
       .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
       .then()
-      .log().ifError()
-      .statusCode(422);
+      .log().all()
+      .statusCode(400);
 
     given() // no domain permission
       .header(TEN).header(USER8).header(JSON)
@@ -477,14 +477,14 @@ public class NotesTest {
       .body(containsString("-8888-"));   // updated by
 
     // Update the other one, by fetching and PUTting back
-    String body = given()
+    String rawNote2 = given()
       .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .log().all() // .ifError()
       .statusCode(200)
       .extract().body().asString();
-    String newDoc = body
+    String newNote2 = rawNote2
       .replaceAll("8888", "9999") // createdBy
       .replaceFirst("23456", "34567") // link to the thing
       .replaceFirst("\"things\"", "\"rooms\""); // new domain
@@ -492,7 +492,7 @@ public class NotesTest {
     given() // no perm for rooms
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
       .header("X-Okapi-Permissions", "notes.domain.things")
-      .body(newDoc)
+      .body(newNote2)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .log().ifError()
@@ -501,7 +501,7 @@ public class NotesTest {
     given() // no perm for things
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
       .header("X-Okapi-Permissions", "notes.domain.rooms")
-      .body(newDoc)
+      .body(newNote2)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .log().ifError()
@@ -509,7 +509,7 @@ public class NotesTest {
 
     given() // ok update
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
-      .body(newDoc)
+      .body(newNote2)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .log().ifError()
@@ -522,6 +522,16 @@ public class NotesTest {
       .body(containsString("-8888-"));   // createdBy, NOT CHANGED
     //.body(containsString("-9999-"));   // createdBy
     // The RMB will manage the metadata, and not change anything in it
+
+    // Check a PUT without id is properly rejected - modnotes-22
+    String badNote2 = rawNote2.replaceFirst("\"id\" : \"[2-]+\",", "");
+    given() // ok update
+      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
+      .body(badNote2)
+      .put("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .log().ifError()
+      .statusCode(422);
 
     // check with extra permissions and all
     given()

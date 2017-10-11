@@ -316,9 +316,9 @@ public class NotesResourceImpl implements NotesResource {
       logger.debug("Looking up user " + url);
       CompletableFuture<org.folio.rest.tools.client.Response> response
         = client.request(url, okapiHeaders);
-      response.whenComplete((resp, ex) -> {
-        handleLookupUserResponse(resp, note, asyncResultHandler, userId, lang);
-      });
+      response.whenComplete((resp, ex) ->
+        handleLookupUserResponse(resp, note, asyncResultHandler, userId, lang)
+      );
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
       asyncResultHandler.handle(
@@ -595,11 +595,11 @@ public class NotesResourceImpl implements NotesResource {
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
     logger.info("PUT note " + id + " " + Json.encode(entity));
-    String noteId = entity.getId();
-    if (noteId != null && !noteId.equals(id)) {
-      logger.error("Trying to change note Id from " + id + " to " + noteId);
+    final String noteId = entity.getId();
+    if (noteId == null ) {
+      logger.error("No id when PUTtin note " + id);
       Errors valErr = ValidationHelper.createValidationErrorMessage("id", noteId,
-        "Can not change the id");
+        "Id is required");
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
         .withJsonUnprocessableEntity(valErr)));
       return;
@@ -636,7 +636,15 @@ public class NotesResourceImpl implements NotesResource {
               .withPlainInternalServerError(msg)));
             break;
         }
-      } else {
+      } else { // found the note. Check id and put it in the db
+        if (!noteId.equals(id)) {
+          logger.error("Trying to change note Id from " + id + " to " + noteId);
+          Errors valErr = ValidationHelper.createValidationErrorMessage("id", noteId,
+            "Can not change the id. Must be " + id + " not " + noteId);
+          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
+            .withJsonUnprocessableEntity(valErr)));
+          return;
+        }
         putNotesById2(id, lang, entity,
           okapiHeaders, vertxContext, asyncResultHandler);
       }
