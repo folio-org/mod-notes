@@ -319,12 +319,12 @@ public class NotesTest {
       .statusCode(200)
       .body(containsString("\"totalRecords\" : 0"));
 
-    // Post another note
+    // Post another note, with a few tags to be notified
     String note2 = "{"
       + "\"id\" : \"22222222-2222-2222-2222-222222222222\"," + LS
       + "\"link\" : \"things/23456\"," + LS
       + "\"domain\" : \"things\"," + LS
-      + "\"text\" : \"Note on a thing\"," + LS
+      + "\"text\" : \"@foo Note on a thing @üñí @bar\"," + LS
       + "\"creatorUserName\" : \"user88\" }" + LS;  // Different from mock
 
     // Wrong permissions, should fail

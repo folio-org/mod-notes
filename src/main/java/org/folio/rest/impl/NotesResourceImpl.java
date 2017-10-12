@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.ErrorType;
@@ -279,12 +281,12 @@ public class NotesResourceImpl implements NotesResource {
     // Get the creator names, if not there
     if (note.getCreatorUserName() == null
       || note.getCreatorLastName() == null) {
-      lookupUser(okapiHeaders, tenantId, note, lang, res -> {
+      pn2LookupUser(okapiHeaders, tenantId, note, lang, res -> {
         if (res.succeeded()) {
           if (res.result() != null) { // we have a result already, pass it on
             asyncResultHandler.handle(res);
           } else { // null indicates successfull lookup
-            postNotes2(context, tenantId, note, asyncResultHandler, lang);
+            pn4SendNotifies(context, tenantId, note, asyncResultHandler, lang);
           }
         } else { // should not happen
           asyncResultHandler.handle(
@@ -293,11 +295,12 @@ public class NotesResourceImpl implements NotesResource {
         }
       });
     } else { // no need to look anything up, proceed to actual post
-      postNotes2(context, tenantId, note, asyncResultHandler, lang);
+      pn4SendNotifies(context, tenantId, note, asyncResultHandler, lang);
     }
   }
 
-  private void lookupUser(Map<String, String> okapiHeaders,
+  // Post notes, part 2: Look up the user (skipped if we already have what we need)
+  private void pn2LookupUser(Map<String, String> okapiHeaders,
     String tenantId, Note note, String lang,
     Handler<AsyncResult<Response>> asyncResultHandler) {
 
@@ -317,7 +320,7 @@ public class NotesResourceImpl implements NotesResource {
       CompletableFuture<org.folio.rest.tools.client.Response> response
         = client.request(url, okapiHeaders);
       response.whenComplete((resp, ex) ->
-        handleLookupUserResponse(resp, note, asyncResultHandler, userId, lang)
+ pn3HandleLookupUserResponse(resp, note, asyncResultHandler, userId, lang)
       );
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
@@ -327,7 +330,8 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
-  private void handleLookupUserResponse(org.folio.rest.tools.client.Response resp,
+  // Post notes, part 3: Handle the user lookup response
+  private void pn3HandleLookupUserResponse(org.folio.rest.tools.client.Response resp,
     Note note, Handler<AsyncResult<Response>> asyncResultHandler,
     String userId, String lang) {
 
@@ -373,7 +377,31 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
-  private void postNotes2(Context context, String tenantId, Note note,
+  // Helper to go through the note text, find all @username tags, and
+  // send notifies to the mentioned users.
+  private void checkUserTags(Note note) {
+    String txt = note.getText();
+    java.util.regex.Pattern p
+      = Pattern.compile("@\\w+", Pattern.UNICODE_CHARACTER_CLASS);
+    logger.info("XXX Checking user tags in '" + txt + "' "
+      + "against '" + p.pattern() + "'");
+    Matcher m = p.matcher(txt);
+    while (m.find()) {
+      logger.info("XXX   Found a match: '" + m.group());
+    }
+    logger.info("XXX   Matching done");
+  }
+
+  // Post notes part 4: Send notifies to users mentioned in the note text
+  private void pn4SendNotifies(Context context, String tenantId, Note note,
+    Handler<AsyncResult<Response>> asyncResultHandler, String lang) {
+    checkUserTags(note); // Should have a callback
+    pn5InsertNote(context, tenantId, note, asyncResultHandler, lang);
+
+  }
+
+  // Post notes part 5: Actually insert the note in the database
+  private void pn5InsertNote(Context context, String tenantId, Note note,
     Handler<AsyncResult<Response>> asyncResultHandler, String lang) {
 
     try {
