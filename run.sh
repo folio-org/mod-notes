@@ -4,6 +4,7 @@
 # - Run in mod-notes main directory
 # - mod-notes itself compiled ok
 # - mod-users in ../mod-users, compiled ok
+# - mod-notify in ../mod-notify, compiled ok
 
 
 # Parameters
@@ -190,7 +191,9 @@ TOK=-H`grep -i x-okapi-token /tmp/loginresp.json | sed 's/ //' `
 echo Received a token $TOK
 
 
-
+#############
+# The notify module is quite standard
+mod mod-notify
 
 ###################
 mod mod-notes

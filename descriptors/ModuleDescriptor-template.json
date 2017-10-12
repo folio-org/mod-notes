@@ -1,6 +1,16 @@
 {
   "id": "${artifactId}-${version}",
   "name": "Notes",
+  "requires": [
+    {
+      "id": "users",
+      "version": "14.0"
+    },
+    {
+      "id": "notify",
+      "version": "1.1"
+    }
+  ],
   "provides": [
     {
       "id": "notes",
@@ -102,12 +112,6 @@
         "notes.domain.all"
       ],
       "visible": false
-    }
-  ],
-  "requires": [
-    {
-      "id": "users",
-      "version": "14.0"
     }
   ]
 }
