@@ -1,7 +1,7 @@
 {
   "mocks": [
     {
-      "description": "url -> when this url is called with the method [get / put  / etc...] than if the request requires input data ",
+      "description": "a good user to simulate username lookups",
       "url": "/users/99999999-9999-9999-9999-999999999999",
       "method": "get",
       "status": 200,
@@ -36,7 +36,7 @@
         }
       ]
     }, {
-      "description": "url -> when this url is called with the method [get / put  / etc...] than if the request requires input data ",
+      "description": "another user to look up",
       "url": "/users/88888888-8888-8888-8888-888888888888",
       "method": "get",
       "status": 200,
@@ -64,6 +64,26 @@
       "url": "/users/22999999-9999-9999-9999-999999999922",
       "method": "get",
       "status": 403
+    }, {
+      "description": "Post a notify for userId foo",
+      "url": "/notify/_userid/foo",
+      "method": "post",
+      "status": 201
+    }, {
+      "description": "Post a notify for userId üñí, funny characters in name",
+      "url": "/notify/_userid/üñí",
+      "method": "post",
+      "status": 201
+    }, {
+      "description": "Post a notify for userId bar, who is not found",
+      "url": "/notify/_userid/bar",
+      "method": "post",
+      "status": 404
+    }, {
+      "description": "Post a notify for userId broken, that fails",
+      "url": "/notify/_userid/broken",
+      "method": "post",
+      "status": 500
     }
   ]
 }
