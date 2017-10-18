@@ -404,7 +404,7 @@ public class NotesResourceImpl implements NotesResource {
       return;
     }
     String userId = m.group(2).replace("@", "");
-    String url = "/notify/_userid/" + userId;
+    String url = "/notify/_username/" + userId;
     logger.info("XXX   Found a match: '" + m.group() + "' " + url);
     try {
       Notification notification = new Notification();
