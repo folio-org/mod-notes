@@ -6,6 +6,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import static io.vertx.core.Future.succeededFuture;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.io.IOException;
@@ -13,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.ErrorType;
@@ -27,6 +30,7 @@ import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.Personal;
 import org.folio.rest.jaxrs.model.User;
+import org.folio.rest.jaxrs.model.Notification;
 import org.folio.rest.jaxrs.resource.NotesResource;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -50,7 +54,7 @@ import org.z3950.zing.cql.cql2pgjson.SchemaException;
 
 @java.lang.SuppressWarnings({"squid:S1192"}) // This can be removed once John sets SQ up properly
 public class NotesResourceImpl implements NotesResource {
-  private final Logger logger = LoggerFactory.getLogger("okapi");
+  private final Logger logger = LoggerFactory.getLogger("mod-notes");
   private final Messages messages = Messages.getInstance();
   public static final String NOTE_TABLE = "note_data";
   private static final String LOCATION_PREFIX = "/notes/";
@@ -279,12 +283,12 @@ public class NotesResourceImpl implements NotesResource {
     // Get the creator names, if not there
     if (note.getCreatorUserName() == null
       || note.getCreatorLastName() == null) {
-      lookupUser(okapiHeaders, tenantId, note, lang, res -> {
+      pn2LookupUser(okapiHeaders, tenantId, note, lang, res -> {
         if (res.succeeded()) {
           if (res.result() != null) { // we have a result already, pass it on
             asyncResultHandler.handle(res);
           } else { // null indicates successfull lookup
-            postNotes2(context, tenantId, note, asyncResultHandler, lang);
+            pn4SendNotifies(context, tenantId, note, okapiHeaders, asyncResultHandler, lang);
           }
         } else { // should not happen
           asyncResultHandler.handle(
@@ -293,11 +297,12 @@ public class NotesResourceImpl implements NotesResource {
         }
       });
     } else { // no need to look anything up, proceed to actual post
-      postNotes2(context, tenantId, note, asyncResultHandler, lang);
+      pn4SendNotifies(context, tenantId, note, okapiHeaders, asyncResultHandler, lang);
     }
   }
 
-  private void lookupUser(Map<String, String> okapiHeaders,
+  // Post notes, part 2: Look up the user (skipped if we already have what we need)
+  private void pn2LookupUser(Map<String, String> okapiHeaders,
     String tenantId, Note note, String lang,
     Handler<AsyncResult<Response>> asyncResultHandler) {
 
@@ -317,7 +322,7 @@ public class NotesResourceImpl implements NotesResource {
       CompletableFuture<org.folio.rest.tools.client.Response> response
         = client.request(url, okapiHeaders);
       response.whenComplete((resp, ex) ->
-        handleLookupUserResponse(resp, note, asyncResultHandler, userId, lang)
+        pn3HandleLookupUserResponse(resp, note, asyncResultHandler, userId, lang)
       );
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
@@ -327,7 +332,8 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
-  private void handleLookupUserResponse(org.folio.rest.tools.client.Response resp,
+  // Post notes, part 3: Handle the user lookup response
+  private void pn3HandleLookupUserResponse(org.folio.rest.tools.client.Response resp,
     Note note, Handler<AsyncResult<Response>> asyncResultHandler,
     String userId, String lang) {
 
@@ -373,7 +379,78 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
-  private void postNotes2(Context context, String tenantId, Note note,
+  // Helper to go through the note text, find all @username tags, and
+  // send notifies to the mentioned users.
+  private void checkUserTags(Note note, Map<String, String> okapiHeaders,
+          Handler<ExtendedAsyncResult<Void>> handler) {
+    String tenantId = TenantTool.calculateTenantId(
+      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    String txt = note.getText();
+    java.util.regex.Pattern p
+      = Pattern.compile("(^|\\W)@(\\w+)", Pattern.UNICODE_CHARACTER_CLASS);
+    logger.info("XXX Checking user tags in '" + txt + "' "
+      + "against '" + p.pattern() + "'");
+    Matcher m = p.matcher(txt);
+    String okapiURL = okapiHeaders.get("X-Okapi-Url");
+    HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
+    checkUserTagsR(note, client, okapiHeaders, m, handler);
+  }
+  private void checkUserTagsR(Note note, HttpClientInterface client , 
+          Map<String, String> okapiHeaders,  Matcher m,
+          Handler<ExtendedAsyncResult<Void>> handler) {
+    if (!m.find()) {
+      logger.info("XXX   Matching done");
+      handler.handle(new Success<>());
+      return;
+    }
+    String userId = m.group(2).replace("@", "");
+    String url = "/notify/_username/" + userId;
+    logger.info("XXX   Found a match: '" + m.group() + "' " + url);
+    try {
+      Notification notification = new Notification();
+      String message = note.getCreatorUserName() + " mentioned you in a note "
+              + " " + note.getId() + " about " + note.getLink();
+      notification.setText(message);
+      notification.setLink(note.getLink());
+      CompletableFuture<org.folio.rest.tools.client.Response> response
+        = client.request(HttpMethod.POST, notification, url, okapiHeaders);
+      response.whenComplete((resp, ex) -> {
+        if (resp.getCode()==201) {
+          logger.info("XXX   Posted notify OK");
+          // recurse on to the next tag
+          checkUserTagsR(note, client,  okapiHeaders, m, handler);
+        } else if (resp.getCode() == 404 ) {
+          logger.info("XXX  Notify post didn't find the user " + userId + ". Skipping it");
+          // recurse on to the next tag
+          checkUserTagsR(note, client,  okapiHeaders, m, handler);
+        } else {
+          logger.info("XXX  Notify post failed with " + resp.getCode() );
+          logger.info("XXX  " + Json.encode(resp.getError()));
+          handler.handle(new Failure<>(INTERNAL,"Notify post failed with " + resp.getCode()));
+        }
+      });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      handler.handle(new Failure<>(INTERNAL,e.getMessage()));
+    }
+  }
+
+  // Post notes part 4: Send notifies to users mentioned in the note text
+  private void pn4SendNotifies(Context context, String tenantId, Note note,Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> asyncResultHandler, String lang) {
+    checkUserTags(note, okapiHeaders, res->{
+      if (res.succeeded()) {
+        pn5InsertNote(context, tenantId, note, asyncResultHandler, lang);
+      } else { // all errors map down to internal errors. They have been logged
+        asyncResultHandler.handle(
+          succeededFuture(PostNotesResponse.withPlainInternalServerError(
+              res.cause().getMessage())));
+      }
+    });
+  }
+
+  // Post notes part 5: Actually insert the note in the database
+  private void pn5InsertNote(Context context, String tenantId, Note note,
     Handler<AsyncResult<Response>> asyncResultHandler, String lang) {
 
     try {
@@ -697,4 +774,5 @@ public class NotesResourceImpl implements NotesResource {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
+  
 }

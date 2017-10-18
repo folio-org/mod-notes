@@ -184,9 +184,10 @@ public class NotesTest {
     String note1 = "{"
       + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
-      + "\"text\" : \"First note\"}" + LS;
+      + "\"text\" : \"First note email@folio.org\"}" + LS;
     // no domain, we add that when updating. This will break when we make
     // the domain required, just add the field here.
+    // The email is to check that we don't trigger userId tag lookup for such
 
     String bad2 = note1.replaceFirst("}", ")"); // make it invalid json
     given()
@@ -319,12 +320,12 @@ public class NotesTest {
       .statusCode(200)
       .body(containsString("\"totalRecords\" : 0"));
 
-    // Post another note
+    // Post another note, with a few tags to be notified
     String note2 = "{"
       + "\"id\" : \"22222222-2222-2222-2222-222222222222\"," + LS
       + "\"link\" : \"things/23456\"," + LS
       + "\"domain\" : \"things\"," + LS
-      + "\"text\" : \"Note on a thing\"," + LS
+      + "\"text\" : \"@foo Note on a thing @üñí @bar\"," + LS
       + "\"creatorUserName\" : \"user88\" }" + LS;  // Different from mock
 
     // Wrong permissions, should fail
@@ -372,6 +373,16 @@ public class NotesTest {
       .log().ifError()
       .statusCode(400)
       .body(containsString("User lookup failed with 403. 229999"));
+
+    // Force an error in notify-post
+    given()
+      .header(TEN).header(JSON).header(USER8).header(ALLPERM)
+      .body(note2.replaceAll("foo", "broken"))
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .statusCode(500)
+      .body(containsString("Notify post failed with 500"));
 
     // good permission, this should work
     given()

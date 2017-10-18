@@ -4,6 +4,7 @@
 # - Run in mod-notes main directory
 # - mod-notes itself compiled ok
 # - mod-users in ../mod-users, compiled ok
+# - mod-notify in ../mod-notify, compiled ok
 
 
 # Parameters
@@ -91,28 +92,31 @@ echo
 # Start mod-perms first, so we can get out TenantPermissions to work
 cat >/tmp/depl.perm.json << END
 {
-  "srvcId": "permissions-module-4.0.4",
+  "srvcId": "mod-permissions-5.0.1-SNAPSHOT",
   "nodeId": "localhost",
   "descriptor": {
-    "exec": "java -Dport=%p -jar ../mod-permissions/target/permissions-module-fat.jar -Dhttp.port=%p embed_postgres=true"
+    "exec": "java -Dport=%p -jar ../mod-permissions/target/mod-permissions-fat.jar -Dhttp.port=%p embed_postgres=true"
   }
 }
 END
 mod mod-permissions \
-  ../mod-permissions/ModuleDescriptor.json \
-  /tmp/depl.perm.json \
-  permissions-module
+  "" \
+  /tmp/depl.perm.json 
 
 echo Post perm user
 cat >/tmp/permuser.json << END
 { "userId":"99999999-9999-9999-9999-999999999999",
-  "permissions":["notes.domain.all","notes.all","perms.all","users.all", "users.item.get"] }
+  "permissions":["notes.domain.all","notes.all",
+    "perms.all",
+    "users.all", "users.item.get",
+    "notify.all", "notify.collection.get" ] }
 END
 
 $CURL $TEN $JSON \
    -X POST \
    -d@/tmp/permuser.json\
    $OKAPIURL/perms/users
+
 
 #####################
 # Users
@@ -133,22 +137,20 @@ $CURL $TEN $JSON \
    $OKAPIURL/users
 echo
 
+
 #################
 # mod-login is quite like mod-permissions
 cat >/tmp/depl.login.json << END
 {
-  "srvcId": "login-module-3.0.3",
+  "srvcId": "mod-login-4.0.1-SNAPSHOT",
   "nodeId": "localhost",
   "descriptor": {
-    "exec": "java -Dport=%p -jar ../mod-login/target/login-module-fat.jar -Dhttp.port=%p embed_postgres=true"
+    "exec": "java -Dport=%p -jar ../mod-login/target/mod-login-fat.jar -Dhttp.port=%p embed_postgres=true"
   }
 }
 END
 
-mod mod-login \
-  ../mod-login/ModuleDescriptor.json \
-  /tmp/depl.login.json \
-  login-module
+mod mod-login ""  /tmp/depl.login.json
 
 echo Post login user
 cat >/tmp/loginuser.json << END
@@ -161,22 +163,21 @@ $CURL $TEN $JSON \
    -d@/tmp/loginuser.json\
    $OKAPIURL/authn/credentials
 
+
 ###################
 # mod-authtoken
 cat >/tmp/depl.auth.json << END
 {
-  "srvcId": "authtoken-module-0.6.0",
+  "srvcId": "mod-authtoken-1.0.1-SNAPSHOT",
   "nodeId": "localhost",
   "descriptor": {
-    "exec": "java -Dport=%p -jar ../mod-authtoken/target/authtoken_module-fat.jar -Dhttp.port=%p embed_postgres=true"
+    "exec": "java -Dport=%p -jar ../mod-authtoken/target/mod-authtoken-fat.jar -Dhttp.port=%p embed_postgres=true"
   }
 }
 END
 
-mod mod-authtoken \
-  ../mod-authtoken/ModuleDescriptor.json  \
-  /tmp/depl.auth.json \
-  authtoken-module
+mod mod-authtoken "" /tmp/depl.auth.json
+
 
 ###################
 # Actual login
@@ -190,10 +191,14 @@ TOK=-H`grep -i x-okapi-token /tmp/loginresp.json | sed 's/ //' `
 echo Received a token $TOK
 
 
-
+#############
+# The notify module is quite standard
+mod mod-notify
 
 ###################
+# mod-notes itself, at last
 mod mod-notes
+
 
 sleep 1
 
@@ -216,17 +221,16 @@ $CURL $TOK $JSON \
   $OKAPIURL/notes
 echo
 
-
-
-
 echo Test 3: get a list with the new one
 $CURL $TOK  $OKAPIURL/notes
 echo
 
 echo Test 4: Post another one
 $CURL $TOK $JSON $USER\
-  -X POST -d '{"link":"items/23456","text":"hello thing", "domain":"items"}' \
+  -X POST -d '{"link":"items/23456", "domain":"items",
+    "text":"hello thing @testuser"}' \
   $OKAPIURL/notes
+echo
 
 echo Test 5: get a list with both
 $CURL $TOK $OKAPIURL/notes
@@ -262,12 +266,23 @@ echo
 $CURL $TOK $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.descending
 echo
 
-echo Test 12: permissions
+echo Test 12: permissions - Expect a 403
+# Adding a permission to the request doesn't help. 
 $CURL $TEN \
   -H"X-Okapi-Permissions:notes.domain.users" \
   $OKAPIURL/notes?query='link=*56*'
 echo
 
+echo Test 13: Show notifications
+$CURL $TOK \
+  $OKAPIURL/notify
+echo
+
+
+# Dummy to disable some part of this script
+# Copy the cat line anywhere above this. Leave one copy here!
+cat >/dev/null << SKIPTHIS
+SKIPTHIS
 
 # Let it run
 echo
