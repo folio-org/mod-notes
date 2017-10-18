@@ -421,7 +421,7 @@ public class NotesTest {
       + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
       + "\"domain\" : \"users\"," + LS
-      + "\"text\" : \"First note with a comment\"}" + LS;
+      + "\"text\" : \"First note with a comment to @foo\"}" + LS;
 
     given()
       .header(TEN).header(USER8).header(JSON).header(ALLPERM)

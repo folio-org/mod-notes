@@ -379,61 +379,6 @@ public class NotesResourceImpl implements NotesResource {
     }
   }
 
-  // Helper to go through the note text, find all @username tags, and
-  // send notifies to the mentioned users.
-  private void checkUserTags(Note note, Map<String, String> okapiHeaders,
-          Handler<ExtendedAsyncResult<Void>> handler) {
-    String tenantId = TenantTool.calculateTenantId(
-      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    String txt = note.getText();
-    java.util.regex.Pattern p
-      = Pattern.compile("(^|\\W)@(\\w+)", Pattern.UNICODE_CHARACTER_CLASS);
-    logger.info("XXX Checking user tags in '" + txt + "' "
-      + "against '" + p.pattern() + "'");
-    Matcher m = p.matcher(txt);
-    String okapiURL = okapiHeaders.get("X-Okapi-Url");
-    HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
-    checkUserTagsR(note, client, okapiHeaders, m, handler);
-  }
-  private void checkUserTagsR(Note note, HttpClientInterface client , 
-          Map<String, String> okapiHeaders,  Matcher m,
-          Handler<ExtendedAsyncResult<Void>> handler) {
-    if (!m.find()) {
-      logger.info("XXX   Matching done");
-      handler.handle(new Success<>());
-      return;
-    }
-    String userId = m.group(2).replace("@", "");
-    String url = "/notify/_username/" + userId;
-    logger.info("XXX   Found a match: '" + m.group() + "' " + url);
-    try {
-      Notification notification = new Notification();
-      String message = note.getCreatorUserName() + " mentioned you in a note "
-              + " " + note.getId() + " about " + note.getLink();
-      notification.setText(message);
-      notification.setLink(note.getLink());
-      CompletableFuture<org.folio.rest.tools.client.Response> response
-        = client.request(HttpMethod.POST, notification, url, okapiHeaders);
-      response.whenComplete((resp, ex) -> {
-        if (resp.getCode()==201) {
-          logger.info("XXX   Posted notify OK");
-          // recurse on to the next tag
-          checkUserTagsR(note, client,  okapiHeaders, m, handler);
-        } else if (resp.getCode() == 404 ) {
-          logger.info("XXX  Notify post didn't find the user " + userId + ". Skipping it");
-          // recurse on to the next tag
-          checkUserTagsR(note, client,  okapiHeaders, m, handler);
-        } else {
-          logger.info("XXX  Notify post failed with " + resp.getCode() );
-          logger.info("XXX  " + Json.encode(resp.getError()));
-          handler.handle(new Failure<>(INTERNAL,"Notify post failed with " + resp.getCode()));
-        }
-      });
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      handler.handle(new Failure<>(INTERNAL,e.getMessage()));
-    }
-  }
 
   // Post notes part 4: Send notifies to users mentioned in the note text
   private void pn4SendNotifies(Context context, String tenantId, Note note,Map<String, String> okapiHeaders,
@@ -494,6 +439,64 @@ public class NotesResourceImpl implements NotesResource {
       );
     }
   }
+
+    // Helper to go through the note text, find all @username tags, and
+  // send notifies to the mentioned users.
+  private void checkUserTags(Note note, Map<String, String> okapiHeaders,
+          Handler<ExtendedAsyncResult<Void>> handler) {
+    String tenantId = TenantTool.calculateTenantId(
+      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    String txt = note.getText();
+    java.util.regex.Pattern p
+      = Pattern.compile("(^|\\W)@(\\w+)", Pattern.UNICODE_CHARACTER_CLASS);
+    logger.info("XXX Checking user tags in '" + txt + "' "
+      + "against '" + p.pattern() + "'");
+    Matcher m = p.matcher(txt);
+    String okapiURL = okapiHeaders.get("X-Okapi-Url");
+    HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
+    checkUserTagsR(note, client, okapiHeaders, m, handler);
+  }
+
+  private void checkUserTagsR(Note note, HttpClientInterface client ,
+          Map<String, String> okapiHeaders,  Matcher m,
+          Handler<ExtendedAsyncResult<Void>> handler) {
+    if (!m.find()) {
+      logger.info("XXX   Matching done");
+      handler.handle(new Success<>());
+      return;
+    }
+    String userId = m.group(2).replace("@", "");
+    String url = "/notify/_username/" + userId;
+    logger.info("XXX   Found a match: '" + m.group() + "' " + url);
+    try {
+      Notification notification = new Notification();
+      String message = note.getCreatorUserName() + " mentioned you in a note "
+              + " " + note.getId() + " about " + note.getLink();
+      notification.setText(message);
+      notification.setLink(note.getLink());
+      CompletableFuture<org.folio.rest.tools.client.Response> response
+        = client.request(HttpMethod.POST, notification, url, okapiHeaders);
+      response.whenComplete((resp, ex) -> {
+        if (resp.getCode()==201) {
+          logger.info("XXX   Posted notify OK");
+          // recurse on to the next tag
+          checkUserTagsR(note, client,  okapiHeaders, m, handler);
+        } else if (resp.getCode() == 404 ) {
+          logger.info("XXX  Notify post didn't find the user " + userId + ". Skipping it");
+          // recurse on to the next tag
+          checkUserTagsR(note, client,  okapiHeaders, m, handler);
+        } else {
+          logger.info("XXX  Notify post failed with " + resp.getCode() );
+          logger.info("XXX  " + Json.encode(resp.getError()));
+          handler.handle(new Failure<>(INTERNAL,"Notify post failed with " + resp.getCode()));
+        }
+      });
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      handler.handle(new Failure<>(INTERNAL,e.getMessage()));
+    }
+  }
+
 
   /**
    * Helper to get a note and check permissions. Fetches the record from the
@@ -722,13 +725,27 @@ public class NotesResourceImpl implements NotesResource {
             .withJsonUnprocessableEntity(valErr)));
           return;
         }
-        putNotesById2(id, lang, entity,
+        putNotesById2Notify(id, lang, entity,
           okapiHeaders, vertxContext, asyncResultHandler);
       }
     });
   }
 
-  private void putNotesById2(String id, String lang, Note entity,
+  private void putNotesById2Notify(String id, String lang, Note note, Map<String, String> okapiHeaders,Context context,
+    Handler<AsyncResult<Response>> asyncResultHandler ) {
+    checkUserTags(note, okapiHeaders, res->{
+      if (res.succeeded()) {
+        putNotesById3Update(id, lang, note, okapiHeaders, context, asyncResultHandler);
+      } else { // all errors map down to internal errors. They have been logged
+        asyncResultHandler.handle(
+          succeededFuture(PostNotesResponse.withPlainInternalServerError(
+              res.cause().getMessage())));
+      }
+    });
+  }
+
+
+  private void putNotesById3Update(String id, String lang, Note entity,
     Map<String, String> okapiHeaders, Context vertxContext,
     Handler<AsyncResult<Response>> asyncResultHandler) {
     try {

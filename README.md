@@ -17,14 +17,20 @@ The interface provides the usual CRUD operations POST/PUT/GET/DELETE on `/notes`
 and `/notes/$id` as well as a GET interface on `/notes/_self` to list all notes
 created by the current user. See the RAML for precise definitions.
 
-The GET interfaces accept a query as usual, for example `notes/?query=link=users`.
-Querying on the link is practical to limit to notes on given types of items,
+The GET interfaces accept a query as usual, for example `notes/?query=domain=users`.
+Querying on the domain is practical to limit to notes on given types of items,
 querying on the text is good for searching.
 
 For ease of use, the notes contain the username and human readable name (first,
 middle, and last) of the creating user. These get automatically populated when
 a note is created, if necessary. They can be changed later with a PUT request,
 in case the user changes his name.
+
+## User mentions
+If the note text contains a tag like @foobar, the module will try to send a
+notification to the user whose username is foobar, that he has been mentioned
+in a note. If no user is found, the tag is silently ignored. (This feature was
+added in version 1.1.4)
 
 ## Permissions
 The module declares the usual permission bits for the CRUD operations, but it
