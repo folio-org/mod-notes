@@ -421,6 +421,8 @@ public class NotesTest {
       + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
       + "\"domain\" : \"users\"," + LS
+      + "\"creatorUserName\" : \"user-newname-88\"," + LS
+      + "\"creatorLastName\" : \"User8-changed\"," + LS
       + "\"text\" : \"First note with a comment to @foo\"}" + LS;
 
     given()
@@ -468,6 +470,26 @@ public class NotesTest {
       .log().ifError()
       .body(containsString("333 not found"))
       .statusCode(404);
+
+    given() // No username
+      .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.users")
+      .body(updated1.replaceAll("creatorUserName", "creatorFirstName"))
+      .put("/notes/11111111-1111-1111-1111-111111111111")
+      .then()
+      .log().ifError()
+      .body(containsString("creatorUserName is required"))
+      .statusCode(422);
+
+    given() // No last name
+      .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.users")
+      .body(updated1.replaceAll("creatorLastName", "creatorFirstName"))
+      .put("/notes/11111111-1111-1111-1111-111111111111")
+      .then()
+      .log().ifError()
+      .body(containsString("creatorLastName is required"))
+      .statusCode(422);
 
     given() // This should work
       .header(TEN).header(USER8).header(JSON)
