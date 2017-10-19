@@ -13,7 +13,7 @@ OKAPILOG="-Dloglevel=DEBUG"   # comment out if you don't want debug logs
 CURL="curl -w\n -D - "
 
 # Most often used headers
-PERM="-HX-Okapi-Permissions:notes.domain.all,notes.all,users.all"
+PERM="-HX-Okapi-Permissions:notes.domain.users,notes.domain.items,notes.all,users.all"
 TEN="-HX-Okapi-Tenant:testlib22"
 JSON="-HContent-type:application/json"
 USER="-HX-Okapi-User-Id:99999999-9999-9999-9999-999999999999"
@@ -101,12 +101,12 @@ cat >/tmp/depl.perm.json << END
 END
 mod mod-permissions \
   "" \
-  /tmp/depl.perm.json 
+  /tmp/depl.perm.json
 
 echo Post perm user
 cat >/tmp/permuser.json << END
 { "userId":"99999999-9999-9999-9999-999999999999",
-  "permissions":["notes.domain.all","notes.all",
+  "permissions":[ "notes.allops", "notes.domain.users", "notes.domain.items",
     "perms.all",
     "users.all", "users.item.get",
     "notify.all", "notify.collection.get" ] }
@@ -116,6 +116,7 @@ $CURL $TEN $JSON \
    -X POST \
    -d@/tmp/permuser.json\
    $OKAPIURL/perms/users
+
 
 
 #####################
@@ -166,9 +167,10 @@ $CURL $TEN $JSON \
 
 ###################
 # mod-authtoken
+# After this, the system is locked down
 cat >/tmp/depl.auth.json << END
 {
-  "srvcId": "mod-authtoken-1.0.1-SNAPSHOT",
+  "srvcId": "mod-authtoken-1.1.1-SNAPSHOT",
   "nodeId": "localhost",
   "descriptor": {
     "exec": "java -Dport=%p -jar ../mod-authtoken/target/mod-authtoken-fat.jar -Dhttp.port=%p embed_postgres=true"
@@ -199,6 +201,31 @@ mod mod-notify
 # mod-notes itself, at last
 mod mod-notes
 
+# Create the domain-specific permissions
+# If the permissions are not defined, they don't get expanded, even if we have
+# posted them in the perms user.
+
+cat >/tmp/domain.user.perm.json <<END
+{
+    "permissionName" : "notes.domain.users",
+    "displayName" : "Notes - allow access the 'users' domain",
+    "description" : "users domain"
+  }
+END
+$CURL $TOK $JSON -X POST \
+  -d@/tmp/domain.user.perm.json \
+  $OKAPIURL/perms/permissions
+
+cat >/tmp/domain.user.perm.json <<END
+{
+    "permissionName" : "notes.domain.items",
+    "displayName" : "Notes - allow access the 'items' domain",
+    "description" : "items domain"
+  }
+END
+$CURL $TOK $JSON -X POST \
+  -d@/tmp/domain.user.perm.json \
+  $OKAPIURL/perms/permissions
 
 sleep 1
 
@@ -267,13 +294,21 @@ $CURL $TOK $OKAPIURL/notes?query=text=hello+sortby+link%2Fsort.descending
 echo
 
 echo Test 12: permissions - Expect a 403
-# Adding a permission to the request doesn't help. 
+# Adding a permission to the request doesn't help.
 $CURL $TEN \
   -H"X-Okapi-Permissions:notes.domain.users" \
   $OKAPIURL/notes?query='link=*56*'
 echo
 
-echo Test 13: Show notifications
+echo Test 13: Post without permission - Expect a 401
+# We have domain permissions for 'things' and 'users', not for 'forbidden'
+$CURL $TOK $JSON $USER\
+  -X POST -d '{"link":"forbidden/23456", "domain":"forbidden",
+    "text":"Forbidden @testuser"}' \
+  $OKAPIURL/notes
+echo
+
+echo Test 14: Show notifications - Should have exactly one
 $CURL $TOK \
   $OKAPIURL/notify
 echo
