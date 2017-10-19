@@ -100,15 +100,24 @@
       "description": "All domains"
     },
     {
-      "permissionName": "notes.all",
-      "displayName": "Notes module - all permissions",
-      "description": "Entire set of permissions needed to use the notes modules",
+      "permissionName": "notes.allops",
+      "displayName": "Notes module - all CRUD permissions",
+      "description": "Entire set of permissions needed to use the notes modules, but no domain permissions",
       "subPermissions": [
         "notes.collection.get",
         "notes.item.get",
         "notes.item.post",
         "notes.item.put",
-        "notes.item.delete",
+        "notes.item.delete"
+      ],
+      "visible": false
+    },
+    {
+      "permissionName": "notes.all",
+      "displayName": "Notes module - all permissions and all domains",
+      "description": "Entire set of permissions needed to use the notes modules on any domain",
+      "subPermissions": [
+        "notes.allops",
         "notes.domain.all"
       ],
       "visible": false
