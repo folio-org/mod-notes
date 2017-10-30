@@ -1,11 +1,11 @@
 {
-"tables":[
-  {
-    "tableName": "note_data",
-    "fromModuleVersion": 0.2,
-    "withMetadata": true,
-    "generateId": true,
-    "ginIndex": true
-  }
-]
+  "tables": [
+    {
+      "tableName": "note_data",
+      "fromModuleVersion": 0.2,
+      "withMetadata": true,
+      "generateId": true,
+      "ginIndex": true
+    }
+  ]
 }
