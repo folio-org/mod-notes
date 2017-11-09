@@ -42,12 +42,12 @@ function mod {
   echo "###"
   if [ ! -f $MD ]
   then
-    echo No ModuleDescritpor found for $MODNAME: $MD
+    echo No ModuleDescriptor found for $MODNAME: $MD
     exit 1
   fi
   if [ ! -f $DD ]
   then
-    echo "No DeploymentDesriptor for $MODNAME: $DD"
+    echo "No DeploymentDescriptor for $MODNAME: $DD"
     exit 1
   fi
   $CURL -X POST -d@$MD $OKAPIURL/_/proxy/modules
@@ -71,7 +71,7 @@ OKAPIPATH="../okapi/okapi-core/target/okapi-core-fat.jar"
 java $OKAPILOG -jar $OKAPIPATH dev > okapi.log 2>&1 &
 PID=$!
 echo Started okapi PID=$PID
-sleep 1 # give it time to start
+sleep 2 # give it time to start
 echo
 
 # Test tenant
@@ -337,6 +337,6 @@ ps | grep java && ( echo ... ; sleep 2 )
 ps | grep java && ( echo ... ; sleep 2 )
 ps | grep java && ( echo ... ; sleep 2 )
 rm -rf /tmp/postgresql-embed*
-ps | grep java && echo "OOPS - Still some java processes running"
+ps | grep java | grep -v "grep java" && echo "OOPS - Still some java processes running"
 echo bye
 
