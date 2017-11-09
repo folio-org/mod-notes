@@ -42,12 +42,12 @@ function mod {
   echo "###"
   if [ ! -f $MD ]
   then
-    echo No ModuleDescritpor found for $MODNAME: $MD
+    echo No ModuleDescriptor found for $MODNAME: $MD
     exit 1
   fi
   if [ ! -f $DD ]
   then
-    echo "No DeploymentDesriptor for $MODNAME: $DD"
+    echo "No DeploymentDescriptor for $MODNAME: $DD"
     exit 1
   fi
   $CURL -X POST -d@$MD $OKAPIURL/_/proxy/modules
