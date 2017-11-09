@@ -71,7 +71,7 @@ OKAPIPATH="../okapi/okapi-core/target/okapi-core-fat.jar"
 java $OKAPILOG -jar $OKAPIPATH dev > okapi.log 2>&1 &
 PID=$!
 echo Started okapi PID=$PID
-sleep 1 # give it time to start
+sleep 2 # give it time to start
 echo
 
 # Test tenant
