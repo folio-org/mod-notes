@@ -340,7 +340,8 @@ public class NotesResourceImpl implements NotesResource {
       if (resp.getCode() == 200) {
         logger.debug("Received user " + resp.getBody());
         JsonObject usr = resp.getBody();
-        if (usr.containsKey("username") && usr.containsKey("personal")) {
+        if (usr.containsKey("username")
+          && usr.containsKey("personal")) {
           if (note.getCreatorUserName() == null) {
             note.setCreatorUserName(usr.getString("username"));
           }
