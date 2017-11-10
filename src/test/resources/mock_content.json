@@ -60,6 +60,25 @@
       "method": "get",
       "status": 404
     }, {
+      "description": "Ok lookup, but no names",
+      "url": "/users/33999999-9999-9999-9999-999999999933",
+      "method": "get",
+      "status": 200,
+      "receivedData": {
+        "MISSINGusername": "m8",
+        "MISSINGid": "33999999-9999-9999-9999-999999999933",
+        "active": true,
+        "type": "patron",
+        "patronGroup": "4bb563d9-3f9d-4e1e-8d1d-04e75666d68f",
+        "meta": {
+          "creation_date": "2016-11-05T0723",
+          "last_login_date": ""
+        },
+        "personal": {
+          "MISSINGlastName": "M8"
+        }
+      }
+    }, {
       "description": "simulate a post where user lookup fails",
       "url": "/users/22999999-9999-9999-9999-999999999922",
       "method": "get",

@@ -7,6 +7,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import static io.vertx.core.Future.succeededFuture;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.io.IOException;
@@ -28,8 +29,6 @@ import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.jaxrs.model.Personal;
-import org.folio.rest.jaxrs.model.User;
 import org.folio.rest.jaxrs.model.Notification;
 import org.folio.rest.jaxrs.resource.NotesResource;
 import org.folio.rest.persist.Criteria.Criteria;
@@ -340,18 +339,29 @@ public class NotesResourceImpl implements NotesResource {
     try {
       if (resp.getCode() == 200) {
         logger.debug("Received user " + resp.getBody());
-        User usr = (User) resp.convertToPojo(User.class);
-        if (note.getCreatorUserName() == null) {
-          note.setCreatorUserName(usr.getUsername());
+        JsonObject usr = resp.getBody();
+        if (usr.containsKey("username")
+          && usr.containsKey("personal")) {
+          if (note.getCreatorUserName() == null) {
+            note.setCreatorUserName(usr.getString("username"));
+          }
+          if (note.getCreatorLastName() == null) {
+            JsonObject p = usr.getJsonObject("personal");
+            if (p != null) {
+              note.setCreatorFirstName(p.getString("firstName"));
+              note.setCreatorMiddleName(p.getString("middleName"));
+              note.setCreatorLastName(p.getString("lastName"));
+            }
+          }
+          // null indicates all is well, and we can proceed
+          asyncResultHandler.handle(succeededFuture(null));
+        } else {
+          logger.error("User lookup failed for " + userId + ". Missing fields");
+          logger.error(Json.encodePrettily(resp));
+          asyncResultHandler.handle(succeededFuture(PostNotesResponse
+            .withPlainBadRequest("User lookup failed. "
+              + "Missing fields in " + usr)));
         }
-        if (note.getCreatorLastName() == null) {
-          Personal p = usr.getPersonal();
-          note.setCreatorFirstName(p.getFirstName());
-          note.setCreatorMiddleName(p.getMiddleName());
-          note.setCreatorLastName(p.getLastName());
-        }
-        // null indicates all is well, and we can proceed
-        asyncResultHandler.handle(succeededFuture(null));
       } else if (resp.getCode() == 404) {
         logger.error("User lookup failed for " + userId);
         logger.error(Json.encodePrettily(resp));
