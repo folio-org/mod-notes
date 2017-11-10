@@ -374,6 +374,18 @@ public class NotesTest {
       .statusCode(400)
       .body(containsString("User lookup failed with 403. 229999"));
 
+    // Simulate user lookup with critical fields missing
+    given()
+      .header(TEN).header(JSON)
+      .header("X-Okapi-User-Id", "33999999-9999-9999-9999-999999999933")
+      .header("X-Okapi-Permissions", "notes.domain.things")
+      .body(note2)
+      .post("/notes")
+      .then()
+      .log().ifError()
+      .statusCode(400)
+      .body(containsString("Missing fields"));
+
     // Force an error in notify-post
     given()
       .header(TEN).header(JSON).header(USER8).header(ALLPERM)
