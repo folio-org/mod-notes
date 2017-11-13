@@ -198,7 +198,7 @@ public class NotesTest {
       .statusCode(400)
       .body(containsString("Json content error"));
 
-    String bad3 = note1.replaceFirst("link", "badFieldName");
+    String bad3 = note1.replaceFirst("link", "creatorMiddleName");
     given()
       .header(TEN).header(JSON)
       .body(bad3)
