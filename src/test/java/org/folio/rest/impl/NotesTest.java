@@ -118,7 +118,7 @@ public class NotesTest {
     given()
       .get("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("Tenant"));
 
@@ -127,7 +127,7 @@ public class NotesTest {
       .header(TEN)
       .get("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(401)
       .body(containsString("notes.domain"));
 
@@ -139,7 +139,7 @@ public class NotesTest {
       .header(ALLPERM)
       .get("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("\"modnotestest_mod_notes.note_data\" does not exist"));
 
@@ -151,7 +151,7 @@ public class NotesTest {
       .body(tenants)
       .post("/_/tenant")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(201);
 
     // Empty list of notes
@@ -159,7 +159,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("\"notes\" : [ ]"));
 
@@ -223,7 +223,7 @@ public class NotesTest {
       .body(note1)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(400);
 
     String bad4 = note1.replaceAll("-1111-", "-2-");  // make bad UUID
@@ -232,7 +232,7 @@ public class NotesTest {
       .body(bad4)
       .post("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("invalid input syntax for uuid"));
 
@@ -242,7 +242,7 @@ public class NotesTest {
       .body(note1)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(201);
 
     // Fetch the note in various ways
@@ -250,7 +250,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"))
       .body(containsString("domain")) // Default created from link
@@ -271,7 +271,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes/99111111-1111-1111-1111-111111111199")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(404)
       .body(containsString("not found"));
 
@@ -279,7 +279,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes/777")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(400);
 
     given()
@@ -308,7 +308,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes?query=VERYBADQUERY")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(422)
       .body(containsString("QueryValidationException"));
 
@@ -319,14 +319,14 @@ public class NotesTest {
       .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
       .then()
       .statusCode(200)
-      .log().all()
+      .log().ifValidationFails()
       .body(containsString("\"totalRecords\" : 0"));
 
     given()
       .header(TEN).header(ALLPERM)
       .get("/notes?query=UNKNOWNFIELD=foobar")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("\"totalRecords\" : 0"));
 
@@ -345,7 +345,7 @@ public class NotesTest {
       .body(note2)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .body(containsString("notes.domain.things"))
       .statusCode(401);
 
@@ -356,7 +356,7 @@ public class NotesTest {
       .body(note2)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .body(containsString("Can not look up user"))
       .statusCode(400);
 
@@ -368,7 +368,7 @@ public class NotesTest {
       .body(note2)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("Can not find user 119999"));
 
@@ -380,7 +380,7 @@ public class NotesTest {
       .body(note2)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("User lookup failed with 403. 229999"));
 
@@ -392,7 +392,7 @@ public class NotesTest {
       .body(note2)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("Missing fields"));
 
@@ -402,7 +402,7 @@ public class NotesTest {
       .body(note2.replaceAll("foo", "broken"))
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(500)
       .body(containsString("Notify post failed with 500"));
 
@@ -413,7 +413,7 @@ public class NotesTest {
       .body(note2)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(201);
 
     // Post the same id again
@@ -423,7 +423,7 @@ public class NotesTest {
       .body(note2)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(422)
       .body(containsString("Duplicate id"));
 
@@ -432,7 +432,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes?query=text=note")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"))
       .body(containsString("user88")) // the creator username we posted
@@ -452,7 +452,7 @@ public class NotesTest {
       .body(updated1)
       .put("/notes/22222222-2222-2222-2222-222222222222") // wrong one
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(422)
       .body(containsString("Can not change the id"));
 
@@ -461,7 +461,7 @@ public class NotesTest {
       .body(updated1)
       .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(400);
 
     given() // no domain permission
@@ -469,7 +469,7 @@ public class NotesTest {
       .body(updated1)
       .put("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .body(containsString("notes.domain.users"))
       .statusCode(401);
 
@@ -479,7 +479,7 @@ public class NotesTest {
       .body(updated1)
       .put("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .body(containsString("notes.domain.users"))
       .statusCode(401);
 
@@ -489,7 +489,7 @@ public class NotesTest {
       .body(updated1.replaceAll("1", "3"))
       .put("/notes/33333333-3333-3333-3333-333333333333")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .body(containsString("333 not found"))
       .statusCode(404);
 
@@ -499,7 +499,7 @@ public class NotesTest {
       .body(updated1.replaceAll("creatorUserName", "creatorFirstName"))
       .put("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .body(containsString("creatorUserName is required"))
       .statusCode(422);
 
@@ -509,7 +509,7 @@ public class NotesTest {
       .body(updated1.replaceAll("creatorLastName", "creatorFirstName"))
       .put("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .body(containsString("creatorLastName is required"))
       .statusCode(422);
 
@@ -519,14 +519,14 @@ public class NotesTest {
       .body(updated1)
       .put("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(204);
 
     given()
       .header(TEN).header(ALLPERM)
       .get("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("with a comment"))
       .body(containsString("-8888-"));   // updated by
@@ -536,7 +536,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().all() // .ifError()
+      .log().ifValidationFails()
       .statusCode(200)
       .extract().body().asString();
     String newNote2 = rawNote2
@@ -550,7 +550,7 @@ public class NotesTest {
       .body(newNote2)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .body(containsString("rooms"))
       .statusCode(401);
     given() // no perm for things
@@ -559,7 +559,7 @@ public class NotesTest {
       .body(newNote2)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(401);
 
     given() // ok update
@@ -567,15 +567,14 @@ public class NotesTest {
       .body(newNote2)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(204);
     given()
       .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().all() // .ifError()
+      .log().ifValidationFails()
       .body(containsString("-8888-"));   // createdBy, NOT CHANGED
-    //.body(containsString("-9999-"));   // createdBy
     // The RMB will manage the metadata, and not change anything in it
 
     // Check a PUT without id is properly rejected - modnotes-22
@@ -585,7 +584,7 @@ public class NotesTest {
       .body(badNote2)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(422);
 
     // check with extra permissions and all
@@ -594,7 +593,7 @@ public class NotesTest {
       .header("X-Okapi-Permissions", "notes.domain.all,notes.domain.extra")
       .get("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200);
 
     // Check with extra permissions
@@ -605,7 +604,7 @@ public class NotesTest {
       .header("X-Okapi-Permissions", perms)
       .get("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200);
 
     // _self
@@ -614,7 +613,7 @@ public class NotesTest {
       .get("/notes/_self")
       .then()
       .statusCode(400)
-      .log().all()
+      .log().ifValidationFails()
       .body(containsString("No UserId"));
 
     given()
@@ -622,14 +621,14 @@ public class NotesTest {
       .get("/notes/_self")
       .then()
       .statusCode(200)
-      .log().all()
+      .log().ifValidationFails()
       .body(containsString("with a comment"));
 
     given()
       .header(TEN).header(USER8).header(ALLPERM)
       .get("/notes/_self?query=text=note")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .body(containsString("on a thing")); // createdby matches
 
     given()
@@ -637,7 +636,7 @@ public class NotesTest {
       .header("X-Okapi-Permissions", "notes.domain.things,notes.domain.rooms")
       .get("/notes/_self?query=text=note")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .body(containsString("on a thing")); // createdby matches
 
     // Permission tests
@@ -651,7 +650,7 @@ public class NotesTest {
       .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.rooms")
       .get("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("\"totalRecords\" : 1"))
       .body(containsString("rooms"));  // no users note!
@@ -661,7 +660,7 @@ public class NotesTest {
       .header("X-Okapi-Permissions", "notes.domain.meetingrooms,notes.domain.users")
       .get("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("users/1234"));
 
@@ -670,7 +669,7 @@ public class NotesTest {
       .header("X-Okapi-Permissions", "notes.domain.all")
       .get("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("users/1234"));
 
@@ -679,7 +678,7 @@ public class NotesTest {
       .header("X-Okapi-Permissions", "notes.domain.things")
       .get("/notes/11111111-1111-1111-1111-111111111111")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(401)
       .body(containsString("notes.domain.users"));
 
@@ -688,7 +687,7 @@ public class NotesTest {
       .header(TEN)
       .delete("/notes/11111111-3-1111-333-111111111111")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(400);
 
     given() // not found
@@ -728,7 +727,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("\"notes\" : [ ]"));
 
@@ -742,7 +741,7 @@ public class NotesTest {
       .body(note3)
       .post("/notes")
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(201)
       .extract().header("Location");
 
@@ -751,7 +750,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("\"id\" :")) // one given by the module
       .body(containsString("no id"))
@@ -762,7 +761,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes?query=domain=users")
       .then()
-      .log().all()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("\"id\" :")) // one given by the module
       .body(containsString("no id"))
@@ -773,7 +772,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .delete(location)
       .then()
-      .log().ifError()
+      .log().ifValidationFails()
       .statusCode(204);
 
     // All done
