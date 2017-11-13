@@ -5,6 +5,7 @@
       "fromModuleVersion": 0.2,
       "withMetadata": true,
       "generateId": true,
+      "populateJsonWithId": true,
       "ginIndex": true
     }
   ]

@@ -287,7 +287,8 @@ public class NotesTest {
       .get("/notes?query=text=fiRST")
       .then()
       .statusCode(200)
-      .body(containsString("First note"));
+      .body(containsString("First note"))
+      .body(containsString("id"));
 
     given()
       .header(TEN).header(ALLPERM)
@@ -749,6 +750,17 @@ public class NotesTest {
     given()
       .header(TEN).header(ALLPERM)
       .get("/notes")
+      .then()
+      .log().all()
+      .statusCode(200)
+      .body(containsString("\"id\" :")) // one given by the module
+      .body(containsString("no id"))
+      .body(containsString("-9999-")) // CreatedBy userid in metadata
+      .body(containsString("\"totalRecords\" : 1"));
+
+    given()
+      .header(TEN).header(ALLPERM)
+      .get("/notes?query=domain=users")
       .then()
       .log().all()
       .statusCode(200)
