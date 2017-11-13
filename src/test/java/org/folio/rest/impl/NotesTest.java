@@ -208,6 +208,15 @@ public class NotesTest {
       .body(containsString("may not be null"))
       .body(containsString("\"link\","));
 
+    String badfieldDoc = note1.replaceFirst("link", "UnknownFieldName");
+    given()
+      .header(TEN).header(JSON)
+      .body(badfieldDoc)
+      .post("/notes")
+      .then()
+      .statusCode(422)
+      .body(containsString("Unrecognized field"));
+
     // Post by an unknown user 19, lookup fails
     given()
       .header(TEN).header(USER19).header(JSON).header(ALLPERM)
