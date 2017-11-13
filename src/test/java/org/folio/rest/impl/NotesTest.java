@@ -198,7 +198,7 @@ public class NotesTest {
       .statusCode(400)
       .body(containsString("Json content error"));
 
-    String bad3 = note1.replaceFirst("link", "badFieldName");
+    String bad3 = note1.replaceFirst("link", "creatorMiddleName");
     given()
       .header(TEN).header(JSON)
       .body(bad3)
@@ -207,6 +207,15 @@ public class NotesTest {
       .statusCode(422)
       .body(containsString("may not be null"))
       .body(containsString("\"link\","));
+
+    String badfieldDoc = note1.replaceFirst("link", "UnknownFieldName");
+    given()
+      .header(TEN).header(JSON)
+      .body(badfieldDoc)
+      .post("/notes")
+      .then()
+      .statusCode(422)
+      .body(containsString("Unrecognized field"));
 
     // Post by an unknown user 19, lookup fails
     given()
