@@ -1,3 +1,9 @@
+## 2.0.1 2017-11-14
+ * MODNOTES-24 Upgrade to RMB 15
+ * Requires interface 'users' in 14.0 or 15.0
+ * MODNOTES-29 /notes endpoint accepts arbitrary key-value pairs
+ * MODNOTES-30 Add "populateJsonWithId" to the db-schema json file
+
 ## 2.0.0 2017-10-20
  * MODNOTES-19: parse tags and trigger notifications to users mentioned
  * MODNOTES-16: More granular permissions for domains
