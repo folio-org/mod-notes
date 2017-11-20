@@ -681,11 +681,14 @@ public class NotesResourceImpl implements NotesResource {
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
     logger.info("PUT note " + id + " " + Json.encode(note));
-    final String noteId = note.getId();
-    if (noteId == null ) {
-      logger.error("No id when PUTting note " + id);
-      Errors valErr = ValidationHelper.createValidationErrorMessage("id", noteId,
-        "Id is required");
+    if (note.getId() == null) {
+      note.setId(id);
+      logger.debug("No Id in the note, taking the one from the link");
+      // The RMB should handle this. See RMB-94
+    }
+    if (!note.getId().equals(id)) {
+      Errors valErr = ValidationHelper.createValidationErrorMessage("id", note.getId(),
+        "Can not change Id");
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
         .withJsonUnprocessableEntity(valErr)));
       return;
@@ -741,15 +744,7 @@ public class NotesResourceImpl implements NotesResource {
               .withPlainInternalServerError(msg)));
             break;
         }
-      } else { // found the note. check the id matches, and put it in the db
-        if (!noteId.equals(id)) {
-          logger.error("Trying to change note Id from " + id + " to " + noteId);
-          Errors valErr = ValidationHelper.createValidationErrorMessage("id", noteId,
-            "Can not change the id. Must be " + id + " not " + noteId);
-          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-            .withJsonUnprocessableEntity(valErr)));
-          return;
-        }
+      } else { // found the note. put it in the db
         putNotesById2Notify(id, lang, note,
           okapiHeaders, vertxContext, asyncResultHandler);
       }

@@ -335,7 +335,7 @@ public class NotesTest {
       + "\"id\" : \"22222222-2222-2222-2222-222222222222\"," + LS
       + "\"link\" : \"things/23456\"," + LS
       + "\"domain\" : \"things\"," + LS
-      + "\"text\" : \"@foo Note on a thing @üñí @bar\"," + LS
+      + "\"text\" : \"@foo Note on a thing @üñí @bar\"}" + LS
       + "\"creatorUserName\" : \"user88\" }" + LS;  // Different from mock
 
     // Wrong permissions, should fail
@@ -435,7 +435,7 @@ public class NotesTest {
       .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"))
-      .body(containsString("user88")) // the creator username we posted
+      //      .body(containsString("user88")) // the creator username we posted
       .body(containsString("things/23456"));
 
     // Update a note
@@ -454,7 +454,7 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(422)
-      .body(containsString("Can not change the id"));
+      .body(containsString("Can not change Id"));
 
     given()
       .header(TEN).header(USER8).header(JSON).header(ALLPERM)
@@ -462,7 +462,7 @@ public class NotesTest {
       .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
       .then()
       .log().ifValidationFails()
-      .statusCode(400);
+      .statusCode(422);  // fails the same-id check before validating the UUID
 
     given() // no domain permission
       .header(TEN).header(USER8).header(JSON)
@@ -577,15 +577,22 @@ public class NotesTest {
       .body(containsString("-8888-"));   // createdBy, NOT CHANGED
     // The RMB will manage the metadata, and not change anything in it
 
-    // Check a PUT without id is properly rejected - modnotes-22
-    String badNote2 = rawNote2.replaceFirst("\"id\" : \"[2-]+\",", "");
+    // Check a PUT without id is accepted, uses the id from the url
+    String OkNoteNoId = newNote2.replaceFirst("\"id\" : \"[2-]+\",", "");
     given() // ok update
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
-      .body(badNote2)
+      .body(OkNoteNoId)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .log().ifValidationFails()
-      .statusCode(422);
+      .statusCode(204);
+    given()
+      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
+      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(200)
+      .body(containsString("\"id\" : \"22222222-2222-2222-2222-222222222222\""));
 
     // check with extra permissions and all
     given()
