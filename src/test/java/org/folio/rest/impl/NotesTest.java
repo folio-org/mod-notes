@@ -439,12 +439,11 @@ public class NotesTest {
       .body(containsString("things/23456"));
 
     // Update a note
+    //  no Creator fields, RMB should keep them, once we mark them as read-only
     String updated1 = "{"
       + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
       + "\"domain\" : \"users\"," + LS
-      + "\"creatorUserName\" : \"user-newname-88\"," + LS
-      + "\"creatorLastName\" : \"User8-changed\"," + LS
       + "\"text\" : \"First note with a comment to @foo\"}" + LS;
 
     given()
@@ -493,26 +492,6 @@ public class NotesTest {
       .body(containsString("333 not found"))
       .statusCode(404);
 
-    given() // No username
-      .header(TEN).header(USER8).header(JSON)
-      .header("X-Okapi-Permissions", "notes.domain.users")
-      .body(updated1.replaceAll("creatorUserName", "creatorFirstName"))
-      .put("/notes/11111111-1111-1111-1111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .body(containsString("creatorUserName is required"))
-      .statusCode(422);
-
-    given() // No last name
-      .header(TEN).header(USER8).header(JSON)
-      .header("X-Okapi-Permissions", "notes.domain.users")
-      .body(updated1.replaceAll("creatorLastName", "creatorFirstName"))
-      .put("/notes/11111111-1111-1111-1111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .body(containsString("creatorLastName is required"))
-      .statusCode(422);
-
     given() // This should work
       .header(TEN).header(USER8).header(JSON)
       .header("X-Okapi-Permissions", "notes.domain.users")
@@ -529,7 +508,11 @@ public class NotesTest {
       .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("with a comment"))
+      //.body(containsString("creatorUserName"))
+      //.body(containsString("creatorLastName"))
       .body(containsString("-8888-"));   // updated by
+    // The creator fields should be there, once we mark them read-only, and
+    // the RMB keeps such in place.
 
     // Update the other one, by fetching and PUTting back
     String rawNote2 = given()

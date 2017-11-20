@@ -693,27 +693,9 @@ public class NotesResourceImpl implements NotesResource {
         .withJsonUnprocessableEntity(valErr)));
       return;
     }
-    final String username = note.getCreatorUserName();
-    if (username == null ) {
-      logger.error("No creatorUserName when PUTting note " + id);
-      Errors valErr = ValidationHelper.createValidationErrorMessage("creatorUserName", username,
-        "creatorUserName is required");
-      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withJsonUnprocessableEntity(valErr)));
-      return;
-    }
-    final String lastname = note.getCreatorLastName();
-    if (lastname == null) {
-      logger.error("No creatorLastName when PUTting note " + id);
-      Errors valErr = ValidationHelper.createValidationErrorMessage("creatorLastName", lastname,
-        "creatorLastName is required");
-      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withJsonUnprocessableEntity(valErr)));
-      return;
-    }
 
     // Check the perm for the domain we are about to set
-    // later we also check the perm for the domain as it is in the db
+    // getOneNore will check the perm for the domain as it is in the db
     String newDomain = note.getDomain();
     if (!noteDomainPermission(newDomain, okapiHeaders)) {
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
