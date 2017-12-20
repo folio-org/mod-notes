@@ -292,7 +292,7 @@ public class NotesTest {
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes?query=metadata.createdByUserId=9999")
+      .get("/notes?query=metadata.createdByUserId=*9999*")
       .then()
       .statusCode(200)
       .body(containsString("First note"));
