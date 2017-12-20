@@ -314,6 +314,7 @@ public class NotesTest {
 
     // Why do the next two not fail with a QueryValidationException ??
     // When run manually (run.sh), they return a 422 all right
+    // See MODNOTES-15, and the comments in NotesResourceImpl.java around initCQLValidation()
     given()
       .header(TEN).header(ALLPERM)
       .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
