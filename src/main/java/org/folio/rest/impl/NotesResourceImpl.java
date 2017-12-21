@@ -681,36 +681,21 @@ public class NotesResourceImpl implements NotesResource {
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
     logger.info("PUT note " + id + " " + Json.encode(note));
-    final String noteId = note.getId();
-    if (noteId == null ) {
-      logger.error("No id when PUTting note " + id);
-      Errors valErr = ValidationHelper.createValidationErrorMessage("id", noteId,
-        "Id is required");
-      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withJsonUnprocessableEntity(valErr)));
-      return;
+    if (note.getId() == null) {
+      note.setId(id);
+      logger.debug("No Id in the note, taking the one from the link");
+      // The RMB should handle this. See RMB-94
     }
-    final String username = note.getCreatorUserName();
-    if (username == null ) {
-      logger.error("No creatorUserName when PUTting note " + id);
-      Errors valErr = ValidationHelper.createValidationErrorMessage("creatorUserName", username,
-        "creatorUserName is required");
-      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withJsonUnprocessableEntity(valErr)));
-      return;
-    }
-    final String lastname = note.getCreatorLastName();
-    if (lastname == null) {
-      logger.error("No creatorLastName when PUTting note " + id);
-      Errors valErr = ValidationHelper.createValidationErrorMessage("creatorLastName", lastname,
-        "creatorLastName is required");
+    if (!note.getId().equals(id)) {
+      Errors valErr = ValidationHelper.createValidationErrorMessage("id", note.getId(),
+        "Can not change Id");
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
         .withJsonUnprocessableEntity(valErr)));
       return;
     }
 
     // Check the perm for the domain we are about to set
-    // later we also check the perm for the domain as it is in the db
+    // getOneNote will check the perm for the domain as it is in the db
     String newDomain = note.getDomain();
     if (!noteDomainPermission(newDomain, okapiHeaders)) {
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
@@ -741,22 +726,21 @@ public class NotesResourceImpl implements NotesResource {
               .withPlainInternalServerError(msg)));
             break;
         }
-      } else { // found the note. check the id matches, and put it in the db
-        if (!noteId.equals(id)) {
-          logger.error("Trying to change note Id from " + id + " to " + noteId);
-          Errors valErr = ValidationHelper.createValidationErrorMessage("id", noteId,
-            "Can not change the id. Must be " + id + " not " + noteId);
-          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-            .withJsonUnprocessableEntity(valErr)));
-          return;
-        }
+      } else { // found the note. put it in the db
+        // Copy readonly fields over (RMB removed them from the incoming note)
+        Note oldNote = res.result();
+        note.setCreatorUserName(oldNote.getCreatorUserName());
+        note.setCreatorLastName(oldNote.getCreatorLastName());
+        note.setCreatorFirstName(oldNote.getCreatorFirstName());
+        note.setCreatorMiddleName(oldNote.getCreatorMiddleName());
         putNotesById2Notify(id, lang, note,
           okapiHeaders, vertxContext, asyncResultHandler);
       }
     });
   }
 
-  private void putNotesById2Notify(String id, String lang, Note note, Map<String, String> okapiHeaders,Context context,
+  private void putNotesById2Notify(String id, String lang, Note note,
+    Map<String, String> okapiHeaders, Context context,
     Handler<AsyncResult<Response>> asyncResultHandler ) {
     checkUserTags(note, okapiHeaders, res->{
       if (res.succeeded()) {

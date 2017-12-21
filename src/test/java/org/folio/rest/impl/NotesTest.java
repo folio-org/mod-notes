@@ -336,7 +336,7 @@ public class NotesTest {
       + "\"id\" : \"22222222-2222-2222-2222-222222222222\"," + LS
       + "\"link\" : \"things/23456\"," + LS
       + "\"domain\" : \"things\"," + LS
-      + "\"text\" : \"@foo Note on a thing @üñí @bar\"," + LS
+      + "\"text\" : \"@foo Note on a thing @üñí @bar\"}" + LS
       + "\"creatorUserName\" : \"user88\" }" + LS;  // Different from mock
 
     // Wrong permissions, should fail
@@ -416,6 +416,16 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(201);
+    given()
+      .header(TEN).header(ALLPERM)
+      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .statusCode(200)
+      .log().ifValidationFails()
+      .body(containsString("-8888-")) // metadata.createdByUserId
+      .body(containsString("creatorLastName"))
+      .body(containsString("creatorUserName"))
+      .body(containsString("things/23456"));
 
     // Post the same id again
     given()
@@ -436,16 +446,15 @@ public class NotesTest {
       .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"))
-      .body(containsString("user88")) // the creator username we posted
+      //      .body(containsString("user88")) // the creator username we posted
       .body(containsString("things/23456"));
 
     // Update a note
+    //  no Creator fields, RMB should keep them, once we mark them as read-only
     String updated1 = "{"
       + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
       + "\"domain\" : \"users\"," + LS
-      + "\"creatorUserName\" : \"user-newname-88\"," + LS
-      + "\"creatorLastName\" : \"User8-changed\"," + LS
       + "\"text\" : \"First note with a comment to @foo\"}" + LS;
 
     given()
@@ -455,7 +464,7 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(422)
-      .body(containsString("Can not change the id"));
+      .body(containsString("Can not change Id"));
 
     given()
       .header(TEN).header(USER8).header(JSON).header(ALLPERM)
@@ -463,7 +472,7 @@ public class NotesTest {
       .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
       .then()
       .log().ifValidationFails()
-      .statusCode(400);
+      .statusCode(422);  // fails the same-id check before validating the UUID
 
     given() // no domain permission
       .header(TEN).header(USER8).header(JSON)
@@ -494,26 +503,6 @@ public class NotesTest {
       .body(containsString("333 not found"))
       .statusCode(404);
 
-    given() // No username
-      .header(TEN).header(USER8).header(JSON)
-      .header("X-Okapi-Permissions", "notes.domain.users")
-      .body(updated1.replaceAll("creatorUserName", "creatorFirstName"))
-      .put("/notes/11111111-1111-1111-1111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .body(containsString("creatorUserName is required"))
-      .statusCode(422);
-
-    given() // No last name
-      .header(TEN).header(USER8).header(JSON)
-      .header("X-Okapi-Permissions", "notes.domain.users")
-      .body(updated1.replaceAll("creatorLastName", "creatorFirstName"))
-      .put("/notes/11111111-1111-1111-1111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .body(containsString("creatorLastName is required"))
-      .statusCode(422);
-
     given() // This should work
       .header(TEN).header(USER8).header(JSON)
       .header("X-Okapi-Permissions", "notes.domain.users")
@@ -530,20 +519,26 @@ public class NotesTest {
       .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("with a comment"))
+      //.body(containsString("creatorUserName"))
+      //.body(containsString("creatorLastName"))
       .body(containsString("-8888-"));   // updated by
+    // The creator fields should be there, once we mark them read-only, and
+    // the RMB keeps such in place. MODNOTES-31
 
     // Update the other one, by fetching and PUTting back
     String rawNote2 = given()
       .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifValidationFails()
+      .log().all() //.ifValidationFails()
       .statusCode(200)
       .extract().body().asString();
     String newNote2 = rawNote2
       .replaceAll("8888", "9999") // createdBy
       .replaceFirst("23456", "34567") // link to the thing
-      .replaceFirst("\"things\"", "\"rooms\""); // new domain
+      .replaceAll("things", "rooms") // new domain (also in link)
+      .replaceFirst("\"m8\"", "\"NewCrUsername\""); // readonly field, should not matter
+    logger.info("About to PUT note: " + newNote2);
 
     given() // no perm for rooms
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
@@ -574,19 +569,38 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifValidationFails()
-      .body(containsString("-8888-"));   // createdBy, NOT CHANGED
-    // The RMB will manage the metadata, and not change anything in it
+      .log().all() // ifValidationFails()
+      .body(containsString("rooms")) // domain got updated
+      // The RMB should manage the metadata
+      .body(containsString("-8888-")) // createdBy, NOT CHANGED
+      .body(containsString("-7777-")) // updatedBy, Should be changed
+      // But the special fields are managed by our mod-notes. Should remain.
+      .body(containsString("creatorUserName"))
+      .body(containsString("creatorLastName"))
+      .body(containsString("m8")); // CreatorUserName we tried to change
 
-    // Check a PUT without id is properly rejected - modnotes-22
-    String badNote2 = rawNote2.replaceFirst("\"id\" : \"[2-]+\",", "");
+    // Check a PUT without id is accepted, uses the id from the url
+    String OkNoteNoId = newNote2.replaceFirst("\"id\" : \"[2-]+\",", "");
     given() // ok update
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
-      .body(badNote2)
+      .body(OkNoteNoId)
       .put("/notes/22222222-2222-2222-2222-222222222222")
       .then()
       .log().ifValidationFails()
-      .statusCode(422);
+      .statusCode(204);
+    given()
+      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
+      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .log().all() //ifValidationFails()
+      .statusCode(200)
+      .body(containsString("\"id\" : \"22222222-2222-2222-2222-222222222222\""))
+      .body(containsString("-8888-")) // createdBy, NOT CHANGED
+      .body(containsString("-7777-")) // updatedBy, Should be changed
+      // But the special fields are managed by our mod-notes. Should remain.
+      .body(containsString("creatorUserName"))
+      .body(containsString("creatorLastName"))
+      .body(containsString("m8")); // CreatorUserName we tried to change
 
     // check with extra permissions and all
     given()
