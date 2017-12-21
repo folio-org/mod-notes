@@ -695,7 +695,7 @@ public class NotesResourceImpl implements NotesResource {
     }
 
     // Check the perm for the domain we are about to set
-    // getOneNore will check the perm for the domain as it is in the db
+    // getOneNote will check the perm for the domain as it is in the db
     String newDomain = note.getDomain();
     if (!noteDomainPermission(newDomain, okapiHeaders)) {
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
@@ -727,13 +727,20 @@ public class NotesResourceImpl implements NotesResource {
             break;
         }
       } else { // found the note. put it in the db
+        // Copy readonly fields over (RMB removed them from the incoming note)
+        Note oldNote = res.result();
+        note.setCreatorUserName(oldNote.getCreatorUserName());
+        note.setCreatorLastName(oldNote.getCreatorLastName());
+        note.setCreatorFirstName(oldNote.getCreatorFirstName());
+        note.setCreatorMiddleName(oldNote.getCreatorMiddleName());
         putNotesById2Notify(id, lang, note,
           okapiHeaders, vertxContext, asyncResultHandler);
       }
     });
   }
 
-  private void putNotesById2Notify(String id, String lang, Note note, Map<String, String> okapiHeaders,Context context,
+  private void putNotesById2Notify(String id, String lang, Note note,
+    Map<String, String> okapiHeaders, Context context,
     Handler<AsyncResult<Response>> asyncResultHandler ) {
     checkUserTags(note, okapiHeaders, res->{
       if (res.succeeded()) {

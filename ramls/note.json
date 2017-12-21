@@ -24,26 +24,31 @@
     "creatorUserName": {
       "type": "string",
       "description": "username of the user who created the note",
-      "example": "johndoe17"
+      "example": "johndoe17",
+      "readonly": true
     },
     "creatorLastName": {
       "type": "string",
       "description": "Last name of the user who created the note",
-      "example": "Doe"
+      "example": "Doe",
+      "readonly": true
     },
     "creatorFirstName": {
       "type": "string",
       "description": "First name of the user who created the note",
-      "example": "John"
+      "example": "John",
+      "readonly": true
     },
     "creatorMiddleName": {
       "type": "string",
       "description": "Middle name or initial of the user who created the note",
-      "example": "X."
+      "example": "X.",
+      "readonly": true
     },
     "metadata": {
       "type": "object",
-      "$ref": "raml-util/schemas/metadata.schema"
+      "$ref": "raml-util/schemas/metadata.schema",
+      "readonly": true
     }
   },
   "required": [

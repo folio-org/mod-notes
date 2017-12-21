@@ -416,6 +416,16 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(201);
+    given()
+      .header(TEN).header(ALLPERM)
+      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .then()
+      .statusCode(200)
+      .log().ifValidationFails()
+      .body(containsString("-8888-")) // metadata.createdByUserId
+      .body(containsString("creatorLastName"))
+      .body(containsString("creatorUserName"))
+      .body(containsString("things/23456"));
 
     // Post the same id again
     given()
@@ -513,20 +523,22 @@ public class NotesTest {
       //.body(containsString("creatorLastName"))
       .body(containsString("-8888-"));   // updated by
     // The creator fields should be there, once we mark them read-only, and
-    // the RMB keeps such in place.
+    // the RMB keeps such in place. MODNOTES-31
 
     // Update the other one, by fetching and PUTting back
     String rawNote2 = given()
       .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifValidationFails()
+      .log().all() //.ifValidationFails()
       .statusCode(200)
       .extract().body().asString();
     String newNote2 = rawNote2
       .replaceAll("8888", "9999") // createdBy
       .replaceFirst("23456", "34567") // link to the thing
-      .replaceFirst("\"things\"", "\"rooms\""); // new domain
+      .replaceAll("things", "rooms") // new domain (also in link)
+      .replaceFirst("\"m8\"", "\"NewCrUsername\""); // readonly field, should not matter
+    logger.info("About to PUT note: " + newNote2);
 
     given() // no perm for rooms
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
@@ -557,9 +569,15 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifValidationFails()
-      .body(containsString("-8888-"));   // createdBy, NOT CHANGED
-    // The RMB will manage the metadata, and not change anything in it
+      .log().all() // ifValidationFails()
+      .body(containsString("rooms")) // domain got updated
+      // The RMB should manage the metadata
+      .body(containsString("-8888-")) // createdBy, NOT CHANGED
+      .body(containsString("-7777-")) // updatedBy, Should be changed
+      // But the special fields are managed by our mod-notes. Should remain.
+      .body(containsString("creatorUserName"))
+      .body(containsString("creatorLastName"))
+      .body(containsString("m8")); // CreatorUserName we tried to change
 
     // Check a PUT without id is accepted, uses the id from the url
     String OkNoteNoId = newNote2.replaceFirst("\"id\" : \"[2-]+\",", "");
@@ -574,9 +592,15 @@ public class NotesTest {
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
       .get("/notes/22222222-2222-2222-2222-222222222222")
       .then()
-      .log().ifValidationFails()
+      .log().all() //ifValidationFails()
       .statusCode(200)
-      .body(containsString("\"id\" : \"22222222-2222-2222-2222-222222222222\""));
+      .body(containsString("\"id\" : \"22222222-2222-2222-2222-222222222222\""))
+      .body(containsString("-8888-")) // createdBy, NOT CHANGED
+      .body(containsString("-7777-")) // updatedBy, Should be changed
+      // But the special fields are managed by our mod-notes. Should remain.
+      .body(containsString("creatorUserName"))
+      .body(containsString("creatorLastName"))
+      .body(containsString("m8")); // CreatorUserName we tried to change
 
     // check with extra permissions and all
     given()
