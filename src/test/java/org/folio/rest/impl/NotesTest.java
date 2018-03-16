@@ -1,11 +1,14 @@
 package org.folio.rest.impl;
 
+import java.util.Locale;
+
 import org.junit.Test;
 
 import com.jayway.restassured.RestAssured;
 import static com.jayway.restassured.RestAssured.given;
 import com.jayway.restassured.response.Header;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -57,6 +60,7 @@ public class NotesTest {
 
   @Before
   public void setUp(TestContext context) {
+    Locale.setDefault(Locale.US);  // enforce English error messages
     vertx = Vertx.vertx();
     moduleName = PomReader.INSTANCE.getModuleName()
       .replaceAll("_", "-");  // RMB normalizes the dash to underscore, fix back
@@ -205,8 +209,9 @@ public class NotesTest {
       .post("/notes")
       .then()
       .statusCode(422)
-      .body(containsString("may not be null"))
-      .body(containsString("\"link\","));
+      // English error message for Locale.US, see @Before
+      .body("errors[0].message", is("may not be null"))
+      .body("errors[0].parameters[0].key", is("link"));
 
     String badfieldDoc = note1.replaceFirst("link", "UnknownFieldName");
     given()
@@ -234,7 +239,7 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(400)
-      .body(containsString("invalid input syntax for uuid"));
+      .body(containsString("invalid input syntax for type uuid"));
 
     // Post a good note
     given()
