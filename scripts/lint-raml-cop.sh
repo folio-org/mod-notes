@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
 
+# The directory to start searching for RAML files.
+# Relative to the root of the repository.
 ramls_dir="ramls"
+
+# Space-separated list of sub-directory paths that need to be avoided.
+prune_dirs="raml-util"
 
 if ! cmd=$(command -v raml-cop); then
   echo "raml-cop is not available. Do 'npm install -g raml-cop'"
   exit 1
 fi
 
-script_home="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "${script_home}" || exit
+repo_home="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+cd "${repo_home}" || exit
 
-mapfile -t raml_files < <(find ${ramls_dir} -path ${ramls_dir}/raml-util -prune -o -name "*.raml" -print)
+prune_string=$(printf " -path ${ramls_dir}/%s -o" ${prune_dirs})
+mapfile -t raml_files < <(find ${ramls_dir} \( ${prune_string% -o} \) -prune -o -name "*.raml" -print)
 
 if [[ ${#raml_files[@]} -eq 0 ]]; then
-  echo "No RAML files found under '${script_home}/${ramls_dir}'"
+  echo "No RAML files found under '${repo_home}/${ramls_dir}'"
   exit 1
 fi
 
