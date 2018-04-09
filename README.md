@@ -55,13 +55,13 @@ quite do yet.
 
 ### Other documentation
 
-Other [modules](http://dev.folio.org/source-code/#server-side) are described,
-with further FOLIO Developer documentation at [dev.folio.org](http://dev.folio.org/)
+Other [modules](https://dev.folio.org/source-code/#server-side) are described,
+with further FOLIO Developer documentation at [dev.folio.org](https://dev.folio.org/)
 
 ### Issue tracker
 
 See project [MODNOTES](https://issues.folio.org/browse/MODNOTES)
-at the [FOLIO issue tracker](http://dev.folio.org/community/guide-issues).
+at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker).
 
 ### Quick start
 
@@ -76,7 +76,7 @@ java -jar target/mod-notes-fat.jar \
 
 ### API documentation
 
-This module's [API documentation](http://dev.folio.org/doc/api/#mod-notes).
+This module's [API documentation](https://dev.folio.org/reference/api/#mod-notes).
 
 The local API docs are available, for example:
 ```
@@ -92,6 +92,6 @@ etc.
 ### Download and configuration
 
 The built artifacts for this module are available.
-See [configuration](http://dev.folio.org/doc/artifacts) for repository access,
+See [configuration](https://dev.folio.org/download/artifacts) for repository access,
 and the [Docker image](https://hub.docker.com/r/folioorg/mod-notes/).
 
