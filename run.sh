@@ -16,7 +16,7 @@ CURL="curl -w\n -D - "
 PERM="-HX-Okapi-Permissions:notes.domain.users,notes.domain.items,notes.all,users.all"
 TEN="-HX-Okapi-Tenant:testlib22"
 JSON="-HContent-type:application/json"
-USER="-HX-Okapi-User-Id:99999999-9999-9999-9999-999999999999"
+USER="-HX-Okapi-User-Id:99999999-9999-4999-9999-999999999999"
 
 # Check we have the fat jar
 if [ ! -f target/mod-notes-fat.jar ]
@@ -105,7 +105,7 @@ mod mod-permissions \
 
 echo Post perm user
 cat >/tmp/permuser.json << END
-{ "userId":"99999999-9999-9999-9999-999999999999",
+{ "userId":"99999999-9999-4999-9999-999999999999",
   "permissions":[ "notes.allops", "notes.domain.users", "notes.domain.items",
     "perms.all",
     "users.all", "users.item.get",
@@ -124,7 +124,7 @@ $CURL $TEN $JSON \
 mod mod-users
 echo Post our test user
 cat > /tmp/user.json <<END
-{ "id":"99999999-9999-9999-9999-999999999999",
+{ "id":"99999999-9999-4999-9999-999999999999",
   "username":"testuser",
   "personal": {
      "lastName": "User",
@@ -155,7 +155,7 @@ mod mod-login ""  /tmp/depl.login.json
 
 echo Post login user
 cat >/tmp/loginuser.json << END
-{ "userId":"99999999-9999-9999-9999-999999999999",
+{ "userId":"99999999-9999-4999-9999-999999999999",
   "password":"secretpassword" }
 END
 
@@ -244,7 +244,7 @@ echo
 
 echo Test 2: Post one
 $CURL $TOK $JSON \
-  -X POST -d '{"id":"44444444-4444-4444-4444-444444444444",
+  -X POST -d '{"id":"44444444-4444-4444-a444-444444444444",
     "link":"users/56789","text":"hello there","domain":"users"}' \
   $OKAPIURL/notes
 echo

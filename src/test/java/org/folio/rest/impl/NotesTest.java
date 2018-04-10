@@ -44,13 +44,13 @@ public class NotesTest {
   private final Header TEN = new Header("X-Okapi-Tenant", "modnotestest");
   private final Header ALLPERM = new Header("X-Okapi-Permissions", "notes.domain.all");
   private final Header USER9 = new Header("X-Okapi-User-Id",
-    "99999999-9999-9999-9999-999999999999");
+    "99999999-9999-4999-9999-999999999999");
   private final Header USER19 = new Header("X-Okapi-User-Id",
-    "11999999-9999-9999-9999-999999999911");  // One that is not found in the mock data
+    "11999999-9999-4999-9999-999999999911");  // One that is not found in the mock data
   private final Header USER8 = new Header("X-Okapi-User-Id",
-    "88888888-8888-8888-8888-888888888888");
+    "88888888-8888-4888-8888-888888888888");
   private final Header USER7 = new Header("X-Okapi-User-Id",
-    "77777777-7777-7777-7777-777777777777");
+    "77777777-7777-4777-a777-777777777777");
   private final Header JSON = new Header("Content-Type", "application/json");
   private String moduleName; //  "mod-notes"
   private String moduleVersion; // "1.0.0" or "0.1.2-SNAPSHOT"
@@ -186,7 +186,7 @@ public class NotesTest {
       .body(containsString("Json content error"));
 
     String note1 = "{"
-      + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
+      + "\"id\" : \"11111111-1111-1111-a111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
       + "\"text\" : \"First note email@folio.org\"}" + LS;
     // no domain, we add that when updating. This will break when we make
@@ -267,14 +267,14 @@ public class NotesTest {
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes/11111111-1111-1111-1111-111111111111")
+      .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .statusCode(200)
       .body(containsString("First note"));
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes/99111111-1111-1111-1111-111111111199")
+      .get("/notes/99111111-1111-1111-a111-111111111199")
       .then()
       .log().ifValidationFails()
       .statusCode(404)
@@ -304,7 +304,7 @@ public class NotesTest {
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes?query=metadata.createdByUserId=\"99999999-9999-9999-9999-999999999999\"")
+      .get("/notes?query=metadata.createdByUserId=\"99999999-9999-4999-9999-999999999999\"")
       .then()
       .statusCode(200)
       .body(containsString("First note"));
@@ -338,7 +338,7 @@ public class NotesTest {
 
     // Post another note, with a few tags to be notified
     String note2 = "{"
-      + "\"id\" : \"22222222-2222-2222-2222-222222222222\"," + LS
+      + "\"id\" : \"22222222-2222-2222-a222-222222222222\"," + LS
       + "\"link\" : \"things/23456\"," + LS
       + "\"domain\" : \"things\"," + LS
       + "\"text\" : \"@foo Note on a thing @üñí @bar\"}" + LS
@@ -369,7 +369,7 @@ public class NotesTest {
     // Simulate user lookup failure
     given()
       .header(TEN).header(JSON)
-      .header("X-Okapi-User-Id", "11999999-9999-9999-9999-999999999911")
+      .header("X-Okapi-User-Id", "11999999-9999-4999-9999-999999999911")
       .header("X-Okapi-Permissions", "notes.domain.things")
       .body(note2)
       .post("/notes")
@@ -381,7 +381,7 @@ public class NotesTest {
     // Simulate permission problem in user lookup
     given()
       .header(TEN).header(JSON)
-      .header("X-Okapi-User-Id", "22999999-9999-9999-9999-999999999922")
+      .header("X-Okapi-User-Id", "22999999-9999-4999-9999-999999999922")
       .header("X-Okapi-Permissions", "notes.domain.things")
       .body(note2)
       .post("/notes")
@@ -393,7 +393,7 @@ public class NotesTest {
     // Simulate user lookup with critical fields missing
     given()
       .header(TEN).header(JSON)
-      .header("X-Okapi-User-Id", "33999999-9999-9999-9999-999999999933")
+      .header("X-Okapi-User-Id", "33999999-9999-4999-9999-999999999933")
       .header("X-Okapi-Permissions", "notes.domain.things")
       .body(note2)
       .post("/notes")
@@ -423,7 +423,7 @@ public class NotesTest {
       .statusCode(201);
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .get("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .statusCode(200)
       .log().ifValidationFails()
@@ -457,7 +457,7 @@ public class NotesTest {
     // Update a note
     //  no Creator fields, RMB should keep them, once we mark them as read-only
     String updated1 = "{"
-      + "\"id\" : \"11111111-1111-1111-1111-111111111111\"," + LS
+      + "\"id\" : \"11111111-1111-1111-a111-111111111111\"," + LS
       + "\"link\" : \"users/1234\"," + LS
       + "\"domain\" : \"users\"," + LS
       + "\"text\" : \"First note with a comment to @foo\"}" + LS;
@@ -465,7 +465,7 @@ public class NotesTest {
     given()
       .header(TEN).header(USER8).header(JSON).header(ALLPERM)
       .body(updated1)
-      .put("/notes/22222222-2222-2222-2222-222222222222") // wrong one
+      .put("/notes/22222222-2222-2222-a222-222222222222") // wrong one
       .then()
       .log().ifValidationFails()
       .statusCode(422)
@@ -482,7 +482,7 @@ public class NotesTest {
     given() // no domain permission
       .header(TEN).header(USER8).header(JSON)
       .body(updated1)
-      .put("/notes/11111111-1111-1111-1111-111111111111")
+      .put("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
       .body(containsString("notes.domain.users"))
@@ -492,7 +492,7 @@ public class NotesTest {
       .header(TEN).header(USER8).header(JSON)
       .header("X-Okapi-Permissions", "notes.domain.things")
       .body(updated1)
-      .put("/notes/11111111-1111-1111-1111-111111111111")
+      .put("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
       .body(containsString("notes.domain.users"))
@@ -502,7 +502,7 @@ public class NotesTest {
       .header(TEN).header(USER8).header(JSON)
       .header("X-Okapi-Permissions", "notes.domain.users")
       .body(updated1.replaceAll("1", "3"))
-      .put("/notes/33333333-3333-3333-3333-333333333333")
+      .put("/notes/33333333-3333-3333-a333-333333333333")
       .then()
       .log().ifValidationFails()
       .body(containsString("333 not found"))
@@ -512,14 +512,14 @@ public class NotesTest {
       .header(TEN).header(USER8).header(JSON)
       .header("X-Okapi-Permissions", "notes.domain.users")
       .body(updated1)
-      .put("/notes/11111111-1111-1111-1111-111111111111")
+      .put("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
       .statusCode(204);
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes/11111111-1111-1111-1111-111111111111")
+      .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
       .statusCode(200)
@@ -533,7 +533,7 @@ public class NotesTest {
     // Update the other one, by fetching and PUTting back
     String rawNote2 = given()
       .header(TEN).header(ALLPERM)
-      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .get("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().all() //.ifValidationFails()
       .statusCode(200)
@@ -549,7 +549,7 @@ public class NotesTest {
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
       .header("X-Okapi-Permissions", "notes.domain.things")
       .body(newNote2)
-      .put("/notes/22222222-2222-2222-2222-222222222222")
+      .put("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
       .body(containsString("rooms"))
@@ -558,7 +558,7 @@ public class NotesTest {
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
       .header("X-Okapi-Permissions", "notes.domain.rooms")
       .body(newNote2)
-      .put("/notes/22222222-2222-2222-2222-222222222222")
+      .put("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
       .statusCode(401);
@@ -566,13 +566,13 @@ public class NotesTest {
     given() // ok update
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
       .body(newNote2)
-      .put("/notes/22222222-2222-2222-2222-222222222222")
+      .put("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
       .statusCode(204);
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .get("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().all() // ifValidationFails()
       .body(containsString("rooms")) // domain got updated
@@ -589,17 +589,17 @@ public class NotesTest {
     given() // ok update
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
       .body(OkNoteNoId)
-      .put("/notes/22222222-2222-2222-2222-222222222222")
+      .put("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
       .statusCode(204);
     given()
       .header(TEN).header(USER7).header(JSON).header(ALLPERM)
-      .get("/notes/22222222-2222-2222-2222-222222222222")
+      .get("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().all() //ifValidationFails()
       .statusCode(200)
-      .body(containsString("\"id\" : \"22222222-2222-2222-2222-222222222222\""))
+      .body(containsString("\"id\" : \"22222222-2222-2222-a222-222222222222\""))
       .body(containsString("-8888-")) // createdBy, NOT CHANGED
       .body(containsString("-7777-")) // updatedBy, Should be changed
       // But the special fields are managed by our mod-notes. Should remain.
@@ -678,7 +678,7 @@ public class NotesTest {
     given()
       .header(TEN)
       .header("X-Okapi-Permissions", "notes.domain.meetingrooms,notes.domain.users")
-      .get("/notes/11111111-1111-1111-1111-111111111111")
+      .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
       .statusCode(200)
@@ -687,7 +687,7 @@ public class NotesTest {
     given()
       .header(TEN)
       .header("X-Okapi-Permissions", "notes.domain.all")
-      .get("/notes/11111111-1111-1111-1111-111111111111")
+      .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
       .statusCode(200)
@@ -696,7 +696,7 @@ public class NotesTest {
     given()
       .header(TEN)
       .header("X-Okapi-Permissions", "notes.domain.things")
-      .get("/notes/11111111-1111-1111-1111-111111111111")
+      .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
       .statusCode(401)
@@ -712,14 +712,14 @@ public class NotesTest {
 
     given() // not found
       .header(TEN).header(ALLPERM)
-      .delete("/notes/11111111-2222-3333-4444-555555555555")
+      .delete("/notes/11111111-2222-3333-a444-555555555555")
       .then()
       .statusCode(404);
 
     given() // wrong perm
       .header(TEN)
       .header("X-Okapi-Permissions", "notes.domain.things")
-      .delete("/notes/11111111-1111-1111-1111-111111111111")
+      .delete("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .statusCode(401);
 
@@ -727,19 +727,19 @@ public class NotesTest {
     given()
       .header(TEN)
       .header("X-Okapi-Permissions", "notes.domain.users")
-      .delete("/notes/11111111-1111-1111-1111-111111111111")
+      .delete("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .statusCode(204);
 
     given()
       .header(TEN)
-      .delete("/notes/11111111-1111-1111-1111-111111111111") // no longer there
+      .delete("/notes/11111111-1111-1111-a111-111111111111") // no longer there
       .then()
       .statusCode(404);
 
     given()
       .header(TEN).header(ALLPERM)
-      .delete("/notes/22222222-2222-2222-2222-222222222222")
+      .delete("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .statusCode(204);
 
