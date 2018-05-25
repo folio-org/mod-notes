@@ -9,11 +9,6 @@ ramls_dir="ramls"
 # Space-separated list of sub-directory paths that need to be avoided.
 prune_dirs="raml-util"
 
-if [[ ${BASH_VERSION%%.*} -lt 4 ]]; then
-  echo "Requires bash 4+"
-  exit 1
-fi
-
 if ! cmd=$(command -v raml-cop); then
   echo "raml-cop is not available. Do 'npm install -g raml-cop'"
   echo "${help_msg}"
@@ -24,7 +19,7 @@ repo_home="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 cd "${repo_home}" || exit
 
 prune_string=$(printf " -path ${ramls_dir}/%s -o" ${prune_dirs})
-mapfile -t raml_files < <(find ${ramls_dir} \( ${prune_string% -o} \) -prune -o -name "*.raml" -print)
+raml_files=($(find ${ramls_dir} \( ${prune_string% -o} \) -prune -o -name "*.raml" -print))
 
 if [[ ${#raml_files[@]} -eq 0 ]]; then
   echo "No RAML files found under '${repo_home}/${ramls_dir}'"
