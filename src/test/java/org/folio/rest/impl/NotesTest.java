@@ -19,6 +19,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.io.IOException;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 
@@ -70,7 +71,7 @@ public class NotesTest {
     try {
       PostgresClient.setIsEmbedded(true);
       PostgresClient.getInstance(vertx).startEmbeddedPostgres();
-    } catch (Exception e) {
+    } catch (IOException e) {
       e.printStackTrace();
       context.fail(e);
       return;
@@ -144,8 +145,7 @@ public class NotesTest {
       .get("/notes")
       .then()
       .log().ifValidationFails()
-      .statusCode(400)
-      .body(containsString("\"modnotestest_mod_notes.note_data\" does not exist"));
+      .statusCode(500);
 
     // Call the tenant interface to initialize the database
     String tenants = "{\"module_to\":\"" + moduleId + "\"}";
@@ -174,6 +174,7 @@ public class NotesTest {
       .body(bad1)
       .post("/notes")
       .then()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("Content-type"));
 
@@ -182,6 +183,7 @@ public class NotesTest {
       .body(bad1)
       .post("/notes")
       .then()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("Json content error"));
 
@@ -199,6 +201,7 @@ public class NotesTest {
       .body(bad2)
       .post("/notes")
       .then()
+      .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("Json content error"));
 
@@ -208,6 +211,7 @@ public class NotesTest {
       .body(bad3)
       .post("/notes")
       .then()
+      .log().ifValidationFails()
       .statusCode(422)
       // English error message for Locale.US, see @Before
       .body("errors[0].message", is("may not be null"))
@@ -219,6 +223,7 @@ public class NotesTest {
       .body(badfieldDoc)
       .post("/notes")
       .then()
+      .log().ifValidationFails()
       .statusCode(422)
       .body(containsString("Unrecognized field"));
 
@@ -269,6 +274,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"));
 
@@ -291,6 +297,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes?query=text=fiRST")
       .then()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"))
       .body(containsString("id"));
@@ -299,6 +306,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes?query=metadata.createdByUserId=*9999*")
       .then()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"));
 
@@ -306,6 +314,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes?query=metadata.createdByUserId=\"99999999-9999-4999-9999-999999999999\"")
       .then()
+      .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"));
 
@@ -315,7 +324,7 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(422)
-      .body(containsString("QueryValidationException"));
+      .body(containsString("no serverChoiceIndexes defined"));
 
     // Why do the next two not fail with a QueryValidationException ??
     // When run manually (run.sh), they return a 422 all right
@@ -324,17 +333,17 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
       .then()
-      .statusCode(200)
       .log().ifValidationFails()
-      .body(containsString("\"totalRecords\" : 0"));
+      .statusCode(422)
+      .body(containsString("is not present in index"));
 
     given()
       .header(TEN).header(ALLPERM)
       .get("/notes?query=UNKNOWNFIELD=foobar")
       .then()
       .log().ifValidationFails()
-      .statusCode(200)
-      .body(containsString("\"totalRecords\" : 0"));
+      .statusCode(422)
+      .body(containsString("is not present in index"));
 
     // Post another note, with a few tags to be notified
     String note2 = "{"
@@ -714,6 +723,7 @@ public class NotesTest {
       .header(TEN).header(ALLPERM)
       .delete("/notes/11111111-2222-3333-a444-555555555555")
       .then()
+      .log().ifValidationFails()
       .statusCode(404);
 
     given() // wrong perm
@@ -721,6 +731,7 @@ public class NotesTest {
       .header("X-Okapi-Permissions", "notes.domain.things")
       .delete("/notes/11111111-1111-1111-a111-111111111111")
       .then()
+      .log().ifValidationFails()
       .statusCode(401);
 
     // delete them
@@ -729,18 +740,21 @@ public class NotesTest {
       .header("X-Okapi-Permissions", "notes.domain.users")
       .delete("/notes/11111111-1111-1111-a111-111111111111")
       .then()
+      .log().ifValidationFails()
       .statusCode(204);
 
     given()
       .header(TEN)
       .delete("/notes/11111111-1111-1111-a111-111111111111") // no longer there
       .then()
+      .log().ifValidationFails()
       .statusCode(404);
 
     given()
       .header(TEN).header(ALLPERM)
       .delete("/notes/22222222-2222-2222-a222-222222222222")
       .then()
+      .log().ifValidationFails()
       .statusCode(204);
 
     given()

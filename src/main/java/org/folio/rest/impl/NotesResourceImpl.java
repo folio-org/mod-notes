@@ -59,7 +59,7 @@ public class NotesResourceImpl implements NotesResource {
   private static final String LOCATION_PREFIX = "/notes/";
   private static final String IDFIELDNAME = "id";
   private String NOTE_SCHEMA = null;  // NOSONAR
-  private static final String NOTE_SCHEMA_NAME = "apidocs/raml/note.json";
+  private static final String NOTE_SCHEMA_NAME = "ramls/note.json";
   private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
   // Get this from the restVerticle, like the rest, when it gets defined there.
   private static final ErrorType FORBIDDEN = ANY;
@@ -78,7 +78,7 @@ public class NotesResourceImpl implements NotesResource {
 
   public NotesResourceImpl(Vertx vertx, String tenantId) {
     if (NOTE_SCHEMA == null) {
-      //initCQLValidation();  // NOSONAR
+      initCQLValidation();  // NOSONAR
       // Commented out, because it fails a perfectly valid query
       // like metadata.createdDate=2017
       // See RMB-54
@@ -205,8 +205,14 @@ public class NotesResourceImpl implements NotesResource {
       }
 
       logger.info("Getting notes. new query:" + query);
-      CQLWrapper cql = getCQL(query, limit, offset, NOTE_SCHEMA);
-
+      CQLWrapper cql = null;
+      try {
+        cql = getCQL(query, limit, offset, NOTE_SCHEMA);
+      } catch (Exception e) {
+        logger.info("XXX getCQL exception ", e);
+        ValidationHelper.handleError(e, asyncResultHandler);
+        return;
+      }
       PostgresClient.getInstance(vertxContext.owner(), tenantId)
         .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
           true /*get count too*/, false /* set id */,
@@ -221,12 +227,15 @@ public class NotesResourceImpl implements NotesResource {
               asyncResultHandler.handle(succeededFuture(
                   GetNotesResponse.withJsonOK(notes)));
             } else {
+              logger.error("XXX pgclient.get error callback");
               logger.error(reply.cause().getMessage(), reply.cause());
-              asyncResultHandler.handle(succeededFuture(GetNotesResponse
-                  .withPlainBadRequest(reply.cause().getMessage())));
+              ValidationHelper.handleError(reply.cause(), asyncResultHandler);
+              //asyncResultHandler.handle(succeededFuture(GetNotesResponse
+              //    .withPlainBadRequest(reply.cause().getMessage())));
             }
           });
     } catch (CQLQueryValidationException e1) {
+      logger.info("XXX general CQLQueryValidationException ", e1);
       int start = e1.getMessage().indexOf('\'');
       int end = e1.getMessage().lastIndexOf('\'');
       String field = e1.getMessage();
@@ -238,6 +247,7 @@ public class NotesResourceImpl implements NotesResource {
       asyncResultHandler.handle(succeededFuture(GetNotesResponse
         .withJsonUnprocessableEntity(e)));
     } catch (Exception e) {
+      logger.info("XXX Assorted exception ", e);
       logger.error(e.getMessage(), e);
       String message = messages.getMessage(lang, MessageConsts.InternalServerError);
       if (e.getCause() != null && e.getCause().getClass().getSimpleName()
