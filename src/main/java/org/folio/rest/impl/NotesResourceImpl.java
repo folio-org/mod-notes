@@ -58,12 +58,13 @@ public class NotesResourceImpl implements NotesResource {
   public static final String NOTE_TABLE = "note_data";
   private static final String LOCATION_PREFIX = "/notes/";
   private static final String IDFIELDNAME = "id";
-  private String NOTE_SCHEMA = null;  // NOSONAR
+  private String NOTE_SCHEMA = null;
   private static final String NOTE_SCHEMA_NAME = "ramls/note.json";
   private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
   // Get this from the restVerticle, like the rest, when it gets defined there.
   private static final ErrorType FORBIDDEN = ANY;
   // Remove this when Okapi supports FORBIDDEN
+  // TODO !!
 
   private void initCQLValidation() {  //NOSONAR
     String path = NOTE_SCHEMA_NAME;
@@ -78,10 +79,7 @@ public class NotesResourceImpl implements NotesResource {
 
   public NotesResourceImpl(Vertx vertx, String tenantId) {
     if (NOTE_SCHEMA == null) {
-      initCQLValidation();  // NOSONAR
-      // Commented out, because it fails a perfectly valid query
-      // like metadata.createdDate=2017
-      // See RMB-54
+      initCQLValidation();
     }
     PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
   }
@@ -152,111 +150,83 @@ public class NotesResourceImpl implements NotesResource {
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
 
-    try {
-      logger.info("Getting notes. self=" + self + " "
-        + offset + "+" + limit + " q=" + query);
+    logger.info("Getting notes. self=" + self + " "        + offset + "+" + limit + " q=" + query);
 
-      String tenantId = TenantTool.calculateTenantId(
-        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      if (self) {
-        String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
-        if (userId == null || userId.isEmpty()) {
-          logger.error("No userId for getNotesSelf");
-          asyncResultHandler.handle(succeededFuture(GetNotesResponse
-            .withPlainBadRequest("No UserId")));
-          return;
-        }
-        String userQuery = "metadata.createdByUserId=\"" + userId + "\"";
-        if (query == null) {
-          query = userQuery;
-        } else {
-          query = "(" + userQuery + ") and (" + query + ")";
-        }
-      }
-      String perms = okapiHeaders.get(OKAPI_PERM_HEADER);
-      if (perms == null || perms.isEmpty()) {
-        logger.error("No " + OKAPI_PERM_HEADER + " - check notes.domain.* permissions");
+    String tenantId = TenantTool.calculateTenantId(
+      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    if (self) {
+      String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
+      if (userId == null || userId.isEmpty()) {
+        logger.error("No userId for getNotesSelf");
         asyncResultHandler.handle(succeededFuture(GetNotesResponse
-          .withPlainUnauthorized("No notes.domain.* permissions")));
+          .withPlainBadRequest("No UserId")));
         return;
       }
-      boolean allseen = false;
-      String delim = "";
-      StringBuilder pqb = new StringBuilder();
-      for (String p : perms.split(",")) {
-        if (p.equals("notes.domain.all")) {
-          allseen = true;
-          break;
-        }
-        if (p.startsWith("notes.domain.")) {
-          pqb.append(delim)
-            .append("domain=")
-            .append(p.replaceFirst("^notes\\.domain\\.", ""));
-          delim = " OR ";
-        }
+      String userQuery = "metadata.createdByUserId=\"" + userId + "\"";
+      if (query == null) {
+        query = userQuery;
+      } else {
+        query = "(" + userQuery + ") and (" + query + ")";
       }
-      String pq = pqb.toString();
-      if (!allseen && !pq.isEmpty()) {
-        if (query == null) {
-          query = pq;
-        } else {
-          query = "(" + query + ") and ( " + pq + ")";
-        }
-      }
-
-      logger.info("Getting notes. new query:" + query);
-      CQLWrapper cql = null;
-      try {
-        cql = getCQL(query, limit, offset, NOTE_SCHEMA);
-      } catch (Exception e) {
-        logger.info("XXX getCQL exception ", e);
-        ValidationHelper.handleError(e, asyncResultHandler);
-        return;
-      }
-      PostgresClient.getInstance(vertxContext.owner(), tenantId)
-        .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
-          true /*get count too*/, false /* set id */,
-          reply -> {
-            if (reply.succeeded()) {
-              NoteCollection notes = new NoteCollection();
-              @SuppressWarnings("unchecked")
-              List<Note> notelist = (List<Note>) reply.result().getResults();
-              notes.setNotes(notelist);
-              Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
-              notes.setTotalRecords(totalRecords);
-              asyncResultHandler.handle(succeededFuture(
-                  GetNotesResponse.withJsonOK(notes)));
-            } else {
-              logger.error("XXX pgclient.get error callback");
-              logger.error(reply.cause().getMessage(), reply.cause());
-              ValidationHelper.handleError(reply.cause(), asyncResultHandler);
-              //asyncResultHandler.handle(succeededFuture(GetNotesResponse
-              //    .withPlainBadRequest(reply.cause().getMessage())));
-            }
-          });
-    } catch (CQLQueryValidationException e1) {
-      logger.info("XXX general CQLQueryValidationException ", e1);
-      int start = e1.getMessage().indexOf('\'');
-      int end = e1.getMessage().lastIndexOf('\'');
-      String field = e1.getMessage();
-      if (start != -1 && end != -1) {
-        field = field.substring(start + 1, end);
-      }
-      Errors e = ValidationHelper.createValidationErrorMessage(field,
-        "", e1.getMessage());
-      asyncResultHandler.handle(succeededFuture(GetNotesResponse
-        .withJsonUnprocessableEntity(e)));
-    } catch (Exception e) {
-      logger.info("XXX Assorted exception ", e);
-      logger.error(e.getMessage(), e);
-      String message = messages.getMessage(lang, MessageConsts.InternalServerError);
-      if (e.getCause() != null && e.getCause().getClass().getSimpleName()
-        .endsWith("CQLParseException")) {
-        message = " CQL parse error " + e.getLocalizedMessage();
-      }
-      asyncResultHandler.handle(succeededFuture(GetNotesResponse
-        .withPlainInternalServerError(message)));
     }
+    String perms = okapiHeaders.get(OKAPI_PERM_HEADER);
+    if (perms == null || perms.isEmpty()) {
+      logger.error("No " + OKAPI_PERM_HEADER + " - check notes.domain.* permissions");
+      asyncResultHandler.handle(succeededFuture(GetNotesResponse
+        .withPlainUnauthorized("No notes.domain.* permissions")));
+      return;
+    }
+    boolean allseen = false;
+    String delim = "";
+    StringBuilder pqb = new StringBuilder();
+    for (String p : perms.split(",")) {
+      if (p.equals("notes.domain.all")) {
+        allseen = true;
+        break;
+      }
+      if (p.startsWith("notes.domain.")) {
+        pqb.append(delim)
+          .append("domain=")
+          .append(p.replaceFirst("^notes\\.domain\\.", ""));
+        delim = " OR ";
+      }
+    }
+    String pq = pqb.toString();
+    if (!allseen && !pq.isEmpty()) {
+      if (query == null) {
+        query = pq;
+      } else {
+        query = "(" + query + ") and ( " + pq + ")";
+      }
+    }
+
+    logger.info("Getting notes. new query:" + query);
+    CQLWrapper cql = null;
+    try {
+      cql = getCQL(query, limit, offset, NOTE_SCHEMA);
+    } catch (Exception e) {
+      logger.info("XXX getCQL exception ", e);
+      ValidationHelper.handleError(e, asyncResultHandler);
+      return;
+    }
+    PostgresClient.getInstance(vertxContext.owner(), tenantId)
+      .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
+        true /*get count too*/, false /* set id */,
+        reply -> {
+          if (reply.succeeded()) {
+            NoteCollection notes = new NoteCollection();
+            @SuppressWarnings("unchecked")
+            List<Note> notelist = (List<Note>) reply.result().getResults();
+            notes.setNotes(notelist);
+            Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
+            notes.setTotalRecords(totalRecords);
+            asyncResultHandler.handle(succeededFuture(
+              GetNotesResponse.withJsonOK(notes)));
+          } else {
+            logger.error("XXX pgclient.get error callback", reply.cause());
+            ValidationHelper.handleError(reply.cause(), asyncResultHandler);
+          }
+        });
   }
 
   /**
@@ -346,8 +316,8 @@ public class NotesResourceImpl implements NotesResource {
     Note note, Handler<AsyncResult<Response>> asyncResultHandler,
     String userId, String lang) {
 
-    try {
-      if (resp.getCode() == 200) {
+    switch (resp.getCode()) {
+      case 200:
         logger.debug("Received user " + resp.getBody());
         JsonObject usr = resp.getBody();
         if (usr.containsKey("username")
@@ -372,30 +342,28 @@ public class NotesResourceImpl implements NotesResource {
             .withPlainBadRequest("User lookup failed. "
               + "Missing fields in " + usr)));
         }
-      } else if (resp.getCode() == 404) {
+        break;
+      case 404:
         logger.error("User lookup failed for " + userId);
         logger.error(Json.encodePrettily(resp));
         asyncResultHandler.handle(succeededFuture(PostNotesResponse
           .withPlainBadRequest("User lookup failed. "
             + "Can not find user " + userId)));
-      } else if (resp.getCode() == 403) {
+        break;
+      case 403:
         logger.error("User lookup failed for " + userId);
         logger.error(Json.encodePrettily(resp));
         asyncResultHandler.handle(succeededFuture(PostNotesResponse
           .withPlainBadRequest("User lookup failed with 403. " + userId
             + " " + Json.encode(resp.getError()))));
-      } else {
+        break;
+      default:
         logger.error("User lookup failed with " + resp.getCode());
         logger.error(Json.encodePrettily(resp));
         asyncResultHandler.handle(
           succeededFuture(PostNotesResponse.withPlainInternalServerError(
-              messages.getMessage(lang, MessageConsts.InternalServerError))));
-      }
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      asyncResultHandler.handle(
-        succeededFuture(PostNotesResponse.withPlainInternalServerError(
             messages.getMessage(lang, MessageConsts.InternalServerError))));
+        break;
     }
   }
 
@@ -418,46 +386,20 @@ public class NotesResourceImpl implements NotesResource {
   private void pn5InsertNote(Context context, String tenantId, Note note,
     Handler<AsyncResult<Response>> asyncResultHandler, String lang) {
 
-    try {
-      String id = note.getId();
-      PostgresClient.getInstance(context.owner(), tenantId).save(NOTE_TABLE,
-        id, note,
-        reply -> {
-          if (reply.succeeded()) {
-            Object ret = reply.result();
-            note.setId((String) ret);
-            OutStream stream = new OutStream();
-            stream.setData(note);
-            asyncResultHandler.handle(succeededFuture(PostNotesResponse
-              .withJsonCreated(LOCATION_PREFIX + ret, stream)));
-          } else {
-            String msg = reply.cause().getMessage();
-            if (msg.contains("duplicate key value violates unique constraint")) {
-              Errors valErr = ValidationHelper.createValidationErrorMessage(
-                "id", id, "Duplicate id");
-              asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                .withJsonUnprocessableEntity(valErr)));
-            } else {
-              String error = PgExceptionUtil.badRequestMessage(reply.cause());
-              logger.error(msg, reply.cause());
-              if (error == null) {
-                asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                  .withPlainInternalServerError(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-              } else {
-                asyncResultHandler.handle(succeededFuture(PostNotesResponse
-                  .withPlainBadRequest(error)));
-              }
-            }
-          }
-        });
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      asyncResultHandler.handle(
-        succeededFuture(PostNotesResponse.withPlainInternalServerError(
-            messages.getMessage(lang, MessageConsts.InternalServerError)))
-      );
-    }
+    String id = note.getId();
+    PostgresClient.getInstance(context.owner(), tenantId)
+      .save(NOTE_TABLE, id, note, reply -> {
+        if (reply.succeeded()) {
+          Object ret = reply.result();
+          note.setId((String) ret);
+          OutStream stream = new OutStream();
+          stream.setData(note);
+          asyncResultHandler.handle(succeededFuture(PostNotesResponse
+            .withJsonCreated(LOCATION_PREFIX + ret, stream)));
+        } else {
+          ValidationHelper.handleError(reply.cause(), asyncResultHandler);
+        }
+      });
   }
 
     // Helper to go through the note text, find all @username tags, and
@@ -493,18 +435,22 @@ public class NotesResourceImpl implements NotesResource {
       CompletableFuture<org.folio.rest.tools.client.Response> response
         = client.request(HttpMethod.POST, notification, url, okapiHeaders);
       response.whenComplete((resp, ex) -> {
-        if (resp.getCode()==201) {
-          logger.debug("Posted notify for " + username + " OK");
-          // recurse on to the next tag
-          checkUserTagsR(note, client,  okapiHeaders, m, handler);
-        } else if (resp.getCode() == 404 ) {
-          logger.info("Notify post didn't find the user " + username + ". Skipping it");
-          // recurse on to the next tag
-          checkUserTagsR(note, client,  okapiHeaders, m, handler);
-        } else {
-          logger.error("Notify post for " + username + " failed with " + resp.getCode());
-          logger.error(Json.encode(resp.getError()));
-          handler.handle(new Failure<>(INTERNAL,"Notify post failed with " + resp.getCode()));
+        switch (resp.getCode()) {
+          case 201:
+            logger.debug("Posted notify for " + username + " OK");
+            // recurse on to the next tag
+            checkUserTagsR(note, client, okapiHeaders, m, handler);
+            break;
+          case 404:
+            logger.info("Notify post didn't find the user " + username + ". Skipping it");
+            // recurse on to the next tag
+            checkUserTagsR(note, client, okapiHeaders, m, handler);
+            break;
+          default:
+            logger.error("Notify post for " + username + " failed with " + resp.getCode());
+            logger.error(Json.encode(resp.getError()));
+            handler.handle(new Failure<>(INTERNAL, "Notify post failed with " + resp.getCode()));
+            break;
         }
       });
     } catch (Exception e) {
@@ -524,46 +470,40 @@ public class NotesResourceImpl implements NotesResource {
    */
   private void getOneNote(String id, Map<String, String> okapiHeaders,
     Context context, Handler<ExtendedAsyncResult<Note>> resp) {
-    try {
 
-      String tenantId = TenantTool.calculateTenantId(
-        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      Criterion c = new Criterion(
-        new Criteria().addField(IDFIELDNAME).setJSONB(false)
+    String tenantId = TenantTool.calculateTenantId(
+      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    Criterion c = new Criterion(
+      new Criteria().addField(IDFIELDNAME).setJSONB(false)
         .setOperation("=").setValue("'" + id + "'"));
-      PostgresClient.getInstance(context.owner(), tenantId)
-        .get(NOTE_TABLE, Note.class, c, true,
-          reply -> {
-            if (reply.succeeded()) {
-              @SuppressWarnings("unchecked")
-              List<Note> notes = (List<Note>) reply.result().getResults();
-              if (notes.isEmpty()) {
-                resp.handle(new Failure<>(NOT_FOUND, "Note " + id + " not found"));
+    PostgresClient.getInstance(context.owner(), tenantId)
+      .get(NOTE_TABLE, Note.class, c, true,
+        reply -> {
+          if (reply.succeeded()) {
+            @SuppressWarnings("unchecked")
+            List<Note> notes = (List<Note>) reply.result().getResults();
+            if (notes.isEmpty()) {
+              resp.handle(new Failure<>(NOT_FOUND, "Note " + id + " not found"));
+            } else {  // Can not use validationHelper here
+              Note n = notes.get(0);
+              String domain = n.getDomain();
+              if (noteDomainPermission(domain, okapiHeaders)) {
+                resp.handle(new Success<>(n));
               } else {
-                Note n = notes.get(0);
-                String domain = n.getDomain();
-                if (noteDomainPermission(domain, okapiHeaders)) {
-                  resp.handle(new Success<>(n));
-                } else {
-                  resp.handle(new Failure<>(FORBIDDEN,
-                    "No permission notes.domain." + domain));
-                }
-              }
-            } else {
-              String error = PgExceptionUtil.badRequestMessage(reply.cause());
-              logger.error(error, reply.cause());
-              if (error == null) {
-                resp.handle(new Failure<>(INTERNAL, ""));
-              } else {
-                resp.handle(new Failure<>(USER, error));
+                resp.handle(new Failure<>(FORBIDDEN,
+                  "No permission notes.domain." + domain));
               }
             }
-          });
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      resp.handle(new Failure<>(INTERNAL, ""));
-    }
-
+          } else {
+            String error = PgExceptionUtil.badRequestMessage(reply.cause());
+            logger.error(error, reply.cause());
+            if (error == null) {
+              resp.handle(new Failure<>(INTERNAL, ""));
+            } else {
+              resp.handle(new Failure<>(USER, error));
+            }
+          }
+        });
   }
 
   @Override
@@ -617,7 +557,9 @@ public class NotesResourceImpl implements NotesResource {
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
     getOneNote(id, okapiHeaders, vertxContext, res -> {
       if (res.failed()) {
+        logger.warn("XXX deleteNotesById failed: " + res.getType());
         switch (res.getType()) {
+          // ValidationHelper can not handle these error types
           case NOT_FOUND:
             asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
               .withPlainNotFound(res.cause().getMessage())));
@@ -632,11 +574,7 @@ public class NotesResourceImpl implements NotesResource {
             break;
           default: // typically INTERNAL
             String msg = res.cause().getMessage();
-            if (msg.isEmpty()) {
-              msg = messages.getMessage(lang, MessageConsts.InternalServerError);
-            }
-            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .withPlainInternalServerError(msg)));
+            ValidationHelper.handleError(res.cause(), asyncResultHandler);
             break;
         }
       } else {    // all well, try to delete it
@@ -648,40 +586,24 @@ public class NotesResourceImpl implements NotesResource {
 
   private void deleteNotesById2(String id, String tenantId, String lang,
     Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
-    try {
-      PostgresClient.getInstance(vertxContext.owner(), tenantId)
-        .delete(NOTE_TABLE, id,
-          reply -> {
-            if (reply.succeeded()) {
-              if (reply.result().getUpdated() == 1) {
-                asyncResultHandler.handle(succeededFuture(
-                    DeleteNotesByIdResponse.withNoContent()));
-              } else {
-                logger.error(messages.getMessage(lang,
-                    MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
-                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-                    .withPlainNotFound(messages.getMessage(lang,
-                        MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
-              }
-            } else {
-              String error = PgExceptionUtil.badRequestMessage(reply.cause());
-              logger.error(error, reply.cause());
-              if (error == null) {
-                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-                  .withPlainInternalServerError(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-              } else {
-                asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-                  .withPlainBadRequest(error)));
-              }
-            }
-          });
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-        .withPlainInternalServerError(
-          messages.getMessage(lang, MessageConsts.InternalServerError))));
-    }
+    PostgresClient.getInstance(vertxContext.owner(), tenantId)
+      .delete(NOTE_TABLE, id, reply -> {
+        if (reply.succeeded()) {
+          if (reply.result().getUpdated() == 1) {
+            asyncResultHandler.handle(succeededFuture(
+              DeleteNotesByIdResponse.withNoContent()));
+          } else {
+            logger.error(messages.getMessage(lang,
+              MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
+            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
+              .withPlainNotFound(messages.getMessage(lang,
+                MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
+          }
+        } else {
+          logger.warn("XXX deleteNotesById2 failed: ", reply.cause());
+          ValidationHelper.handleError(reply.cause(), asyncResultHandler);
+        }
+      });
   }
 
 
@@ -767,34 +689,24 @@ public class NotesResourceImpl implements NotesResource {
   private void putNotesById3Update(String id, String lang, Note entity,
     Map<String, String> okapiHeaders, Context vertxContext,
     Handler<AsyncResult<Response>> asyncResultHandler) {
-    try {
-      String tenantId = TenantTool.calculateTenantId(
-        okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-      PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
-        NOTE_TABLE, entity, id,
-        reply -> {
-          if (reply.succeeded()) {
-            if (reply.result().getUpdated() == 0) {
-              asyncResultHandler.handle(succeededFuture(
-                  PutNotesByIdResponse.withPlainInternalServerError(
-                    messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
-            } else {
-              asyncResultHandler.handle(succeededFuture(
-                  PutNotesByIdResponse.withNoContent()));
-            }
-          } else {
-            logger.error(reply.cause().getMessage());
+
+    String tenantId = TenantTool.calculateTenantId(
+      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    PostgresClient.getInstance(vertxContext.owner(), tenantId)
+      .update(NOTE_TABLE, entity, id, reply -> {
+        if (reply.succeeded()) {
+          if (reply.result().getUpdated() == 0) {
             asyncResultHandler.handle(succeededFuture(
-                PutNotesByIdResponse.withPlainInternalServerError(
-                  messages.getMessage(lang, MessageConsts.InternalServerError))));
+              PutNotesByIdResponse.withPlainInternalServerError(
+                messages.getMessage(lang, MessageConsts.NoRecordsUpdated))));
+          } else {
+            asyncResultHandler.handle(succeededFuture(
+              PutNotesByIdResponse.withNoContent()));
           }
-        });
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withPlainInternalServerError(
-          messages.getMessage(lang, MessageConsts.InternalServerError))));
-    }
+        } else {
+          ValidationHelper.handleError(reply.cause(), asyncResultHandler);
+        }
+      });
   }
 
 

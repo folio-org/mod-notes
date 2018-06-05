@@ -243,7 +243,7 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .statusCode(400)
+      .statusCode(422)
       .body(containsString("invalid input syntax for type uuid"));
 
     // Post a good note
@@ -450,7 +450,7 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(422)
-      .body(containsString("Duplicate id"));
+      .body(containsString("violates unique constraint"));
 
     // Get both notes a few different ways
     given()
