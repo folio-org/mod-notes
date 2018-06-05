@@ -168,30 +168,29 @@ $CURL $TEN $JSON \
 ###################
 # mod-authtoken
 # After this, the system is locked down
-cat >/tmp/depl.auth.json << END
-{
-  "srvcId": "mod-authtoken-1.1.1-SNAPSHOT",
-  "nodeId": "localhost",
-  "descriptor": {
-    "exec": "java -Dport=%p -jar ../mod-authtoken/target/mod-authtoken-fat.jar -Dhttp.port=%p embed_postgres=true"
-  }
-}
-END
 
-mod mod-authtoken "" /tmp/depl.auth.json
+mod mod-authtoken
 
 
 ###################
 # Actual login
 # We can reuse the record from when we set the login user
+echo
+echo "Logging in"
 $CURL $TEN $JSON \
    -X POST \
    -d@/tmp/loginuser.json\
    $OKAPIURL/authn/login > /tmp/loginresp.json
+cat /tmp/loginresp.json
 TOK=-H`grep -i x-okapi-token /tmp/loginresp.json | sed 's/ //' `
 
 echo Received a token $TOK
-
+if [ "$TOK" == "-H" ]
+then
+  echo "Could not log in, no point in continuing"
+  echo "Remember to check/kill running processes"
+  exit 1
+fi
 
 #############
 # The notify module is quite standard
@@ -301,7 +300,20 @@ $CURL $TEN \
   $OKAPIURL/notes?query='link=*56*'
 echo
 
-echo Test 13: Post without permission - Expect a 401
+echo Test 13: permissions for self - Expect a 403
+$CURL $TEN \
+  $OKAPIURL/notes/_self
+echo
+
+echo Test 14: permissions for item get - Expect a 403
+$CURL $TEN \
+  $OKAPIURL/notes/44444444-4444-4444-4444-444444444444
+echo
+
+cat >/dev/null << SKIPTHIS
+
+
+echo Test 14: Post without permission - Expect a 401
 # We have domain permissions for 'things' and 'users', not for 'forbidden'
 $CURL $TOK $JSON $USER\
   -X POST -d '{"link":"forbidden/23456", "domain":"forbidden",
@@ -309,7 +321,7 @@ $CURL $TOK $JSON $USER\
   $OKAPIURL/notes
 echo
 
-echo Test 14: Show notifications - Should have exactly one
+echo Test 15: Show notifications - Should have exactly one
 $CURL $TOK \
   $OKAPIURL/notify
 echo
@@ -339,5 +351,6 @@ ps | grep java && ( echo ... ; sleep 2 )
 ps | grep java && ( echo ... ; sleep 2 )
 rm -rf /tmp/postgresql-embed*
 ps | grep java | grep -v "grep java" && echo "OOPS - Still some java processes running"
+ps | grep post | grep -v "grep post" && echo "OOPS - Still some postgres processes running"
 echo bye
 
