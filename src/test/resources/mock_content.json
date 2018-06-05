@@ -2,12 +2,12 @@
   "mocks": [
     {
       "description": "a good user to simulate username lookups",
-      "url": "/users/99999999-9999-9999-9999-999999999999",
+      "url": "/users/99999999-9999-4999-9999-999999999999",
       "method": "get",
       "status": 200,
       "receivedData": {
         "username": "mockuser9",
-        "id": "99999999-9999-9999-9999-999999999999",
+        "id": "99999999-9999-4999-9999-999999999999",
         "active": true,
         "type": "patron",
         "patronGroup": "4bb563d9-3f9d-4e1e-8d1d-04e75666d68f",
@@ -37,12 +37,12 @@
       ]
     }, {
       "description": "another user to look up",
-      "url": "/users/88888888-8888-8888-8888-888888888888",
+      "url": "/users/88888888-8888-4888-8888-888888888888",
       "method": "get",
       "status": 200,
       "receivedData": {
         "username": "m8",
-        "id": "88888888-8888-8888-8888-888888888888",
+        "id": "88888888-8888-4888-8888-888888888888",
         "active": true,
         "type": "patron",
         "patronGroup": "4bb563d9-3f9d-4e1e-8d1d-04e75666d68f",
@@ -56,17 +56,17 @@
       }
     }, {
       "description": "A user that is not found",
-      "url": "/users/11999999-9999-9999-9999-999999999911",
+      "url": "/users/11999999-9999-4999-9999-999999999911",
       "method": "get",
       "status": 404
     }, {
       "description": "Ok lookup, but no names",
-      "url": "/users/33999999-9999-9999-9999-999999999933",
+      "url": "/users/33999999-9999-4999-9999-999999999933",
       "method": "get",
       "status": 200,
       "receivedData": {
         "MISSINGusername": "m8",
-        "MISSINGid": "33999999-9999-9999-9999-999999999933",
+        "MISSINGid": "33999999-9999-4999-9999-999999999933",
         "active": true,
         "type": "patron",
         "patronGroup": "4bb563d9-3f9d-4e1e-8d1d-04e75666d68f",
@@ -80,7 +80,7 @@
       }
     }, {
       "description": "simulate a post where user lookup fails",
-      "url": "/users/22999999-9999-9999-9999-999999999922",
+      "url": "/users/22999999-9999-4999-9999-999999999922",
       "method": "get",
       "status": 403
     }, {

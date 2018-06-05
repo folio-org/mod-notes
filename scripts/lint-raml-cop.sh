@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+help_msg="Some assistance is at https://dev.folio.org/guides/raml-cop"
+
 # The directory to start searching for RAML files.
 # Relative to the root of the repository.
 ramls_dir="ramls"
@@ -9,6 +11,7 @@ prune_dirs="raml-util"
 
 if ! cmd=$(command -v raml-cop); then
   echo "raml-cop is not available. Do 'npm install -g raml-cop'"
+  echo "${help_msg}"
   exit 1
 fi
 
@@ -16,7 +19,7 @@ repo_home="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 cd "${repo_home}" || exit
 
 prune_string=$(printf " -path ${ramls_dir}/%s -o" ${prune_dirs})
-mapfile -t raml_files < <(find ${ramls_dir} \( ${prune_string% -o} \) -prune -o -name "*.raml" -print)
+raml_files=($(find ${ramls_dir} \( ${prune_string% -o} \) -prune -o -name "*.raml" -print))
 
 if [[ ${#raml_files[@]} -eq 0 ]]; then
   echo "No RAML files found under '${repo_home}/${ramls_dir}'"
@@ -47,7 +50,7 @@ for f in "${raml_files[@]}"; do
 done
 
 if [[ "${result}" -eq 1 ]]; then
-  echo "Some assistance is at https://dev.folio.org/guides/raml-cop"
+  echo "${help_msg}"
 fi
 
 exit ${result}
