@@ -1,3 +1,12 @@
+## 2.1.0 2018-06-06
+ * MODNOTES-31 "readonly" fields like creatorUserName, etc should be ignorable
+ * MODNOTES-34 Update the 'domain-models-runtime' dependency version
+ * MODNOTES-37 GET /notes/_self requires unexpected permission
+ * MODNOTES-15 Query validation
+ * MODNOTES-39 Fix invalid UUIDs
+ * general tightening of error responses, using RMB's helpers where possible
+ * Code cleanup
+
 ## 2.0.1 2017-11-14
  * MODNOTES-24 Upgrade to RMB 15
  * Requires interface 'users' in 14.0 or 15.0
