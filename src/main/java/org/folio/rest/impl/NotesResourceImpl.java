@@ -261,7 +261,7 @@ public class NotesResourceImpl implements NotesResource {
           if (res.result() != null) { // we have a result already, pass it on
             asyncResultHandler.handle(res);
           } else { // null indicates successfull lookup
-            pn4SendNotifies(context, tenantId, note, okapiHeaders, asyncResultHandler, lang);
+            pn4SendNotifies(context, tenantId, note, okapiHeaders, asyncResultHandler);
           }
         } else { // should not happen
           asyncResultHandler.handle(
@@ -270,7 +270,7 @@ public class NotesResourceImpl implements NotesResource {
         }
       });
     } else { // no need to look anything up, proceed to actual post
-      pn4SendNotifies(context, tenantId, note, okapiHeaders, asyncResultHandler, lang);
+      pn4SendNotifies(context, tenantId, note, okapiHeaders, asyncResultHandler);
     }
   }
 
@@ -364,10 +364,10 @@ public class NotesResourceImpl implements NotesResource {
 
   // Post notes part 4: Send notifies to users mentioned in the note text
   private void pn4SendNotifies(Context context, String tenantId, Note note,Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler, String lang) {
+    Handler<AsyncResult<Response>> asyncResultHandler) {
     checkUserTags(note, okapiHeaders, res->{
       if (res.succeeded()) {
-        pn5InsertNote(context, tenantId, note, asyncResultHandler, lang);
+        pn5InsertNote(context, tenantId, note, asyncResultHandler);
       } else { // all errors map down to internal errors. They have been logged
         asyncResultHandler.handle(
           succeededFuture(PostNotesResponse.withPlainInternalServerError(
@@ -378,7 +378,7 @@ public class NotesResourceImpl implements NotesResource {
 
   // Post notes part 5: Actually insert the note in the database
   private void pn5InsertNote(Context context, String tenantId, Note note,
-    Handler<AsyncResult<Response>> asyncResultHandler, String lang) {
+    Handler<AsyncResult<Response>> asyncResultHandler) {
 
     String id = note.getId();
     PostgresClient.getInstance(context.owner(), tenantId)
