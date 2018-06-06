@@ -58,7 +58,6 @@ public class NotesResourceImpl implements NotesResource {
   private static final String IDFIELDNAME = "id";
   private String NOTE_SCHEMA = null;
   private static final String NOTE_SCHEMA_NAME = "ramls/note.json";
-  private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
   // Get this from the restVerticle, like the rest, when it gets defined there.
 
   private void initCQLValidation() {
@@ -103,9 +102,10 @@ public class NotesResourceImpl implements NotesResource {
    */
   private boolean noteDomainPermission(String domain,
     Map<String, String> okapiHeaders) {
-    String perms = okapiHeaders.get(OKAPI_PERM_HEADER);
+    String perms = okapiHeaders.get(RestVerticle.OKAPI_HEADER_PERMISSIONS);
     if (perms == null || perms.isEmpty()) {
-      logger.error("No " + OKAPI_PERM_HEADER + " - check notes.domain.* permissions");
+      logger.error("No " + RestVerticle.OKAPI_HEADER_PERMISSIONS
+        + " - check notes.domain.* permissions");
       return false;
     }
     return perms.contains("notes.domain." + domain)
@@ -164,9 +164,10 @@ public class NotesResourceImpl implements NotesResource {
         query = "(" + userQuery + ") and (" + query + ")";
       }
     }
-    String perms = okapiHeaders.get(OKAPI_PERM_HEADER);
+    String perms = okapiHeaders.get(RestVerticle.OKAPI_HEADER_PERMISSIONS);
     if (perms == null || perms.isEmpty()) {
-      logger.error("No " + OKAPI_PERM_HEADER + " - check notes.domain.* permissions");
+      logger.error("No " + RestVerticle.OKAPI_HEADER_PERMISSIONS
+        + " - check notes.domain.* permissions");
       asyncResultHandler.handle(succeededFuture(GetNotesResponse
         .withPlainUnauthorized("No notes.domain.* permissions")));
       return;
