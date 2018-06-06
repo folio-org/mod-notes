@@ -30,6 +30,12 @@
         },
         {
           "methods": ["GET"],
+          "pathPattern": "/notes/_self",
+          "permissionsRequired": ["notes.collection.get"],
+          "permissionsDesired": ["notes.domain.*", "notes.domain.all"]
+        },
+        {
+          "methods": ["GET"],
           "pathPattern": "/notes/{id}",
           "permissionsRequired": ["notes.item.get"],
           "permissionsDesired": ["notes.domain.*", "notes.domain.all"]
@@ -126,7 +132,7 @@
   "launchDescriptor": {
     "dockerImage": "${artifactId}:${version}",
     "dockerArgs": {
-      "HostConfig": { "PortBindings": { "8081/tcp":  [{ "HostPort": "%p" }] } } 
+      "HostConfig": { "PortBindings": { "8081/tcp":  [{ "HostPort": "%p" }] } }
     },
     "dockerPull" : false
   }

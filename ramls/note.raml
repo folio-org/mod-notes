@@ -38,9 +38,7 @@ resourceTypes:
       exampleItem: !include examples/note.sample
 
   post:
-    is: [
-      validate
-    ]
+    is: [ validate ]
   get:
     is: [
       searchable: {description: "with valid searchable fields: for example link = 1234", example: "link=/users/1234"},
@@ -70,6 +68,7 @@ resourceTypes:
         schema: note.json
         exampleItem: !include examples/note.sample
     get:
+      is: [ validate ]
       responses:
         400:
           description: "Bad request"
@@ -91,6 +90,7 @@ resourceTypes:
           body:
             text/plain:
     delete:
+      is: [ validate ]
       responses:
         400:
           description: "Bad request"
