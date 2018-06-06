@@ -19,7 +19,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
-import org.folio.okapi.common.ErrorType;
 import static org.folio.okapi.common.ErrorType.*;
 import org.folio.okapi.common.ExtendedAsyncResult;
 import org.folio.okapi.common.Failure;
@@ -37,7 +36,6 @@ import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.cql.CQLQueryValidationException;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.client.HttpClientFactory;
 import org.folio.rest.tools.client.interfaces.HttpClientInterface;
@@ -62,11 +60,8 @@ public class NotesResourceImpl implements NotesResource {
   private static final String NOTE_SCHEMA_NAME = "ramls/note.json";
   private static final String OKAPI_PERM_HEADER = "X-Okapi-Permissions";
   // Get this from the restVerticle, like the rest, when it gets defined there.
-  private static final ErrorType FORBIDDEN = ANY;
-  // Remove this when Okapi supports FORBIDDEN
-  // TODO !!
 
-  private void initCQLValidation() {  //NOSONAR
+  private void initCQLValidation() {
     String path = NOTE_SCHEMA_NAME;
     try {
       NOTE_SCHEMA = IOUtils.toString(
@@ -255,8 +250,9 @@ public class NotesResourceImpl implements NotesResource {
         + " For now, defaulting to '" + domain + "'");
     }
     if (!noteDomainPermission(domain, okapiHeaders)) {
+      logger.warn("postNotes: XXX-2 No permission notes.domain." + domain);
       asyncResultHandler.handle(succeededFuture(PostNotesResponse
-        .withPlainUnauthorized("No permission notes.domain." + domain)));
+        .withPlainUnauthorized("XXX-2 No permission notes.domain." + domain)));
       return;
     }
     // Get the creator names, if not there
@@ -490,8 +486,9 @@ public class NotesResourceImpl implements NotesResource {
               if (noteDomainPermission(domain, okapiHeaders)) {
                 resp.handle(new Success<>(n));
               } else {
+                logger.warn("XXX-3 getOneNote: No permission notes.domain." + domain);
                 resp.handle(new Failure<>(FORBIDDEN,
-                  "No permission notes.domain." + domain));
+                  "XXX-3 No permission notes.domain." + domain));
               }
             }
           } else {
@@ -530,7 +527,7 @@ public class NotesResourceImpl implements NotesResource {
             asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
               .withPlainBadRequest(res.cause().getMessage())));
             break;
-          case ANY: // means FORBIDDEN
+          case FORBIDDEN:
             asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
               .withPlainUnauthorized(res.cause().getMessage())));
             break;
@@ -568,7 +565,7 @@ public class NotesResourceImpl implements NotesResource {
             asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
               .withPlainBadRequest(res.cause().getMessage())));
             break;
-          case ANY: // means FORBIDDEN
+          case FORBIDDEN:
             asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
               .withPlainUnauthorized(res.cause().getMessage())));
             break;
@@ -630,8 +627,9 @@ public class NotesResourceImpl implements NotesResource {
     // getOneNote will check the perm for the domain as it is in the db
     String newDomain = note.getDomain();
     if (!noteDomainPermission(newDomain, okapiHeaders)) {
+      logger.warn("XXX-X putNotesById: Missing permission for new domain " + newDomain);
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withPlainUnauthorized("No permission notes.domain." + newDomain)));
+        .withPlainUnauthorized("XXX-1 No permission notes.domain." + newDomain)));
       return;
     }
     getOneNote(id, okapiHeaders, vertxContext, res -> {
@@ -645,7 +643,8 @@ public class NotesResourceImpl implements NotesResource {
             asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
               .withPlainBadRequest(res.cause().getMessage())));
             break;
-          case ANY: // means FORBIDDEN
+          case FORBIDDEN:
+            logger.warn("XXX putNotesById: getOneNote returned " + res.getType() + "  " + res.cause().getMessage());
             asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
               .withPlainUnauthorized(res.cause().getMessage())));
             break;
@@ -678,6 +677,7 @@ public class NotesResourceImpl implements NotesResource {
       if (res.succeeded()) {
         putNotesById3Update(id, lang, note, okapiHeaders, context, asyncResultHandler);
       } else { // all errors map down to internal errors. They have been logged
+        logger.warn("XXX putNotesById2Notify: checkUserTags failed: " + res.cause().getMessage());
         asyncResultHandler.handle(
           succeededFuture(PostNotesResponse.withPlainInternalServerError(
               res.cause().getMessage())));
@@ -704,6 +704,7 @@ public class NotesResourceImpl implements NotesResource {
               PutNotesByIdResponse.withNoContent()));
           }
         } else {
+          logger.warn("XXX : putNotesById3Update update failed: " + reply.cause().getMessage());
           ValidationHelper.handleError(reply.cause(), asyncResultHandler);
         }
       });
