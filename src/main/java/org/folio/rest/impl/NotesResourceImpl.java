@@ -145,7 +145,7 @@ public class NotesResourceImpl implements NotesResource {
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
 
-    logger.info("Getting notes. self=" + self + " "        + offset + "+" + limit + " q=" + query);
+    logger.debug("Getting notes. self=" + self + " " + offset + "+" + limit + " q=" + query);
 
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
@@ -196,12 +196,11 @@ public class NotesResourceImpl implements NotesResource {
       }
     }
 
-    logger.info("Getting notes. new query:" + query);
+    logger.debug("Getting notes. new query:" + query);
     CQLWrapper cql = null;
     try {
       cql = getCQL(query, limit, offset, NOTE_SCHEMA);
     } catch (Exception e) {
-      logger.info("XXX getCQL exception ", e);
       ValidationHelper.handleError(e, asyncResultHandler);
       return;
     }
@@ -219,7 +218,6 @@ public class NotesResourceImpl implements NotesResource {
             asyncResultHandler.handle(succeededFuture(
               GetNotesResponse.withJsonOK(notes)));
           } else {
-            logger.error("XXX pgclient.get error callback", reply.cause());
             ValidationHelper.handleError(reply.cause(), asyncResultHandler);
           }
         });
@@ -251,9 +249,8 @@ public class NotesResourceImpl implements NotesResource {
         + " For now, defaulting to '" + domain + "'");
     }
     if (!noteDomainPermission(domain, okapiHeaders)) {
-      logger.warn("postNotes: XXX-2 No permission notes.domain." + domain);
       asyncResultHandler.handle(succeededFuture(PostNotesResponse
-        .withPlainUnauthorized("XXX-2 No permission notes.domain." + domain)));
+        .withPlainUnauthorized("No permission notes.domain." + domain)));
       return;
     }
     // Get the creator names, if not there
@@ -399,7 +396,7 @@ public class NotesResourceImpl implements NotesResource {
       });
   }
 
-    // Helper to go through the note text, find all @username tags, and
+  // Helper to go through the note text, find all @username tags, and
   // send notifies to the mentioned users.
   private void checkUserTags(Note note, Map<String, String> okapiHeaders,
           Handler<ExtendedAsyncResult<Void>> handler) {
@@ -487,9 +484,8 @@ public class NotesResourceImpl implements NotesResource {
               if (noteDomainPermission(domain, okapiHeaders)) {
                 resp.handle(new Success<>(n));
               } else {
-                logger.warn("XXX-3 getOneNote: No permission notes.domain." + domain);
                 resp.handle(new Failure<>(FORBIDDEN,
-                  "XXX-3 No permission notes.domain." + domain));
+                  "No permission notes.domain." + domain));
               }
             }
           } else {
@@ -555,7 +551,6 @@ public class NotesResourceImpl implements NotesResource {
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
     getOneNote(id, okapiHeaders, vertxContext, res -> {
       if (res.failed()) {
-        logger.warn("XXX deleteNotesById failed: " + res.getType());
         switch (res.getType()) {
           // ValidationHelper can not handle these error types
           case NOT_FOUND:
@@ -598,7 +593,6 @@ public class NotesResourceImpl implements NotesResource {
                 MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
           }
         } else {
-          logger.warn("XXX deleteNotesById2 failed: ", reply.cause());
           ValidationHelper.handleError(reply.cause(), asyncResultHandler);
         }
       });
@@ -610,7 +604,7 @@ public class NotesResourceImpl implements NotesResource {
   public void putNotesById(String id, String lang, Note note,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
-    logger.info("PUT note " + id + " " + Json.encode(note));
+    logger.debug("PUT note " + id + " " + Json.encode(note));
     if (note.getId() == null) {
       note.setId(id);
       logger.debug("No Id in the note, taking the one from the link");
@@ -628,9 +622,8 @@ public class NotesResourceImpl implements NotesResource {
     // getOneNote will check the perm for the domain as it is in the db
     String newDomain = note.getDomain();
     if (!noteDomainPermission(newDomain, okapiHeaders)) {
-      logger.warn("XXX-X putNotesById: Missing permission for new domain " + newDomain);
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .withPlainUnauthorized("XXX-1 No permission notes.domain." + newDomain)));
+        .withPlainUnauthorized("No permission notes.domain." + newDomain)));
       return;
     }
     getOneNote(id, okapiHeaders, vertxContext, res -> {
@@ -645,7 +638,6 @@ public class NotesResourceImpl implements NotesResource {
               .withPlainBadRequest(res.cause().getMessage())));
             break;
           case FORBIDDEN:
-            logger.warn("XXX putNotesById: getOneNote returned " + res.getType() + "  " + res.cause().getMessage());
             asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
               .withPlainUnauthorized(res.cause().getMessage())));
             break;
@@ -678,7 +670,6 @@ public class NotesResourceImpl implements NotesResource {
       if (res.succeeded()) {
         putNotesById3Update(id, lang, note, okapiHeaders, context, asyncResultHandler);
       } else { // all errors map down to internal errors. They have been logged
-        logger.warn("XXX putNotesById2Notify: checkUserTags failed: " + res.cause().getMessage());
         asyncResultHandler.handle(
           succeededFuture(PostNotesResponse.withPlainInternalServerError(
               res.cause().getMessage())));
@@ -705,7 +696,6 @@ public class NotesResourceImpl implements NotesResource {
               PutNotesByIdResponse.withNoContent()));
           }
         } else {
-          logger.warn("XXX : putNotesById3Update update failed: " + reply.cause().getMessage());
           ValidationHelper.handleError(reply.cause(), asyncResultHandler);
         }
       });
@@ -721,7 +711,7 @@ public class NotesResourceImpl implements NotesResource {
     Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) throws Exception {
-    throw new UnsupportedOperationException("Not supported yet.");
+    throw new UnsupportedOperationException("Not supported");
   }
 
 
