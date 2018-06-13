@@ -1,11 +1,15 @@
 #!/bin/bash
 # A script to set up Okapi and run mod-notes
 # Requirements
-# - Run in mod-notes main directory
+# - Run this script in mod-notes main directory
+# - okapi in ../okapi, compiled ok
 # - mod-notes itself compiled ok
+# - mod-permissions in ../mod-permissions, compiled ok
 # - mod-users in ../mod-users, compiled ok
+# - mod-login in ../mod-login, compiled ok
+# - mod-authtoken in ../mod-authtoken, compiled ok
 # - mod-notify in ../mod-notify, compiled ok
-
+# - curl installed
 
 # Parameters
 OKAPIURL="http://localhost:9130"
@@ -27,6 +31,8 @@ fi
 
 
 # Helper function to load, deploy, and enable a module
+# Now that all modules have a good deploymentDescriptor, this is only used
+# with one argument, the name of the module.
 function mod {
   MODNAME=$1  # name of the module, when enabling it, "mod-users"
   MD=${2:-../$MODNAME/target/ModuleDescriptor.json}
@@ -89,39 +95,38 @@ echo
 
 
 ######################
+# Start the modules
+
+
 # Start mod-perms first, so we can get out TenantPermissions to work
-cat >/tmp/depl.perm.json << END
-{
-  "srvcId": "mod-permissions-5.0.1-SNAPSHOT",
-  "nodeId": "localhost",
-  "descriptor": {
-    "exec": "java -Dport=%p -jar ../mod-permissions/target/mod-permissions-fat.jar -Dhttp.port=%p embed_postgres=true"
-  }
-}
-END
-mod mod-permissions \
-  "" \
-  /tmp/depl.perm.json
+# (Not strictly necessary any more, enabling mod-permissions will catch up
+# with modules enabled earlier.)
+mod mod-permissions
 
-echo Post perm user
-cat >/tmp/permuser.json << END
-{ "userId":"99999999-9999-4999-9999-999999999999",
-  "permissions":[ "notes.allops", "notes.domain.users", "notes.domain.items",
-    "perms.all",
-    "users.all", "users.item.get",
-    "notify.all", "notify.collection.get" ] }
-END
-
-$CURL $TEN $JSON \
-   -X POST \
-   -d@/tmp/permuser.json\
-   $OKAPIURL/perms/users
-
-
-
-#####################
 # Users
 mod mod-users
+
+
+#################
+# mod-login is quite like mod-permissions
+
+mod mod-login
+
+
+
+#############
+# The notify module is quite standard
+mod mod-notify
+
+###################
+# mod-notes itself, at last
+mod mod-notes
+
+
+
+#################
+# Set up our test user
+
 echo Post our test user
 cat > /tmp/user.json <<END
 { "id":"99999999-9999-4999-9999-999999999999",
@@ -139,20 +144,6 @@ $CURL $TEN $JSON \
 echo
 
 
-#################
-# mod-login is quite like mod-permissions
-cat >/tmp/depl.login.json << END
-{
-  "srvcId": "mod-login-4.0.1-SNAPSHOT",
-  "nodeId": "localhost",
-  "descriptor": {
-    "exec": "java -Dport=%p -jar ../mod-login/target/mod-login-fat.jar -Dhttp.port=%p embed_postgres=true"
-  }
-}
-END
-
-mod mod-login ""  /tmp/depl.login.json
-
 echo Post login user
 cat >/tmp/loginuser.json << END
 { "userId":"99999999-9999-4999-9999-999999999999",
@@ -163,6 +154,50 @@ $CURL $TEN $JSON \
    -X POST \
    -d@/tmp/loginuser.json\
    $OKAPIURL/authn/credentials
+
+
+echo List all permsissions
+$CURL $TEN \
+    $OKAPIURL/perms/permissions?query=permissionName=notes
+
+# We use 'notes.domain.users' and 'notes.domain.items' in our tests.
+# These should have been defined in mod-users (missing at the moment),
+# and in mod-items (which we don't even have in this test).
+# So we just inject them into the permission system, so we can grant
+# them to our test user(s)
+echo Define our notes.domain permissions
+cat > /tmp/domainusers.json << END
+{ "permissionName":"notes.domain.users",
+  "displayName":"notes for the users domain"}
+END
+$CURL $TEN $JSON \
+   -X POST \
+   -d@/tmp/domainusers.json\
+   $OKAPIURL/perms/permissions
+
+cat > /tmp/domainitems.json << END
+{ "permissionName":"notes.domain.items",
+  "displayName":"notes for the items domain"}
+END
+$CURL $TEN $JSON \
+   -X POST \
+   -d@/tmp/domainitems.json\
+   $OKAPIURL/perms/permissions
+
+
+echo Post perm user
+cat >/tmp/permuser.json << END
+{ "userId":"99999999-9999-4999-9999-999999999999",
+  "permissions":[ "notes.allops", "notes.domain.users", "notes.domain.items",
+    "perms.all",
+    "users.all", "users.item.get",
+    "notify.all", "notify.collection.get" ] }
+END
+
+$CURL $TEN $JSON \
+   -X POST \
+   -d@/tmp/permuser.json\
+   $OKAPIURL/perms/users
 
 
 ###################
@@ -191,14 +226,6 @@ then
   echo "Remember to check/kill running processes"
   exit 1
 fi
-
-#############
-# The notify module is quite standard
-mod mod-notify
-
-###################
-# mod-notes itself, at last
-mod mod-notes
 
 # Create the domain-specific permissions
 # If the permissions are not defined, they don't get expanded, even if we have
@@ -340,15 +367,21 @@ read
 # Clean up
 echo "Cleaning up: Killing Okapi $PID"
 kill $PID
+sleep 1
 # Wait for all the modules to stop working
 ps | grep java && ( echo ... ; sleep 2 )
 ps | grep java && ( echo ... ; sleep 2 )
-ps | grep java && ( echo ... ; sleep 2 )
-ps | grep java && ( echo ... ; sleep 2 )
-ps | grep java && ( echo ... ; sleep 2 )
-ps | grep java && ( echo ... ; sleep 2 )
-ps | grep java && ( echo ... ; sleep 2 )
-ps | grep java && ( echo ... ; sleep 2 )
+ps | grep java && ( echo ... ; sleep 3 )
+ps | grep java && ( echo ... ; sleep 3 )
+ps | grep java && ( echo ... ; sleep 4 )
+ps | grep java && ( echo ... ; sleep 4 )
+ps | grep postgres && ( echo ... ; sleep 2 )
+ps | grep postgres && ( echo ... ; sleep 3 )
+ps | grep postgres && ( echo ... ; sleep 4 )
+ps | grep postgres && ( echo ... ; sleep 5 )
+ps | grep postgres && ( echo ... ; sleep 6 )
+ps | grep postgres && ( echo ... ; sleep 7 )
+ps | grep postgres && ( echo ... ; sleep 8 )
 rm -rf /tmp/postgresql-embed*
 ps | grep java | grep -v "grep java" && echo "OOPS - Still some java processes running"
 ps | grep post | grep -v "grep post" && echo "OOPS - Still some postgres processes running"
