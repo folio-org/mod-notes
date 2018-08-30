@@ -1,4 +1,4 @@
-#%RAML 0.8
+#%RAML 1.0
 
 title: Notes API
 baseUri: https://github.com/folio-org/mod-notes
@@ -8,24 +8,20 @@ documentation:
   - title: mod-notes API
     content: This documents the API calls that can be made to query and manage notes about all kind of objects
 
-schemas:
-  - note.json: !include note.json
-  - noteCollection: !include noteCollection.json
-  - errors: !include raml-util/schemas/errors.schema
-  - error.schema: !include raml-util/schemas/error.schema
-  - parameters.schema: !include raml-util/schemas/parameters.schema
-  - raml-util/schemas/metadata.schema: !include raml-util/schemas/metadata.schema
+types:
+  note: !include note.json
+  noteCollection: !include noteCollection.json
+  errors: !include raml-util/schemas/errors.schema
 
 traits:
-  - validate: !include raml-util/traits/validation.raml
-  - secured: !include raml-util/traits/auth.raml
-  - language: !include raml-util/traits/language.raml
-  - pageable:  !include raml-util/traits/pageable.raml
-  - searchable: !include raml-util/traits/searchable.raml
+  validate: !include raml-util/traits/validation.raml
+  language: !include raml-util/traits/language.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
 
 resourceTypes:
-  - collection: !include raml-util/rtypes/collection.raml
-  - collection-item: !include raml-util/rtypes/item-collection.raml
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
 
 /notes:
   displayName: Notes
@@ -33,10 +29,9 @@ resourceTypes:
   type:
     collection:
       schemaCollection: noteCollection
-      schemaItem: note.json
+      schemaItem: note
       exampleCollection: !include examples/noteCollection.sample
       exampleItem: !include examples/note.sample
-
   post:
     is: [ validate ]
   get:
@@ -51,7 +46,7 @@ resourceTypes:
     type:
       collection:
         schemaCollection: noteCollection
-        schemaItem: note.json
+        schemaItem: note
         exampleCollection: !include examples/noteCollection.sample
         exampleItem: !include examples/note.sample
     get:
@@ -65,7 +60,7 @@ resourceTypes:
     description: Get, Delete or Update a specific note
     type:
       collection-item:
-        schema: note.json
+        schema: note
         exampleItem: !include examples/note.sample
     get:
       is: [ validate ]
