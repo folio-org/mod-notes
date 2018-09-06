@@ -210,7 +210,7 @@ public class NotesResourceImpl implements Notes {
           if (reply.succeeded()) {
             NoteCollection notes = new NoteCollection();
             @SuppressWarnings("unchecked")
-            List<Note> notelist = (List<Note>) reply.result().getResults();
+            List<Note> notelist = reply.result().getResults();
             notes.setNotes(notelist);
             Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
             notes.setTotalRecords(totalRecords);
@@ -473,7 +473,7 @@ public class NotesResourceImpl implements Notes {
         reply -> {
           if (reply.succeeded()) {
             @SuppressWarnings("unchecked")
-            List<Note> notes = (List<Note>) reply.result().getResults();
+            List<Note> notes = reply.result().getResults();
             if (notes.isEmpty()) {
               resp.handle(new Failure<>(NOT_FOUND, "Note " + id + " not found"));
             } else {  // Can not use validationHelper here
