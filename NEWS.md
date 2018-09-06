@@ -1,3 +1,6 @@
+## 2.1.1 2018-09-06
+ * MODNOTES-43 Update mod-notes to RAML 1.0
+
 ## 2.1.0 2018-06-06
  * MODNOTES-31 "readonly" fields like creatorUserName, etc should be ignorable
  * MODNOTES-34 Update the 'domain-models-runtime' dependency version
