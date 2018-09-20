@@ -1,3 +1,6 @@
+## 2.1.2 2018-09-20
+ * MODNOTES-45 Fix Bad pageable
+
 ## 2.1.1 2018-09-06
  * MODNOTES-43 Update mod-notes to RAML 1.0
 
