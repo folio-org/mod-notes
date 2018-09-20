@@ -793,7 +793,7 @@ public class NotesTest {
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes?query=domain=users")
+      .get("/notes?query=domain=users&limit=1001")
       .then()
       .log().ifValidationFails()
       .statusCode(200)
@@ -801,6 +801,20 @@ public class NotesTest {
       .body(containsString("no id"))
       .body(containsString("-9999-")) // CreatedBy userid in metadata
       .body(containsString("\"totalRecords\" : 1"));
+
+    given()
+      .header(TEN).header(ALLPERM)
+      .get("/notes?query=domain=users&offset=-1")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(400);
+
+    given()
+      .header(TEN).header(ALLPERM)
+      .get("/notes?query=domain=users&limit=-1")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(400);
 
     given()
       .header(TEN).header(ALLPERM)
