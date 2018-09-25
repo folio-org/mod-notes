@@ -27,6 +27,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.PomReader;
 import org.folio.rest.tools.client.test.HttpClientMock2;
+import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.After;
 
 /**
@@ -39,8 +40,8 @@ import org.junit.After;
  */
 @RunWith(VertxUnitRunner.class)
 public class NotesTest {
+
   private final Logger logger = LoggerFactory.getLogger("okapi");
-  private final int port = Integer.parseInt(System.getProperty("port", "8081"));
   private static final String LS = System.lineSeparator();
   private final Header TEN = new Header("X-Okapi-Tenant", "modnotestest");
   private final Header ALLPERM = new Header("X-Okapi-Permissions", "notes.domain.all");
@@ -58,6 +59,8 @@ public class NotesTest {
   private String moduleId; // "mod-notes-1.0.1-SNAPSHOT"
   Vertx vertx;
   Async async;
+  
+  private static int port;
 
   @Before
   public void setUp(TestContext context) {
@@ -76,6 +79,8 @@ public class NotesTest {
       context.fail(e);
       return;
     }
+
+    port = NetworkUtils.nextFreePort();
 
     JsonObject conf = new JsonObject()
       .put("http.port", port)
