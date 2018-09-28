@@ -17,6 +17,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
+    <raml-module-builder.version>21.0.1</raml-module-builder.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <vertx-version>3.5.1</vertx-version>
   </properties>
@@ -58,7 +59,7 @@
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>domain-models-runtime</artifactId>
-      <version>21.0.1</version>
+      <version>${raml-module-builder.version}</version>
     </dependency>
     <dependency>
       <groupId>org.folio.okapi</groupId>
