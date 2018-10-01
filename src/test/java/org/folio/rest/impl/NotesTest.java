@@ -59,7 +59,7 @@ public class NotesTest {
   private String moduleId; // "mod-notes-1.0.1-SNAPSHOT"
   Vertx vertx;
   Async async;
-  
+
   private static int port;
 
   @Before
