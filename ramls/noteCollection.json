@@ -4,6 +4,7 @@
   "description": "Collection of notes",
   "properties": {
     "notes": {
+      "description": "Collection of notes",
       "type": "array",
       "items": {
         "type": "object",
