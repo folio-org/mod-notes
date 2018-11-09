@@ -19,7 +19,7 @@
     <maven.compiler.target>1.7</maven.compiler.target>
     <raml-module-builder.version>21.0.1</raml-module-builder.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
-    <vertx-version>3.5.1</vertx-version>
+    <vertx-version>3.5.4</vertx-version>
   </properties>
 
   <repositories>
