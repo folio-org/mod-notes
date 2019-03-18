@@ -131,6 +131,7 @@ echo Post our test user
 cat > /tmp/user.json <<END
 { "id":"99999999-9999-4999-9999-999999999999",
   "username":"testuser",
+  "active": true,
   "personal": {
      "lastName": "User",
      "firstName": "Test"
@@ -340,7 +341,7 @@ echo
 cat >/dev/null << SKIPTHIS
 
 
-echo Test 14: Post without permission - Expect a 401
+echo Test 15: Post without permission - Expect a 401
 # We have domain permissions for 'things' and 'users', not for 'forbidden'
 $CURL $TOK $JSON $USER\
   -X POST -d '{"link":"forbidden/23456", "domain":"forbidden",
@@ -348,7 +349,7 @@ $CURL $TOK $JSON $USER\
   $OKAPIURL/notes
 echo
 
-echo Test 15: Show notifications - Should have exactly one
+echo Test 16: Show notifications - Should have exactly one
 $CURL $TOK \
   $OKAPIURL/notify
 echo
