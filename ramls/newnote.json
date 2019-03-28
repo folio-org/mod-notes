@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Notes about all kind of objects",
+  "additionalProperties": false,
+  "properties": {
+    "noteId": {
+      "type": "string",
+      "description": "Note identifier",
+      "example": "XXX"
+    },
+    "content": {
+      "type": "string",
+      "description": "The content of the note",
+      "example": "hello world new note"
+    },
+    "creatorLastName": {
+      "type": "string",
+      "description": "Last name of the user who created the note",
+      "example": "Doe",
+      "readonly": true
+    },
+    "creatorFirstName": {
+      "type": "string",
+      "description": "First name of the user who created the note",
+      "example": "John",
+      "readonly": true
+    },
+    "creatorMiddleName": {
+      "type": "string",
+      "description": "Middle name or initial of the user who created the note",
+      "example": "X.",
+      "readonly": true
+    },
+    "metadata": {
+      "type": "object",
+      "$ref": "raml-util/schemas/metadata.schema",
+      "readonly": true
+    }
+  },
+  "required": [
+    "content"
+  ]
+}

@@ -8,7 +8,7 @@
       "populateJsonWithId": true,
       "ginIndex": [
         {
-          "fieldName": "text",
+          "fieldName": "content",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": true

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "Entity associated with a note",
+  "additionalProperties": false,
+  "properties": {
+    "entityId": {
+      "type": "string",
+      "description": "Id of entity linked to a note",
+      "example": "1234-5678"
+    },
+    "entityType": {
+      "type": "string",
+      "description": "Type of entity",
+      "example": "package"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Domain associated with the entity",
+      "example": "eholdings"
+    }
+  },
+  "required": [
+    "entityId",
+    "entityType",
+    "domain"
+  ]
+}
