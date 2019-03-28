@@ -24,22 +24,16 @@
       "description": "The content of the note",
       "example": "There are access issues at BU campus"
     },
-    "creatorLastName": {
-      "type": "string",
-      "description": "Last name of the user who created the note",
-      "example": "Doe",
+    "creator": {
+      "type": "object",
+      "description": "User display info for creator of the note",
+      "$ref": "userDisplayInfo.json",
       "readonly": true
     },
-    "creatorFirstName": {
-      "type": "string",
-      "description": "First name of the user who created the note",
-      "example": "John",
-      "readonly": true
-    },
-    "creatorMiddleName": {
-      "type": "string",
-      "description": "Middle name or initial of the user who created the note",
-      "example": "X.",
+    "updater": {
+      "type": "object",
+      "description": "User display info for updater of the note",
+      "$ref": "userDisplayInfo.json",
       "readonly": true
     },
     "metadata": {
