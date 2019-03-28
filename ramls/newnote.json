@@ -6,13 +6,23 @@
   "properties": {
     "noteId": {
       "type": "string",
-      "description": "Note identifier",
-      "example": "XXX"
+      "description": "Unique generated identified for the note",
+      "example": "62d00c36-a94f-434d-9cd2-c7ea159303da"
+    },
+    "noteType": {
+      "type": "string",
+      "description": "Type of note (configured in settings)",
+      "example": "Access issues"
+    },
+    "noteTitle": {
+      "type": "string",
+      "description": "Note title",
+      "example": "BU Campus only issues"
     },
     "content": {
       "type": "string",
       "description": "The content of the note",
-      "example": "hello world new note"
+      "example": "There are access issues at BU campus"
     },
     "creatorLastName": {
       "type": "string",
@@ -39,6 +49,8 @@
     }
   },
   "required": [
+    "noteType",
+    "noteTitle",
     "content"
   ]
 }
