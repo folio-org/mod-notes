@@ -4,12 +4,12 @@
   "description": "Entity associated with a note",
   "additionalProperties": false,
   "properties": {
-    "entityId": {
+    "id": {
       "type": "string",
       "description": "Id of entity linked to a note",
       "example": "1234-5678"
     },
-    "entityType": {
+    "type": {
       "type": "string",
       "description": "Type of entity",
       "example": "package"
@@ -21,8 +21,8 @@
     }
   },
   "required": [
-    "entityId",
-    "entityType",
+    "id",
+    "type",
     "domain"
   ]
 }

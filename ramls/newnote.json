@@ -4,17 +4,17 @@
   "description": "Notes about all kind of objects",
   "additionalProperties": false,
   "properties": {
-    "noteId": {
+    "id": {
       "type": "string",
       "description": "Unique generated identified for the note",
       "example": "62d00c36-a94f-434d-9cd2-c7ea159303da"
     },
-    "noteType": {
+    "type": {
       "type": "string",
       "description": "Type of note (configured in settings)",
       "example": "Access issues"
     },
-    "noteTitle": {
+    "title": {
       "type": "string",
       "description": "Note title",
       "example": "BU Campus only issues"
@@ -49,8 +49,8 @@
     }
   },
   "required": [
-    "noteType",
-    "noteTitle",
+    "type",
+    "title",
     "content"
   ]
 }
