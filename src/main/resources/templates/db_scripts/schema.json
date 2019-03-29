@@ -14,6 +14,26 @@
           "removeAccents": true
         }
       ]
+    },
+    {
+      "tableName": "note_type",
+      "generateId": true,
+      "fromModuleVersion": 1.0,
+      "withMetadata": true,
+      "populateJsonWithId": true,
+      "uniqueIndex" : [
+        {
+          "fieldName" : "name",
+          "tOps" : "ADD"
+        }
+      ],
+      "likeIndex": [
+        {
+          "fieldName": "name",
+          "tOps": "ADD",
+          "caseSensitive": false
+        }
+      ]
     }
   ]
 }

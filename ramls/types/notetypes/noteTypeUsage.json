@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Note Type Usage Schema",
+  "description": "Usage statistics of note",
+  "javaType": "org.folio.rest.jaxrs.model.NoteTypeUsage",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "noteTotal": {
+      "type": "integer",
+      "description": "Total number of notes of this type"
+    }
+  },
+  "required": [
+    "noteTotal"
+  ]
+}
