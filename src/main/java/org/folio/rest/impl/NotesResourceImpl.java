@@ -25,10 +25,7 @@ import org.folio.okapi.common.Failure;
 import org.folio.okapi.common.Success;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.jaxrs.model.Notification;
+import org.folio.rest.jaxrs.model.*;
 import org.folio.rest.jaxrs.resource.Notes;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -90,27 +87,6 @@ public class NotesResourceImpl implements Notes {
       .setOffset(new Offset(offset));
   }
 
-  /**
-   * Helper to check if the user has a given notes.domain permission. For domain
-   * "things", checks that X-Okapi-Headers contains "notes.domain.things" or
-   * "notes.domain.all"
-   *
-   * @param domain
-   * @param okapiHeaders
-   * @return
-   */
-  private boolean noteDomainPermission(String domain,
-    Map<String, String> okapiHeaders) {
-    String perms = okapiHeaders.get(RestVerticle.OKAPI_HEADER_PERMISSIONS);
-    if (perms == null || perms.isEmpty()) {
-      logger.error("No " + RestVerticle.OKAPI_HEADER_PERMISSIONS
-        + " - check notes.domain.* permissions");
-      return false;
-    }
-    return perms.contains("notes.domain." + domain)
-      || perms.contains("notes.domain.all");
-  }
-
   @Override
   @Validate
   public void getNotes(String query,
@@ -120,17 +96,6 @@ public class NotesResourceImpl implements Notes {
     Context vertxContext) {
 
     getNotesBoth(false, query, offset, limit,
-      lang, okapiHeaders,
-      asyncResultHandler, vertxContext);
-  }
-
-  @Override
-  @Validate
-  public void getNotesSelf(String query, int offset, int limit,
-    String lang, Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) {
-    getNotesBoth(true, query, offset, limit,
       lang, okapiHeaders,
       asyncResultHandler, vertxContext);
   }
@@ -239,28 +204,16 @@ public class NotesResourceImpl implements Notes {
     if (idt == null || idt.isEmpty()) {
       note.setId(UUID.randomUUID().toString());
     }
-    String domain = note.getDomain();
-    if (domain == null || domain.isEmpty()) {
-      domain = note.getLink().replaceFirst("^/?([^/]+).*$", "$1");
-      note.setDomain(domain);
-      logger.warn("Note has no domain. "
-        + "That is DEPRECATED and will stop working soon!"
-        + " For now, defaulting to '" + domain + "'");
-    }
-    if (!noteDomainPermission(domain, okapiHeaders)) {
-      asyncResultHandler.handle(succeededFuture(PostNotesResponse
-        .respond401WithTextPlain("No permission notes.domain." + domain)));
-      return;
-    }
     // Get the creator names, if not there
-    if (note.getCreatorUserName() == null
-      || note.getCreatorLastName() == null) {
+    if (note.getCreator() == null
+      || note.getCreator().getLastName() == null) {
       pn2LookupUser(okapiHeaders, tenantId, note, lang, res -> {
         if (res.succeeded()) {
+          // we have a result already, pass it on
           if (res.result() != null) { // we have a result already, pass it on
             asyncResultHandler.handle(res);
           } else { // null indicates successfull lookup
-            pn4SendNotifies(context, tenantId, note, okapiHeaders, asyncResultHandler);
+            pn5InsertNote(context, tenantId, note, asyncResultHandler);
           }
         } else { // should not happen
           asyncResultHandler.handle(
@@ -268,8 +221,9 @@ public class NotesResourceImpl implements Notes {
                 messages.getMessage(lang, MessageConsts.InternalServerError))));
         }
       });
-    } else { // no need to look anything up, proceed to actual post
-      pn4SendNotifies(context, tenantId, note, okapiHeaders, asyncResultHandler);
+    }
+    else { // no need to look anything up, proceed to actual post
+      pn5InsertNote(context, tenantId, note, asyncResultHandler);
     }
   }
 
@@ -315,15 +269,17 @@ public class NotesResourceImpl implements Notes {
         JsonObject usr = resp.getBody();
         if (usr.containsKey("username")
           && usr.containsKey("personal")) {
-          if (note.getCreatorUserName() == null) {
-            note.setCreatorUserName(usr.getString("username"));
+          if (note.getMetadata().getCreatedByUsername() == null) {
+            note.getMetadata().setCreatedByUsername(usr.getString("username"));
           }
-          if (note.getCreatorLastName() == null) {
+          if (note.getCreator()== null) {
             JsonObject p = usr.getJsonObject("personal");
             if (p != null) {
-              note.setCreatorFirstName(p.getString("firstName"));
-              note.setCreatorMiddleName(p.getString("middleName"));
-              note.setCreatorLastName(p.getString("lastName"));
+              userDisplayInfo creator = new userDisplayInfo();
+              creator.setFirstName(p.getString("firstName"));
+              creator.setMiddleName(p.getString("middleName"));
+              creator.setLastName(p.getString("lastName"));
+              note.setCreator(creator);
             }
           }
           // null indicates all is well, and we can proceed
@@ -360,21 +316,6 @@ public class NotesResourceImpl implements Notes {
     }
   }
 
-
-  // Post notes part 4: Send notifies to users mentioned in the note text
-  private void pn4SendNotifies(Context context, String tenantId, Note note,Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler) {
-    checkUserTags(note, okapiHeaders, res->{
-      if (res.succeeded()) {
-        pn5InsertNote(context, tenantId, note, asyncResultHandler);
-      } else { // all errors map down to internal errors. They have been logged
-        asyncResultHandler.handle(
-          succeededFuture(PostNotesResponse.respond500WithTextPlain(
-              res.cause().getMessage())));
-      }
-    });
-  }
-
   // Post notes part 5: Actually insert the note in the database
   private void pn5InsertNote(Context context, String tenantId, Note note,
     Handler<AsyncResult<Response>> asyncResultHandler) {
@@ -394,62 +335,6 @@ public class NotesResourceImpl implements Notes {
       });
   }
 
-  // Helper to go through the note text, find all @username tags, and
-  // send notifies to the mentioned users.
-  private void checkUserTags(Note note, Map<String, String> okapiHeaders,
-          Handler<ExtendedAsyncResult<Void>> handler) {
-    String tenantId = TenantTool.calculateTenantId(
-      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    String txt = note.getText();
-    java.util.regex.Pattern p
-      = Pattern.compile("(^|\\W)@(\\w+)", Pattern.UNICODE_CHARACTER_CLASS);
-    Matcher m = p.matcher(txt);
-    String okapiURL = okapiHeaders.get("X-Okapi-Url");
-    HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
-    checkUserTagsR(note, client, okapiHeaders, m, handler);
-  }
-
-  private void checkUserTagsR(Note note, HttpClientInterface client ,
-          Map<String, String> okapiHeaders,  Matcher m,
-          Handler<ExtendedAsyncResult<Void>> handler) {
-    if (!m.find()) {
-      handler.handle(new Success<>());
-      return;
-    }
-    String username = m.group(2).replace("@", "");
-    String url = "/notify/_username/" + username;
-    try {
-      Notification notification = new Notification();
-      String message = note.getCreatorUserName() + " mentioned you in a note "
-              + " " + note.getId() + " about " + note.getLink();
-      notification.setText(message);
-      notification.setLink(note.getLink());
-      CompletableFuture<org.folio.rest.tools.client.Response> response
-        = client.request(HttpMethod.POST, notification, url, okapiHeaders);
-      response.whenComplete((resp, ex) -> {
-        switch (resp.getCode()) {
-          case 201:
-            logger.debug("Posted notify for " + username + " OK");
-            // recurse on to the next tag
-            checkUserTagsR(note, client, okapiHeaders, m, handler);
-            break;
-          case 404:
-            logger.info("Notify post didn't find the user " + username + ". Skipping it");
-            // recurse on to the next tag
-            checkUserTagsR(note, client, okapiHeaders, m, handler);
-            break;
-          default:
-            logger.error("Notify post for " + username + " failed with " + resp.getCode());
-            logger.error(Json.encode(resp.getError()));
-            handler.handle(new Failure<>(INTERNAL, "Notify post failed with " + resp.getCode()));
-            break;
-        }
-      });
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      handler.handle(new Failure<>(INTERNAL,e.getMessage()));
-    }
-  }
 
 
   /**
@@ -478,13 +363,7 @@ public class NotesResourceImpl implements Notes {
               resp.handle(new Failure<>(NOT_FOUND, "Note " + id + " not found"));
             } else {  // Can not use validationHelper here
               Note n = notes.get(0);
-              String domain = n.getDomain();
-              if (noteDomainPermission(domain, okapiHeaders)) {
-                resp.handle(new Success<>(n));
-              } else {
-                resp.handle(new Failure<>(FORBIDDEN,
-                  "No permission notes.domain." + domain));
-              }
+              resp.handle(new Success<>(n));
             }
           } else {
             String error = PgExceptionUtil.badRequestMessage(reply.cause());
@@ -616,14 +495,6 @@ public class NotesResourceImpl implements Notes {
       return;
     }
 
-    // Check the perm for the domain we are about to set
-    // getOneNote will check the perm for the domain as it is in the db
-    String newDomain = note.getDomain();
-    if (!noteDomainPermission(newDomain, okapiHeaders)) {
-      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .respond401WithTextPlain("No permission notes.domain." + newDomain)));
-      return;
-    }
     getOneNote(id, okapiHeaders, vertxContext, res -> {
       if (res.failed()) {
         switch (res.getType()) {
@@ -651,30 +522,16 @@ public class NotesResourceImpl implements Notes {
       } else { // found the note. put it in the db
         // Copy readonly fields over (RMB removed them from the incoming note)
         Note oldNote = res.result();
-        note.setCreatorUserName(oldNote.getCreatorUserName());
-        note.setCreatorLastName(oldNote.getCreatorLastName());
-        note.setCreatorFirstName(oldNote.getCreatorFirstName());
-        note.setCreatorMiddleName(oldNote.getCreatorMiddleName());
-        putNotesById2Notify(id, lang, note,
+        userDisplayInfo creator = new userDisplayInfo();
+        creator.setFirstName(oldNote.getCreator().getFirstName());
+        creator.setMiddleName(oldNote.getCreator().getMiddleName());
+        creator.setLastName(oldNote.getCreator().getLastName());
+
+        putNotesById3Update(id, lang, note,
           okapiHeaders, vertxContext, asyncResultHandler);
       }
     });
   }
-
-  private void putNotesById2Notify(String id, String lang, Note note,
-    Map<String, String> okapiHeaders, Context context,
-    Handler<AsyncResult<Response>> asyncResultHandler ) {
-    checkUserTags(note, okapiHeaders, res->{
-      if (res.succeeded()) {
-        putNotesById3Update(id, lang, note, okapiHeaders, context, asyncResultHandler);
-      } else { // all errors map down to internal errors. They have been logged
-        asyncResultHandler.handle(
-          succeededFuture(PostNotesResponse.respond500WithTextPlain(
-              res.cause().getMessage())));
-      }
-    });
-  }
-
 
   private void putNotesById3Update(String id, String lang, Note entity,
     Map<String, String> okapiHeaders, Context vertxContext,
@@ -698,19 +555,4 @@ public class NotesResourceImpl implements Notes {
         }
       });
   }
-
-
-  /**
-   * Post to _self is not supported. The RMB creates one anyway.
-   *
-   */
-  @Override
-  public void postNotesSelf(String lang, Note entity,
-    Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) {
-    throw new UnsupportedOperationException("Not supported");
-  }
-
-
 }

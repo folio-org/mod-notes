@@ -194,8 +194,9 @@ public class NotesTest {
 
     String note1 = "{"
       + "\"id\" : \"11111111-1111-1111-a111-111111111111\"," + LS
-      + "\"link\" : \"users/1234\"," + LS
-      + "\"text\" : \"First note email@folio.org\"}" + LS;
+      + "\"type\" : \"test note\"," + LS
+      + "\"title\" : \"test note title\"," + LS
+      + "\"content\" : \"First note email@folio.org\"}" + LS;
     // no domain, we add that when updating. This will break when we make
     // the domain required, just add the field here.
     // The email is to check that we don't trigger userId tag lookup for such
@@ -210,7 +211,7 @@ public class NotesTest {
       .statusCode(400)
       .body(containsString("Json content error"));
 
-    String bad3 = note1.replaceFirst("link", "creatorMiddleName");
+    String bad3 = note1.replaceFirst("type", "creatorMiddleName");
     given()
       .header(TEN).header(JSON)
       .body(bad3)
@@ -220,9 +221,9 @@ public class NotesTest {
       .statusCode(422)
       // English error message for Locale.US, see @Before
       .body("errors[0].message", is("may not be null"))
-      .body("errors[0].parameters[0].key", is("link"));
+      .body("errors[0].parameters[0].key", is("type"));
 
-    String badfieldDoc = note1.replaceFirst("link", "UnknownFieldName");
+    String badfieldDoc = note1.replaceFirst("type", "UnknownFieldName");
     given()
       .header(TEN).header(JSON)
       .body(badfieldDoc)

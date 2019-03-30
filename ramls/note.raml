@@ -10,7 +10,6 @@ documentation:
 
 types:
   note: !include note.json
-  newnote: !include newnote.json
   entity: !include entity.json
   noteCollection: !include noteCollection.json
   errors: !include raml-util/schemas/errors.schema
@@ -38,25 +37,11 @@ resourceTypes:
     is: [ validate ]
   get:
     is: [
-      searchable: {description: "with valid searchable fields: for example link = 1234", example: "link=/users/1234"},
+      searchable: {description: "with valid searchable fields: for example entityId = 1234", example: "entityId=1234"},
       pageable,
       validate
     ]
     responses:
-  /_self:
-    displayName: Notes created by current user
-    type:
-      collection:
-        schemaCollection: noteCollection
-        schemaItem: note
-        exampleCollection: !include examples/noteCollection.sample
-        exampleItem: !include examples/note.sample
-    get:
-      is: [
-        searchable: {description: "with valid searchable fields: for example link = 1234", example: "link=/users/1234"},
-        pageable,
-        validate
-      ]
   /{id}:
     displayName: Notes
     description: Get, Delete or Update a specific note
