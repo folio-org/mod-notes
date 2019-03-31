@@ -23,7 +23,5 @@
       "example": "X.",
       "readonly": true
     }
-  },
-  "required": [
-  ]
+  }
 }
