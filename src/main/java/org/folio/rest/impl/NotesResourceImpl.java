@@ -275,7 +275,7 @@ public class NotesResourceImpl implements Notes {
           if (note.getCreator()== null) {
             JsonObject p = usr.getJsonObject("personal");
             if (p != null) {
-              userDisplayInfo creator = new userDisplayInfo();
+              UserDisplayInfo creator = new UserDisplayInfo();
               creator.setFirstName(p.getString("firstName"));
               creator.setMiddleName(p.getString("middleName"));
               creator.setLastName(p.getString("lastName"));
@@ -522,7 +522,7 @@ public class NotesResourceImpl implements Notes {
       } else { // found the note. put it in the db
         // Copy readonly fields over (RMB removed them from the incoming note)
         Note oldNote = res.result();
-        userDisplayInfo creator = new userDisplayInfo();
+        UserDisplayInfo creator = new UserDisplayInfo();
         creator.setFirstName(oldNote.getCreator().getFirstName());
         creator.setMiddleName(oldNote.getCreator().getMiddleName());
         creator.setLastName(oldNote.getCreator().getLastName());

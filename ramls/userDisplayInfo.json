@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "description": "User Display Information",
-  "javaType": "org.folio.rest.jaxrs.model.userDisplayInfo",
+  "javaType": "org.folio.rest.jaxrs.model.UserDisplayInfo",
   "additionalProperties": false,
   "properties": {
     "lastName": {
