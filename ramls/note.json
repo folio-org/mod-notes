@@ -21,8 +21,14 @@
     },
     "content": {
       "type": "string",
-      "description": "The content of the note",
+      "description": "Content of the note",
       "example": "There are access issues at BU campus"
+    },
+    "status": {
+      "type": "string",
+      "description": "Status of note - applies when searching by link.id and status",
+      "enum": [ "ASSIGNED", "UNASSIGNED" ],
+      "example": "ASSIGNED"
     },
     "creator": {
       "type": "object",
@@ -41,12 +47,12 @@
       "$ref": "raml-util/schemas/metadata.schema",
       "readonly": true
     },
-    "entities": {
-      "description": "Collection of associated entities",
+    "links": {
+      "description": "Collection of links to associated objects",
       "type": "array",
       "items": {
         "type": "object",
-        "$ref": "entity.json"
+        "$ref": "link.json"
       }
     }
   },
