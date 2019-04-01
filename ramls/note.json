@@ -28,7 +28,8 @@
       "type": "string",
       "description": "Status of note - applies when searching by link.id and status",
       "enum": [ "ASSIGNED", "UNASSIGNED" ],
-      "example": "ASSIGNED"
+      "example": "ASSIGNED",
+      "readonly": true
     },
     "creator": {
       "type": "object",

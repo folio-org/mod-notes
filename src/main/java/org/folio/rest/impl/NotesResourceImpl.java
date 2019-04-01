@@ -87,6 +87,24 @@ public class NotesResourceImpl implements Notes {
       .setOffset(new Offset(offset));
   }
 
+  /**
+   * Helper to check if the user has notes.domain.all permission.
+   *
+   * @param okapiHeaders
+   * @return
+   */
+  private boolean noteDomainPermission(
+    Map<String, String> okapiHeaders) {
+    String perms = okapiHeaders.get(RestVerticle.OKAPI_HEADER_PERMISSIONS);
+    if (perms == null || perms.isEmpty()) {
+      logger.error("No " + RestVerticle.OKAPI_HEADER_PERMISSIONS
+        + " - check notes.domain.* permissions");
+      return false;
+    }
+    return perms.contains("notes.domain.all");
+  }
+
+
   @Override
   @Validate
   public void getNotes(String query,
@@ -492,6 +510,13 @@ public class NotesResourceImpl implements Notes {
         "Can not change Id");
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
         .respond422WithApplicationJson(valErr)));
+      return;
+    }
+     // Check the perm for the domain we are about to set
+    // getOneNote will check the perm for the domain as it is in the db
+    if (!noteDomainPermission(okapiHeaders)) {
+      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
+        .respond401WithTextPlain("No permission notes.domain.all")));
       return;
     }
 
