@@ -222,6 +222,11 @@ public class NotesResourceImpl implements Notes {
     if (idt == null || idt.isEmpty()) {
       note.setId(UUID.randomUUID().toString());
     }
+    if (!noteDomainPermission(okapiHeaders)) {
+      asyncResultHandler.handle(succeededFuture(PostNotesResponse
+        .respond401WithTextPlain("No permission notes.domain.all")));
+      return;
+    }
     // Get the creator names, if not there
     if (note.getCreator() == null
       || note.getCreator().getLastName() == null) {
@@ -381,7 +386,12 @@ public class NotesResourceImpl implements Notes {
               resp.handle(new Failure<>(NOT_FOUND, "Note " + id + " not found"));
             } else {  // Can not use validationHelper here
               Note n = notes.get(0);
-              resp.handle(new Success<>(n));
+              if (noteDomainPermission(okapiHeaders)) {
+                resp.handle(new Success<>(n));
+              } else {
+                resp.handle(new Failure<>(FORBIDDEN,
+                  "No permission notes.domain.all"));
+              }
             }
           } else {
             String error = PgExceptionUtil.badRequestMessage(reply.cause());
