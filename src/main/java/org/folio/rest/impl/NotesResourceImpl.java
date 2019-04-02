@@ -6,7 +6,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import static io.vertx.core.Future.succeededFuture;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -15,8 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
 import static org.folio.okapi.common.ErrorType.*;
@@ -113,7 +110,7 @@ public class NotesResourceImpl implements Notes {
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
 
-    getNotesBoth(false, query, offset, limit,
+    getNotesBoth(query, offset, limit,
       lang, okapiHeaders,
       asyncResultHandler, vertxContext);
   }
@@ -122,30 +119,15 @@ public class NotesResourceImpl implements Notes {
    * Combined handler for get _self and plain get (collection)
    */
   @java.lang.SuppressWarnings({"squid:S00107"}) // 8 parameters, I know
-  private void getNotesBoth(boolean self, String query, int offset, int limit,
+  private void getNotesBoth(String query, int offset, int limit,
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
 
-    logger.debug("Getting notes. self=" + self + " " + offset + "+" + limit + " q=" + query);
+    logger.debug("Getting notes. " + offset + "+" + limit + " q=" + query);
 
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    if (self) {
-      String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
-      if (userId == null || userId.isEmpty()) {
-        logger.error("No userId for getNotesSelf");
-        asyncResultHandler.handle(succeededFuture(GetNotesResponse
-          .respond400WithTextPlain("No UserId")));
-        return;
-      }
-      String userQuery = "metadata.createdByUserId=\"" + userId + "\"";
-      if (query == null) {
-        query = userQuery;
-      } else {
-        query = "(" + userQuery + ") and (" + query + ")";
-      }
-    }
     String perms = okapiHeaders.get(RestVerticle.OKAPI_HEADER_PERMISSIONS);
     if (perms == null || perms.isEmpty()) {
       logger.error("No " + RestVerticle.OKAPI_HEADER_PERMISSIONS
