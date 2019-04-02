@@ -375,6 +375,17 @@ public class NotesTest {
       + "\"title\" : \"things\"," + LS
       + "\"content\" : \"Test on things\"}" + LS;
 
+    // Wrong permissions, should fail
+    given()
+      .header(TEN).header(USER8).header(JSON)
+      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.users")
+      .body(note2)
+      .post("/notes")
+      .then()
+      .log().ifValidationFails()
+      .body(containsString("notes.domain.all"))
+      .statusCode(401);
+
 
     // No userid, should fail
     given()
@@ -398,6 +409,19 @@ public class NotesTest {
       .log().ifValidationFails()
       .statusCode(400)
       .body(containsString("Can not find user 119999"));
+
+    // Simulate permission problem in user lookup
+
+    given()
+      .header(TEN).header(JSON)
+      .header("X-Okapi-User-Id", "22999999-9999-4999-9999-999999999922")
+      .header(ALLPERM)
+      .body(note2)
+      .post("/notes")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(400)
+      .body(containsString("User lookup failed with 403. 229999"));
 
     // Simulate user lookup with critical fields missing
     given()
