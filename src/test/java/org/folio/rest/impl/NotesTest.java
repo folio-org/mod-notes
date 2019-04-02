@@ -256,6 +256,16 @@ public class NotesTest {
       .statusCode(422)
       .body(containsString("invalid input syntax for type uuid"));
 
+    // Post without permission
+    given()
+      .header(TEN).header(USER9).header(JSON)
+      .body(note1)
+      .post("/notes")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(401)
+      .body(containsString("No permission notes.domain.all"));
+
     // Post a good note
     given()
       .header(TEN).header(USER9).header(JSON).header(ALLPERM)
@@ -540,7 +550,8 @@ public class NotesTest {
       .log().ifValidationFails()
       .statusCode(204);
 
-/*
+    /*
+
     given()
       .header(TEN).header(ALLPERM)
       .get("/notes/22222222-2222-2222-a222-222222222222")
@@ -554,7 +565,6 @@ public class NotesTest {
       .body(containsString("creatorUserName"))
       .body(containsString("creatorLastName"))
       .body(containsString("m8")); // CreatorUserName we tried to change
-
 
 
 
@@ -600,8 +610,7 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(200);
-      */
-
+    */
 
     // Permission tests
     // Normally Okapi and mod-auth would provide the X-Okapi-Permissions
