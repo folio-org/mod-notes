@@ -544,6 +544,7 @@ public class NotesResourceImpl implements Notes {
         creator.setMiddleName(oldNote.getCreator().getMiddleName());
         creator.setLastName(oldNote.getCreator().getLastName());
 
+        note.setCreator(creator);
         putNotesById3Update(id, lang, note,
           okapiHeaders, vertxContext, asyncResultHandler);
       }
