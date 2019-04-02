@@ -702,11 +702,11 @@ public class NotesTest {
       .statusCode(200)
       .body(containsString("\"notes\" : [ ]"));
 
-    /*
     // Test that we create the id if missing
     String note3 = "{"
-      + "\"link\" : \"users/1234\"," + LS
-      + "\"text\" : \"Note with no id\"}" + LS;
+      + "\"type\" : \"test type\"," + LS
+       + "\"title\" : \"testing\"," + LS
+      + "\"content\" : \"Note with no id\"}" + LS;
 
     final String location = given()
       .header(TEN).header(USER9).header(JSON).header(ALLPERM)
@@ -731,7 +731,7 @@ public class NotesTest {
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes?query=domain=users&limit=1001")
+      .get("/notes?query=title=testing&limit=1001")
       .then()
       .log().ifValidationFails()
       .statusCode(200)
@@ -742,14 +742,14 @@ public class NotesTest {
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes?query=domain=users&offset=-1")
+      .get("/notes?query=title=testings&offset=-1")
       .then()
       .log().ifValidationFails()
       .statusCode(400);
 
     given()
       .header(TEN).header(ALLPERM)
-      .get("/notes?query=domain=users&limit=-1")
+      .get("/notes?query=title=testing&limit=-1")
       .then()
       .log().ifValidationFails()
       .statusCode(400);
@@ -760,7 +760,6 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(204);
-      */
 
     // All done
     logger.info("notesTest done");
