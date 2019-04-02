@@ -6,12 +6,11 @@
       "withMetadata": true,
       "generateId": true,
       "populateJsonWithId": true,
-      "ginIndex": [
+      "likeIndex": [
         {
-          "fieldName": "content",
+          "fieldName": "title",
           "tOps": "ADD",
-          "caseSensitive": false,
-          "removeAccents": true
+          "caseSensitive": false
         }
       ]
     },
