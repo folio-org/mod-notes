@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import io.vertx.core.json.JsonObject;
 
 /**
- * Retrieves user information from mod-users
+ * Retrieves user information from mod-users /users/{userId} endpoint.
  */
 public class UserLookUp {
   private static final Logger logger = LoggerFactory.getLogger(UserLookUp.class);
@@ -82,7 +82,9 @@ public class UserLookUp {
    */
   public static CompletableFuture<UserLookUp> getUserInfo(final Map<String, String> okapiHeaders) {
     final String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    System.out.println("Tenant ID is "+tenantId);
     final String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
+    System.out.println("Okapi header ID is "+userId);
     
     CompletableFuture<UserLookUp> future = new CompletableFuture<>();
     if (userId == null) {
@@ -99,13 +101,13 @@ public class UserLookUp {
         .thenApply(response -> {
           try {
             if (Response.isSuccess(response.getCode())) {
-              return mapUserInfo(response);
-            } else if (response.getCode() == 401 || response.getCode() == 403) {
+                return mapUserInfo(response);
+            } else if (response.getCode() == 401) {
                 logger.error("Authorization failure");
                 throw new NotAuthorizedException("Authorization failure");  
             } else if (response.getCode() == 404) {
-              logger.error("User not found");
-              throw new NotFoundException("User not found");  
+                logger.error("User not found");
+                throw new NotFoundException("User not found");  
             } else {
                 logger.error("Cannot get user data: " + response.getError().toString(), response.getException());
                  throw new IllegalStateException(response.getError().toString());
