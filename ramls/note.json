@@ -5,54 +5,61 @@
   "additionalProperties": false,
   "properties": {
     "id": {
-      "type": "string"
-    },
-    "link": {
       "type": "string",
-      "description": "Link to the item the note refers to",
-      "example": "/items/1234-567890"
+      "description": "Unique generated identifier for the note",
+      "example": "62d00c36-a94f-434d-9cd2-c7ea159303da"
     },
-    "text": {
+    "type": {
       "type": "string",
-      "description": "The text of the note"
+      "description": "Type of note (configured in settings)",
+      "example": "Access issues"
     },
-    "domain": {
+    "title": {
       "type": "string",
-      "description": "Domain the note belongs to. Used for permissions like notes.domain.items",
-      "example": "items"
+      "description": "Note title",
+      "example": "BU Campus only issues"
     },
-    "creatorUserName": {
+    "content": {
       "type": "string",
-      "description": "username of the user who created the note",
-      "example": "johndoe17",
+      "description": "Content of the note",
+      "example": "There are access issues at BU campus"
+    },
+    "status": {
+      "type": "string",
+      "description": "Status of note - applies when searching by link.id and status",
+      "enum": [ "ASSIGNED", "UNASSIGNED" ],
+      "example": "ASSIGNED",
       "readonly": true
     },
-    "creatorLastName": {
-      "type": "string",
-      "description": "Last name of the user who created the note",
-      "example": "Doe",
+    "creator": {
+      "type": "object",
+      "description": "User display info for creator of the note",
+      "$ref": "userDisplayInfo.json",
       "readonly": true
     },
-    "creatorFirstName": {
-      "type": "string",
-      "description": "First name of the user who created the note",
-      "example": "John",
-      "readonly": true
-    },
-    "creatorMiddleName": {
-      "type": "string",
-      "description": "Middle name or initial of the user who created the note",
-      "example": "X.",
+    "updater": {
+      "type": "object",
+      "description": "User display info for updater of the note",
+      "$ref": "userDisplayInfo.json",
       "readonly": true
     },
     "metadata": {
       "type": "object",
       "$ref": "raml-util/schemas/metadata.schema",
       "readonly": true
+    },
+    "links": {
+      "description": "Collection of links to associated objects",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "$ref": "link.json"
+      }
     }
   },
   "required": [
-    "link",
-    "text"
+    "type",
+    "title",
+    "content"
   ]
 }
