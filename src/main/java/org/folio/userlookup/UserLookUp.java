@@ -82,9 +82,7 @@ public class UserLookUp {
    */
   public static CompletableFuture<UserLookUp> getUserInfo(final Map<String, String> okapiHeaders) {
     final String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    System.out.println("Tenant ID is "+tenantId);
     final String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
-    System.out.println("Okapi header ID is "+userId);
     
     CompletableFuture<UserLookUp> future = new CompletableFuture<>();
     if (userId == null) {
