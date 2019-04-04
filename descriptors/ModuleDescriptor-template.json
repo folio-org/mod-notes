@@ -55,16 +55,25 @@
         {
           "methods": ["GET"],
           "pathPattern": "/note-types"
-        }, {
-          "methods": ["POST"],
-          "pathPattern": "/note-types"
-        }, {
+        },
+        {
           "methods": ["GET"],
           "pathPattern": "/note-types/{typeId}",
           "permissionsRequired": ["note.types.item.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/note-types",
+          "permissionsRequired": ["note.types.item.post"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/note-types/{id}",
+          "permissionsRequired": ["note.types.item.put"]
         }
       ]
-    }, {
+    },
+    {
       "id": "_jsonSchemas",
       "version": "1.0",
       "interfaceType" : "multiple",
@@ -136,6 +145,16 @@
       "description": "All domains"
     },
     {
+      "permissionName": "note.types.item.post",
+      "displayName": "Note types - create note type",
+      "description": "Create note type"
+    },
+    {
+      "permissionName": "note.types.item.put",
+      "displayName": "Note types - modify note type",
+      "description": "Modify note type"
+    },
+    {
       "permissionName": "notes.allops",
       "displayName": "Notes module - all CRUD permissions",
       "description": "Entire set of permissions needed to use the notes modules, but no domain permissions",
@@ -158,7 +177,9 @@
       "displayName": "Note types - all CRUD permissions",
       "description": "Entire set of permissions needed to use the note type for note module",
       "subPermissions": [
-        "note.types.item.get"
+        "note.types.item.get",
+        "note.types.item.post",
+        "note.types.item.put"
       ],
       "visible": false
     },
