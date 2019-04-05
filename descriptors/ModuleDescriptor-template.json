@@ -51,10 +51,20 @@
           "pathPattern": "/notes/{id}",
           "permissionsRequired": ["notes.item.delete"],
           "permissionsDesired": ["notes.domain.*", "notes.domain.all"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/note-types"
+        }, {
+          "methods": ["POST"],
+          "pathPattern": "/note-types"
+        }, {
+          "methods": ["GET"],
+          "pathPattern": "/note-types/{typeId}",
+          "permissionsRequired": ["note.types.item.get"]
         }
       ]
-    },
-    {
+    }, {
       "id": "_jsonSchemas",
       "version": "1.0",
       "interfaceType" : "multiple",
@@ -64,8 +74,7 @@
           "pathPattern" : "/_/jsonSchemas"
         }
       ]
-    },
-    {
+    }, {
       "id": "_ramls",
       "version": "1.0",
       "interfaceType" : "multiple",
@@ -75,8 +84,7 @@
           "pathPattern" : "/_/ramls"
         }
       ]
-    },
-    {
+    }, {
       "id": "_tenant",
       "version": "1.0",
       "interfaceType": "system",
@@ -141,12 +149,27 @@
       "visible": false
     },
     {
+      "permissionName": "note.types.item.get",
+      "displayName": "Note types - get individual note type from storage",
+      "description": "Get individual note type"
+    },
+    {
+      "permissionName": "note.types.allops",
+      "displayName": "Note types - all CRUD permissions",
+      "description": "Entire set of permissions needed to use the note type for note module",
+      "subPermissions": [
+        "note.types.item.get"
+      ],
+      "visible": false
+    },
+    {
       "permissionName": "notes.all",
       "displayName": "Notes module - all permissions and all domains",
       "description": "Entire set of permissions needed to use the notes modules on any domain",
       "subPermissions": [
         "notes.allops",
-        "notes.domain.all"
+        "notes.domain.all",
+        "note.types.allops"
       ],
       "visible": false
     }
