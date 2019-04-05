@@ -62,9 +62,12 @@ public class NoteTypesImpl implements NoteTypes {
   }
 
   @Override
-  public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
-                                   Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    removeNotStoredFields(entity);
+    PgUtil.put(NOTE_TYPE_TABLE, entity, typeId, okapiHeaders, vertxContext, PutNoteTypesByTypeIdResponse.class, asyncResultHandler);
+  }
 
-    asyncResultHandler.handle(Future.succeededFuture(PutNoteTypesByTypeIdResponse.status(Response.Status.NOT_IMPLEMENTED).build()));
+  private void removeNotStoredFields(NoteType entity) {
+    entity.setUsage(null);
   }
 }

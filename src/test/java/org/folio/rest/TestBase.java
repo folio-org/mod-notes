@@ -3,6 +3,8 @@ package org.folio.rest;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+import org.apache.http.HttpHeaders;
+import org.apache.http.entity.ContentType;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.impl.NoteTypesImplTest;
@@ -18,6 +20,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
+import io.restassured.http.Header;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -28,6 +31,7 @@ import io.vertx.core.logging.LoggerFactory;
 public class TestBase {
 
   public static final String STUB_TENANT = "testlib";
+  protected static final Header JSON_CONTENT_TYPE_HEADER = new Header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
   private static final Logger logger = LoggerFactory.getLogger(NoteTypesImplTest.class);
   private static final String STUB_TOKEN = "TEST_OKAPI_TOKEN";
   private static final String host = "http://127.0.0.1";
