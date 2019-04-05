@@ -52,7 +52,6 @@ class NoteTypesTestUtil {
     future.join();
   }
 
-
   private static NoteType parseNoteType(ObjectMapper mapper, String json) {
     try {
       return mapper.readValue(json, NoteType.class);
