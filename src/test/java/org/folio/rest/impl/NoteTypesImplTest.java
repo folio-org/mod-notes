@@ -2,6 +2,7 @@ package org.folio.rest.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
@@ -84,33 +85,6 @@ public class NoteTypesImplTest extends TestBase {
       List<NoteType> noteTypes = response.path(NOTE_TYPES);
 
       assertEquals(1, noteTypes.size());
-      assertEquals(1, totalRecords);
-    } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
-    }
-  }
-
-  @Test
-  public void shouldReturn200WithNoteTypeCollectionAndWithQuery() throws IOException, URISyntaxException {
-    try {
-      ObjectMapper mapper = new ObjectMapper();
-      NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
-
-      for (NoteType noteType : noteTypes) {
-        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
-      }
-      Response response = RestAssured.given()
-        .spec(getRequestSpecification())
-        .when()
-        .get(NOTE_TYPES_ENDPOINT + "?query=(name=High)")
-        .then()
-        .statusCode(200)
-        .extract().response();
-
-      int totalRecords = response.path(TOTAL_RECORDS);
-      List<NoteType> noteTypeList = response.path(NOTE_TYPES);
-
-      assertEquals(1, noteTypeList.size());
       assertEquals(1, totalRecords);
     } finally {
       NoteTypesTestUtil.deleteAllNoteTypes(vertx);
