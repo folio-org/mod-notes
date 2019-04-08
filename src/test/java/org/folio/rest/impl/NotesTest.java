@@ -5,6 +5,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -37,6 +39,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.runner.RunWith;
 
@@ -57,25 +60,24 @@ import org.junit.After;
 @RunWith(VertxUnitRunner.class)
 public class NotesTest {
 
-  private final Logger logger = LoggerFactory.getLogger("okapi");
+  private static final Logger logger = LoggerFactory.getLogger("okapi");
   private static final String LS = System.lineSeparator();
   private static final String HOST = "http://127.0.0.1";
-  private final Header TEN = new Header("X-Okapi-Tenant", "modnotestest");
-  private final Header ALLPERM = new Header("X-Okapi-Permissions", "notes.domain.all");
-  private final Header USER9 = new Header("X-Okapi-User-Id",
+  private static final Header TEN = new Header("X-Okapi-Tenant", "modnotestest");
+  private static final Header USER9 = new Header("X-Okapi-User-Id",
     "99999999-9999-4999-9999-999999999999");
-  private final Header USER19 = new Header("X-Okapi-User-Id",
+  private static final Header USER19 = new Header("X-Okapi-User-Id",
     "11999999-9999-4999-9999-999999999911");  // One that is not found in the mock data
-  private final Header USER8 = new Header("X-Okapi-User-Id",
+  private static final Header USER8 = new Header("X-Okapi-User-Id",
     "88888888-8888-4888-8888-888888888888");
-  private final Header USER7 = new Header("X-Okapi-User-Id",
+  private static final Header USER7 = new Header("X-Okapi-User-Id",
     "77777777-7777-4777-a777-777777777777");
-  private final Header JSON = new Header("Content-Type", "application/json");
-  private String moduleName; //  "mod-notes"
-  private String moduleVersion; // "1.0.0" or "0.1.2-SNAPSHOT"
-  private String moduleId; // "mod-notes-1.0.1-SNAPSHOT"
-  Vertx vertx;
-  Async async;
+  private static final Header JSON = new Header("Content-Type", "application/json");
+  private static String moduleName; //  "mod-notes"
+  private static String moduleVersion; // "1.0.0" or "0.1.2-SNAPSHOT"
+  private static String moduleId; // "mod-notes-1.0.1-SNAPSHOT"
+  private static Vertx vertx;
+  private static Async async;
 
   private static int port;
 
@@ -85,8 +87,8 @@ public class NotesTest {
       .dynamicPort()
       .notifier(new Slf4jNotifier(true)));
 
-  @Before
-  public void setUp(TestContext context) throws IOException, URISyntaxException {
+  @BeforeClass
+  public static void setUp(TestContext context) {
     Locale.setDefault(Locale.US);  // enforce English error messages
     vertx = Vertx.vertx();
     moduleName = PomReader.INSTANCE.getModuleName()
@@ -112,12 +114,38 @@ public class NotesTest {
       + Json.encode(conf));
     DeploymentOptions opt = new DeploymentOptions()
       .setConfig(conf);
+
+    async = context.async();
     vertx.deployVerticle(RestVerticle.class.getName(),
-      opt, context.asyncAssertSuccess());
+      opt, result -> {
+        // Call the tenant interface to initialize the database
+        String tenants = "{\"module_to\":\"" + moduleId + "\"}";
+        logger.info("About to call the tenant interface " + tenants);
+        given()
+          .header(TEN).header(JSON)
+          .body(tenants)
+          .post("/_/tenant")
+          .then()
+          .log().ifValidationFails()
+          .statusCode(201);
+        NotesTest.async.complete();
+      });
     RestAssured.port = port;
     logger.info("notesTest: setup done. Using port " + port);
+  }
 
+  @AfterClass
+  public static void tearDown(TestContext context) {
+    logger.info("Cleaning up after ModuleTest");
+    async = context.async();
+    vertx.close(context.asyncAssertSuccess(res -> {
+      PostgresClient.stopEmbeddedPostgres();
+      async.complete();
+    }));
+  }
 
+  @Before
+  public void setUp() throws Exception {
     stubFor(
       get(new UrlPathPattern(new EqualToPattern("/users/99999999-9999-4999-9999-999999999999"), false))
         .willReturn(new ResponseDefinitionBuilder()
@@ -176,16 +204,6 @@ public class NotesTest {
     );
   }
 
-  @After
-  public void tearDown(TestContext context) {
-    logger.info("Cleaning up after ModuleTest");
-    async = context.async();
-    vertx.close(context.asyncAssertSuccess(res -> {
-      PostgresClient.stopEmbeddedPostgres();
-      async.complete();
-    }));
-  }
-
   /**
    * All the tests. In one long function, because starting up the embedded
    * postgres takes so long and fills the log.
@@ -213,42 +231,9 @@ public class NotesTest {
       .statusCode(400)
       .body(containsString("Tenant"));
 
-
-    // Simple GET without notes.domains.* permissions
-    givenWithUrl()
-      .header(TEN)
-      .get("/notes")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(401)
-      .body(containsString("notes.domain"));
-
-
-    // Simple GET request with a tenant, but before
-    // we have invoked the tenant interface, so the
-    // call will fail (with lots of traces in the log)
-    givenWithUrl()
-      .header(TEN)
-      .header(ALLPERM)
-      .get("/notes")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(401);
-
-    // Call the tenant interface to initialize the database
-    String tenants = "{\"module_to\":\"" + moduleId + "\"}";
-    logger.info("About to call the tenant interface " + tenants);
-    givenWithUrl()
-      .header(TEN).header(JSON)
-      .body(tenants)
-      .post("/_/tenant")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(201);
-
     // Empty list of notes
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes")
       .then()
       .log().ifValidationFails()
@@ -319,7 +304,7 @@ public class NotesTest {
 
     // Post by an unknown user 19, lookup fails
     givenWithUrl()
-      .header(TEN).header(USER19).header(JSON).header(ALLPERM)
+      .header(TEN).header(USER19).header(JSON)
       .body(note1)
       .post("/notes")
       .then()
@@ -328,7 +313,7 @@ public class NotesTest {
 
     String bad4 = note1.replaceAll("-1111-", "-2-");  // make bad UUID
     givenWithUrl()
-      .header(TEN).header(USER9).header(JSON).header(ALLPERM)
+      .header(TEN).header(USER9).header(JSON)
       .body(bad4)
       .post("/notes")
       .then()
@@ -336,19 +321,9 @@ public class NotesTest {
       .statusCode(422)
       .body(containsString("invalid input syntax for type uuid"));
 
-    // Post without permission
-    givenWithUrl()
-      .header(TEN).header(USER9).header(JSON)
-      .body(note1)
-      .post("/notes")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(401)
-      .body(containsString("No permission notes.domain.all"));
-
     // Post a good note
     givenWithUrl()
-      .header(TEN).header(USER9).header(JSON).header(ALLPERM)
+      .header(TEN).header(USER9).header(JSON)
       .body(note1)
       .post("/notes")
       .then()
@@ -358,7 +333,7 @@ public class NotesTest {
 
     // Fetch the note in various ways
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes")
       .then()
       .log().ifValidationFails()
@@ -371,7 +346,7 @@ public class NotesTest {
       .body(containsString("\"totalRecords\" : 1"));
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
@@ -379,7 +354,7 @@ public class NotesTest {
       .body(containsString("First note"));
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes/99111111-1111-1111-a111-111111111199")
       .then()
       .log().ifValidationFails()
@@ -387,14 +362,14 @@ public class NotesTest {
       .body(containsString("not found"));
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes/777")
       .then()
       .log().ifValidationFails()
       .statusCode(400);
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=content=fiRST")
       .then()
       .log().ifValidationFails()
@@ -404,7 +379,7 @@ public class NotesTest {
 
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=metadata.createdByUserId=*9999*")
       .then()
       .log().ifValidationFails()
@@ -412,7 +387,7 @@ public class NotesTest {
       .body(containsString("First note"));
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=metadata.createdByUserId=\"99999999-9999-4999-9999-999999999999\"")
       .then()
       .log().ifValidationFails()
@@ -420,7 +395,7 @@ public class NotesTest {
       .body(containsString("First note"));
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=VERYBADQUERY")
       .then()
       .log().ifValidationFails()
@@ -432,7 +407,7 @@ public class NotesTest {
     // When run manually (run.sh), they return a 422 all right
     // See MODNOTES-15, and the comments in NotesResourceImpl.java around initCQLValidation()
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
       .then()
       .log().ifValidationFails()
@@ -440,7 +415,7 @@ public class NotesTest {
       .body(containsString("is not present in index"));
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=UNKNOWNFIELD=foobar")
       .then()
       .log().ifValidationFails()
@@ -455,22 +430,9 @@ public class NotesTest {
       + "\"title\" : \"things\"," + LS
       + "\"content\" : \"Test on things\"}" + LS;
 
-    // Wrong permissions, should fail
-    givenWithUrl()
-      .header(TEN).header(USER8).header(JSON)
-      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.users")
-      .body(note2)
-      .post("/notes")
-      .then()
-      .log().ifValidationFails()
-      .body(containsString("notes.domain.all"))
-      .statusCode(401);
-
-
     // No userid, should fail
     givenWithUrl()
       .header(TEN).header(JSON)
-      .header(ALLPERM)
       .body(note2)
       .post("/notes")
       .then()
@@ -482,7 +444,6 @@ public class NotesTest {
     givenWithUrl()
       .header(TEN).header(JSON)
       .header("X-Okapi-User-Id", "11999999-9999-4999-9999-999999999911")
-      .header(ALLPERM)
       .body(note2)
       .post("/notes")
       .then()
@@ -495,7 +456,6 @@ public class NotesTest {
     givenWithUrl()
       .header(TEN).header(JSON)
       .header("X-Okapi-User-Id", "22999999-9999-4999-9999-999999999922")
-      .header(ALLPERM)
       .body(note2)
       .post("/notes")
       .then()
@@ -507,7 +467,6 @@ public class NotesTest {
     givenWithUrl()
       .header(TEN).header(JSON)
       .header("X-Okapi-User-Id", "33999999-9999-4999-9999-999999999933")
-      .header(ALLPERM)
       .body(note2)
       .post("/notes")
       .then()
@@ -519,7 +478,6 @@ public class NotesTest {
     // good permission, this should work
     givenWithUrl()
       .header(TEN).header(USER8).header(JSON)
-      .header(ALLPERM)
       .body(note2)
       .post("/notes")
       .then()
@@ -528,7 +486,7 @@ public class NotesTest {
 
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .statusCode(200)
@@ -542,7 +500,6 @@ public class NotesTest {
     // Post the same id again
     givenWithUrl()
       .header(TEN).header(USER8).header(JSON)
-      .header(ALLPERM)
       .body(note2)
       .post("/notes")
       .then()
@@ -553,7 +510,7 @@ public class NotesTest {
 
     // Get both notes a few different ways
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=content=note")
       .then()
       .log().ifValidationFails()
@@ -570,7 +527,7 @@ public class NotesTest {
       + "\"content\" : \"First note with a comment\"}" + LS;
 
     givenWithUrl()
-      .header(TEN).header(USER8).header(JSON).header(ALLPERM)
+      .header(TEN).header(USER8).header(JSON)
       .body(updated1)
       .put("/notes/22222222-2222-2222-a222-222222222222") // wrong one
       .then()
@@ -580,26 +537,15 @@ public class NotesTest {
 
 
     givenWithUrl()
-      .header(TEN).header(USER8).header(JSON).header(ALLPERM)
+      .header(TEN).header(USER8).header(JSON)
       .body(updated1)
       .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
       .then()
       .log().ifValidationFails()
       .statusCode(422);  // fails the same-id check before validating the UUID
 
-
-    givenWithUrl() // no domain permission
-      .header(TEN).header(USER8).header(JSON)
-      .body(updated1)
-      .put("/notes/11111111-1111-1111-a111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .body(containsString("notes.domain.all"))
-      .statusCode(401);
-
     givenWithUrl() // not found
       .header(TEN).header(USER8).header(JSON)
-      .header(ALLPERM)
       .body(updated1.replaceAll("1", "3"))
       .put("/notes/33333333-3333-3333-a333-333333333333")
       .then()
@@ -609,7 +555,6 @@ public class NotesTest {
 
     givenWithUrl() // This should work
       .header(TEN).header(USER8).header(JSON)
-      .header(ALLPERM)
       .body(updated1)
       .put("/notes/11111111-1111-1111-a111-111111111111")
       .then()
@@ -618,7 +563,7 @@ public class NotesTest {
 
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
@@ -632,7 +577,7 @@ public class NotesTest {
 
     // Update the other one, by fetching and PUTting back
     String rawNote2 = givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().all() //.ifValidationFails()
@@ -645,122 +590,13 @@ public class NotesTest {
       .replaceFirst("\"m8\"", "\"NewCrUsername\""); // readonly field, should not matter
     logger.info("About to PUT note: " + newNote2);
 
-
     givenWithUrl() // ok update
-      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
+      .header(TEN).header(USER7).header(JSON)
       .body(newNote2)
       .put("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
       .statusCode(204);
-
-    /*
-
-    given()
-      .header(TEN).header(ALLPERM)
-      .get("/notes/22222222-2222-2222-a222-222222222222")
-      .then()
-      .log().all() // ifValidationFails()
-      .body(containsString("rooms")) // domain got updated
-      // The RMB should manage the metadata
-      .body(containsString("-8888-")) // createdBy, NOT CHANGED
-      .body(containsString("-7777-")) // updatedBy, Should be changed
-      // But the special fields are managed by our mod-notes. Should remain.
-      .body(containsString("creatorUserName"))
-      .body(containsString("creatorLastName"))
-      .body(containsString("m8")); // CreatorUserName we tried to change
-
-
-
-    // Check a PUT without id is accepted, uses the id from the url
-    String OkNoteNoId = newNote2.replaceFirst("\"id\" : \"[2-]+\",", "");
-    given() // ok update
-      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
-      .body(OkNoteNoId)
-      .put("/notes/22222222-2222-2222-a222-222222222222")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(204);
-    given()
-      .header(TEN).header(USER7).header(JSON).header(ALLPERM)
-      .get("/notes/22222222-2222-2222-a222-222222222222")
-      .then()
-      .log().all() //ifValidationFails()
-      .statusCode(200)
-      .body(containsString("\"id\" : \"22222222-2222-2222-a222-222222222222\""))
-      .body(containsString("-8888-")) // createdBy, NOT CHANGED
-      .body(containsString("-7777-")) // updatedBy, Should be changed
-      // But the special fields are managed by our mod-notes. Should remain.
-      .body(containsString("creatorUserName"))
-      .body(containsString("creatorLastName"))
-      .body(containsString("m8")); // CreatorUserName we tried to change
-
-    // check with extra permissions and all
-    given()
-      .header(TEN)
-      .header("X-Okapi-Permissions", "notes.domain.all,notes.domain.extra")
-      .get("/notes")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(200);
-
-    // Check with extra permissions
-    String perms = "notes.domain.users,notes.domain.rooms,notes.collection.get,"
-      + "some.other.perm,privatenotes.domain.all";
-    given()
-      .header(TEN)
-      .header("X-Okapi-Permissions", perms)
-      .get("/notes")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(200);
-    */
-
-    // Permission tests
-    // Normally Okapi and mod-auth would provide the X-Okapi-Permissions
-    // header. Here we run without Okapi, so we can set them up as needed.
-    // Note that we are only testing permissionsDesired, which come through
-    // as X-Okapi-Permissions. Required permissions are always filtered out
-    // the hard way, and if not there, the module will never see the request.
-    //
-    /*
-    given()
-      .header(TEN)
-      .header("X-Okapi-Permissions", "notes.domain.UNKNOWN,notes.domain.rooms")
-      .get("/notes")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(200)
-      .body(containsString("\"totalRecords\" : 1"))
-      .body(containsString("rooms"));  // no users note!
-
-    given()
-      .header(TEN)
-      .header("X-Okapi-Permissions", "notes.domain.meetingrooms,notes.domain.users")
-      .get("/notes/11111111-1111-1111-a111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(200)
-      .body(containsString("users/1234"));
-
-    given()
-      .header(TEN)
-      .header("X-Okapi-Permissions", "notes.domain.all")
-      .get("/notes/11111111-1111-1111-a111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(200)
-      .body(containsString("users/1234"));
-
-    given()
-      .header(TEN)
-      .header("X-Okapi-Permissions", "notes.domain.things")
-      .get("/notes/11111111-1111-1111-a111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(401)
-      .body(containsString("notes.domain.users"));
-      */
 
     // Failed deletes
     givenWithUrl() // Bad UUID
@@ -771,23 +607,15 @@ public class NotesTest {
       .statusCode(400);
 
     givenWithUrl() // not found
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .delete("/notes/11111111-2222-3333-a444-555555555555")
       .then()
       .log().ifValidationFails()
       .statusCode(404);
 
-    givenWithUrl() // wrong perm
-      .header(TEN)
-      .delete("/notes/11111111-1111-1111-a111-111111111111")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(401);
-
     // delete them
     givenWithUrl()
       .header(TEN)
-      .header(ALLPERM)
       .delete("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
@@ -801,14 +629,14 @@ public class NotesTest {
       .statusCode(404);
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .delete("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
       .statusCode(204);
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes")
       .then()
       .log().ifValidationFails()
@@ -822,7 +650,7 @@ public class NotesTest {
       + "\"content\" : \"Note with no id\"}" + LS;
 
     final String location = givenWithUrl()
-      .header(TEN).header(USER9).header(JSON).header(ALLPERM)
+      .header(TEN).header(USER9).header(JSON)
       .body(note3)
       .post("/notes")
       .then()
@@ -832,7 +660,7 @@ public class NotesTest {
 
     // Fetch the note in various ways
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes")
       .then()
       .log().ifValidationFails()
@@ -843,7 +671,7 @@ public class NotesTest {
       .body(containsString("\"totalRecords\" : 1"));
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=title=testing&limit=1001")
       .then()
       .log().ifValidationFails()
@@ -854,21 +682,21 @@ public class NotesTest {
       .body(containsString("\"totalRecords\" : 1"));
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=title=testings&offset=-1")
       .then()
       .log().ifValidationFails()
       .statusCode(400);
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .get("/notes?query=title=testing&limit=-1")
       .then()
       .log().ifValidationFails()
       .statusCode(400);
 
     givenWithUrl()
-      .header(TEN).header(ALLPERM)
+      .header(TEN)
       .delete(location)
       .then()
       .log().ifValidationFails()
