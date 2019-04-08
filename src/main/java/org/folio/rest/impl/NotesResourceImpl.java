@@ -29,6 +29,7 @@ import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgExceptionUtil;
+import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.client.HttpClientFactory;
@@ -333,39 +334,7 @@ public class NotesResourceImpl implements Notes {
     String lang, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context context) {
-    if (id.equals("_self")) {
-      // The _self endpoint has already handled this request
-      return;
-    }
-    getOneNote(id, okapiHeaders, context, res -> {
-      if (res.succeeded()) {
-        asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-          .respond200WithApplicationJson(res.result())));
-      } else {
-        switch (res.getType()) {
-          case NOT_FOUND:
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .respond404WithTextPlain(res.cause().getMessage())));
-            break;
-          case USER: // bad request
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .respond400WithTextPlain(res.cause().getMessage())));
-            break;
-          case FORBIDDEN:
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .respond401WithTextPlain(res.cause().getMessage())));
-            break;
-          default: // typically INTERNAL
-            String msg = res.cause().getMessage();
-            if (msg.isEmpty()) {
-              msg = messages.getMessage(lang, MessageConsts.InternalServerError);
-            }
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-              .respond500WithTextPlain(msg)));
-            break;
-        }
-      }
-    });
+    PgUtil.getById(NOTE_TABLE, Note.class, id, okapiHeaders, context, GetNotesByIdResponse.class, asyncResultHandler);
   }
 
   @Override

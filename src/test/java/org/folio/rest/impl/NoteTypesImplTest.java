@@ -15,6 +15,7 @@ import org.apache.http.protocol.HTTP;
 import org.folio.rest.TestBase;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
+import org.folio.rest.persist.PostgresClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,7 +46,7 @@ public class NoteTypesImplTest extends TestBase {
       final String stubNoteType = readFile("post_note_type.json");
       final String stubId = "9c1e6f3c-682d-4af4-bd6b-20dad912ff94";
 
-      NoteTypesTestUtil.insertNoteType(vertx, stubId, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, stubId, stubNoteType);
 
       RestAssured.given()
         .spec(getRequestSpecification())
@@ -54,7 +55,7 @@ public class NoteTypesImplTest extends TestBase {
         .then()
         .statusCode(200).extract().asString();
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -123,31 +124,31 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldUpdateNoteNameTypeOnPut() throws IOException, URISyntaxException {
     try {
-      NoteTypesTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, TestUtil.readFile("post_note.json"));
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, TestUtil.readFile("post_note.json"));
       NoteType updatedNoteType = mapper.readValue(TestUtil.readFile("put_note.json"), NoteType.class);
       updateNoteType(updatedNoteType);
 
-      List<NoteType> noteTypes = NoteTypesTestUtil.getAllNoteTypes(vertx);
+      List<NoteType> noteTypes = DBTestUtil.getAllNoteTypes(vertx);
       assertEquals(1, noteTypes.size());
       assertEquals(updatedNoteType.getName(), noteTypes.get(0).getName());
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
   @Test
   public void shouldNotSetNoteUsageOnPut() throws IOException, URISyntaxException {
     try {
-      NoteTypesTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, TestUtil.readFile("post_note.json"));
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, TestUtil.readFile("post_note.json"));
       NoteType updatedNoteType = mapper.readValue(TestUtil.readFile("put_note.json"), NoteType.class);
       updatedNoteType.withUsage(new NoteTypeUsage().withNoteTotal(NOTE_TOTAL));
       updateNoteType(updatedNoteType);
 
-      List<NoteType> noteTypes = NoteTypesTestUtil.getAllNoteTypes(vertx);
+      List<NoteType> noteTypes = DBTestUtil.getAllNoteTypes(vertx);
       assertEquals(1, noteTypes.size());
       assertNull(noteTypes.get(0).getUsage());
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
