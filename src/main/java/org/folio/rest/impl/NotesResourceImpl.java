@@ -46,17 +46,17 @@ import org.z3950.zing.cql.cql2pgjson.SchemaException;
 public class NotesResourceImpl implements Notes {
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
   private final Messages messages = Messages.getInstance();
-  public static final String NOTE_TABLE = "note_data";
+  private static final String NOTE_TABLE = "note_data";
   private static final String LOCATION_PREFIX = "/notes/";
   private static final String IDFIELDNAME = "id";
-  private String NOTE_SCHEMA = null;
+  private String noteSchema = null;
   private static final String NOTE_SCHEMA_NAME = "ramls/note.json";
   // Get this from the restVerticle, like the rest, when it gets defined there.
 
   private void initCQLValidation() {
     String path = NOTE_SCHEMA_NAME;
     try {
-      NOTE_SCHEMA = IOUtils.toString(
+      noteSchema = IOUtils.toString(
         getClass().getClassLoader().getResourceAsStream(path), "UTF-8");
     } catch (Exception e) {
       logger.error("unable to load schema - " + path
@@ -65,7 +65,7 @@ public class NotesResourceImpl implements Notes {
   }
 
   public NotesResourceImpl(Vertx vertx, String tenantId) {
-    if (NOTE_SCHEMA == null) {
+    if (noteSchema == null) {
       initCQLValidation();
     }
     PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
@@ -73,7 +73,7 @@ public class NotesResourceImpl implements Notes {
 
   private CQLWrapper getCQL(String query, int limit, int offset,
     String schema) throws IOException, FieldException, SchemaException  {
-    CQL2PgJSON cql2pgJson = null;
+    CQL2PgJSON cql2pgJson;
     if (schema != null) {
       cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb", schema);
     } else {
@@ -83,24 +83,6 @@ public class NotesResourceImpl implements Notes {
       .setLimit(new Limit(limit))
       .setOffset(new Offset(offset));
   }
-
-  /**
-   * Helper to check if the user has notes.domain.all permission.
-   *
-   * @param okapiHeaders
-   * @return
-   */
-  private boolean noteDomainPermission(
-    Map<String, String> okapiHeaders) {
-    String perms = okapiHeaders.get(RestVerticle.OKAPI_HEADER_PERMISSIONS);
-    if (perms == null || perms.isEmpty()) {
-      logger.error("No " + RestVerticle.OKAPI_HEADER_PERMISSIONS
-        + " - check notes.domain.* permissions");
-      return false;
-    }
-    return perms.contains("notes.domain.all");
-  }
-
 
   @Override
   @Validate
@@ -128,42 +110,11 @@ public class NotesResourceImpl implements Notes {
 
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    String perms = okapiHeaders.get(RestVerticle.OKAPI_HEADER_PERMISSIONS);
-    if (perms == null || perms.isEmpty()) {
-      logger.error("No " + RestVerticle.OKAPI_HEADER_PERMISSIONS
-        + " - check notes.domain.* permissions");
-      asyncResultHandler.handle(succeededFuture(GetNotesResponse
-        .respond401WithTextPlain("No notes.domain.* permissions")));
-      return;
-    }
-    boolean allseen = false;
-    String delim = "";
-    StringBuilder pqb = new StringBuilder();
-    for (String p : perms.split(",")) {
-      if (p.equals("notes.domain.all")) {
-        allseen = true;
-        break;
-      }
-      if (p.startsWith("notes.domain.")) {
-        pqb.append(delim)
-          .append("domain=")
-          .append(p.replaceFirst("^notes\\.domain\\.", ""));
-        delim = " OR ";
-      }
-    }
-    String pq = pqb.toString();
-    if (!allseen && !pq.isEmpty()) {
-      if (query == null) {
-        query = pq;
-      } else {
-        query = "(" + query + ") and ( " + pq + ")";
-      }
-    }
 
     logger.debug("Getting notes. new query:" + query);
-    CQLWrapper cql = null;
+    CQLWrapper cql;
     try {
-      cql = getCQL(query, limit, offset, NOTE_SCHEMA);
+      cql = getCQL(query, limit, offset, noteSchema);
     } catch (Exception e) {
       ValidationHelper.handleError(e, asyncResultHandler);
       return;
@@ -203,11 +154,6 @@ public class NotesResourceImpl implements Notes {
     String idt = note.getId();
     if (idt == null || idt.isEmpty()) {
       note.setId(UUID.randomUUID().toString());
-    }
-    if (!noteDomainPermission(okapiHeaders)) {
-      asyncResultHandler.handle(succeededFuture(PostNotesResponse
-        .respond401WithTextPlain("No permission notes.domain.all")));
-      return;
     }
     // Get the creator names, if not there
     if (note.getCreator() == null
@@ -366,14 +312,8 @@ public class NotesResourceImpl implements Notes {
             List<Note> notes = reply.result().getResults();
             if (notes.isEmpty()) {
               resp.handle(new Failure<>(NOT_FOUND, "Note " + id + " not found"));
-            } else {  // Can not use validationHelper here
-              Note n = notes.get(0);
-              if (noteDomainPermission(okapiHeaders)) {
-                resp.handle(new Success<>(n));
-              } else {
-                resp.handle(new Failure<>(FORBIDDEN,
-                  "No permission notes.domain.all"));
-              }
+            } else {
+              resp.handle(new Success<>(notes.get(0)));
             }
           } else {
             String error = PgExceptionUtil.badRequestMessage(reply.cause());
@@ -502,13 +442,6 @@ public class NotesResourceImpl implements Notes {
         "Can not change Id");
       asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
         .respond422WithApplicationJson(valErr)));
-      return;
-    }
-     // Check the perm for the domain we are about to set
-    // getOneNote will check the perm for the domain as it is in the db
-    if (!noteDomainPermission(okapiHeaders)) {
-      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse
-        .respond401WithTextPlain("No permission notes.domain.all")));
       return;
     }
 
