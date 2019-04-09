@@ -46,7 +46,7 @@ public class NoteTypesImplTest extends TestBase {
       final String stubNoteType = readFile("post_note_type.json");
       final String stubId = "9c1e6f3c-682d-4af4-bd6b-20dad912ff94";
 
-      DBTestUtil.insertNoteType(vertx, stubId, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, stubId, STUB_TENANT, stubNoteType);
 
       RestAssured.given()
         .spec(getRequestSpecification())
@@ -124,7 +124,7 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldUpdateNoteNameTypeOnPut() throws IOException, URISyntaxException {
     try {
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, TestUtil.readFile("post_note.json"));
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, TestUtil.readFile("post_note.json"));
       NoteType updatedNoteType = mapper.readValue(TestUtil.readFile("put_note.json"), NoteType.class);
       updateNoteType(updatedNoteType);
 
@@ -139,7 +139,7 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldNotSetNoteUsageOnPut() throws IOException, URISyntaxException {
     try {
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, TestUtil.readFile("post_note.json"));
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, TestUtil.readFile("post_note.json"));
       NoteType updatedNoteType = mapper.readValue(TestUtil.readFile("put_note.json"), NoteType.class);
       updatedNoteType.withUsage(new NoteTypeUsage().withNoteTotal(NOTE_TOTAL));
       updateNoteType(updatedNoteType);
