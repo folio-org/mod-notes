@@ -48,9 +48,12 @@
         },
         {
           "methods": ["GET"],
+          "pathPattern": "/note-types",
+          "permissionsRequired": ["note.types.collection.get"]
+        }, {
+          "methods": ["POST"],
           "pathPattern": "/note-types"
-        },
-        {
+        }, {
           "methods": ["GET"],
           "pathPattern": "/note-types/{typeId}",
           "permissionsRequired": ["note.types.item.get"]
@@ -167,11 +170,17 @@
       "description": "Get individual note type"
     },
     {
+      "permissionName": "note.types.collection.get",
+      "displayName": "Note types - get note types collection",
+      "description": "Get note types collection"
+    },
+    {
       "permissionName": "note.types.allops",
       "displayName": "Note types - all CRUD permissions",
       "description": "Entire set of permissions needed to use the note type for note module",
       "subPermissions": [
         "note.types.item.get",
+        "note.types.collection.get",
         "note.types.item.post",
         "note.types.item.put"
       ],
