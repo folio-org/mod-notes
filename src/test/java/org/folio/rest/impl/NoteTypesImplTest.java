@@ -41,6 +41,8 @@ public class NoteTypesImplTest extends TestBase {
   private static final String POST_NOTE_TYPE_JSON = "post_note_type.json";
   private static final String ID = "9c1e6f3c-682d-4af4-bd6b-20dad912ff94";
   private static final String COLLECTION_NOTE_TYPE_JSON = "post_collection_note_type.json";
+  private static final int MAX_LIMIT_AND_OFFSET = 2147483647;
+  private static final int NULL_LIMIT_AND_OFFSET = 0;
 
   private ObjectMapper mapper = new ObjectMapper();
 
@@ -90,6 +92,198 @@ public class NoteTypesImplTest extends TestBase {
 
   @Test
   public void shouldReturn200WithNoteTypeCollectionAndWithQuery() throws IOException, URISyntaxException {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
+
+      for (NoteType noteType : noteTypes) {
+        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+      }
+      Response response = RestAssured.given()
+        .spec(getRequestSpecification())
+        .when()
+        .get(NOTE_TYPES_ENDPOINT + "?query=(name=High)")
+        .then()
+        .statusCode(200)
+        .extract().response();
+
+      int totalRecords = response.path(TOTAL_RECORDS);
+      List<NoteType> noteTypeList = response.path(NOTE_TYPES);
+
+      assertEquals(1, noteTypeList.size());
+      assertEquals(1, totalRecords);
+    } finally {
+      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn200WithLimitAndOffsetSet() throws IOException, URISyntaxException {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
+
+      for (NoteType noteType : noteTypes) {
+        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+      }
+      Response response = RestAssured.given()
+        .spec(getRequestSpecification())
+        .when()
+        .get(NOTE_TYPES_ENDPOINT + "?limit=" + MAX_LIMIT_AND_OFFSET + "&offset=2")
+        .then()
+        .statusCode(200)
+        .extract().response();
+
+      int totalRecords = response.path(TOTAL_RECORDS);
+      List<NoteType> noteTypeList = response.path(NOTE_TYPES);
+
+      assertEquals(1, noteTypeList.size());
+      assertEquals(3, totalRecords);
+    } finally {
+      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn200WithMaxLimit() throws IOException, URISyntaxException {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
+
+      for (NoteType noteType : noteTypes) {
+        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+      }
+      Response response = RestAssured.given()
+        .spec(getRequestSpecification())
+        .when()
+        .get(NOTE_TYPES_ENDPOINT + "?limit=" + MAX_LIMIT_AND_OFFSET)
+        .then()
+        .statusCode(200)
+        .extract().response();
+
+      int totalRecords = response.path(TOTAL_RECORDS);
+      List<NoteType> noteTypeList = response.path(NOTE_TYPES);
+
+      assertEquals(3, noteTypeList.size());
+      assertEquals(3, totalRecords);
+    } finally {
+      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn200WithMaxOffset() throws IOException, URISyntaxException {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
+
+      for (NoteType noteType : noteTypes) {
+        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+      }
+      Response response = RestAssured.given()
+        .spec(getRequestSpecification())
+        .when()
+        .get(NOTE_TYPES_ENDPOINT + "?offset=" + MAX_LIMIT_AND_OFFSET)
+        .then()
+        .statusCode(200)
+        .extract().response();
+
+      int totalRecords = response.path(TOTAL_RECORDS);
+      List<NoteType> noteTypeList = response.path(NOTE_TYPES);
+
+      assertEquals(0, noteTypeList.size());
+      assertEquals(3, totalRecords);
+    } finally {
+      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn200WithOffsetNull() throws IOException, URISyntaxException {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
+
+      for (NoteType noteType : noteTypes) {
+        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+      }
+      Response response = RestAssured.given()
+        .spec(getRequestSpecification())
+        .when()
+        .get(NOTE_TYPES_ENDPOINT + "?offset=" + NULL_LIMIT_AND_OFFSET)
+        .then()
+        .statusCode(200)
+        .extract().response();
+
+      int totalRecords = response.path(TOTAL_RECORDS);
+      List<NoteType> noteTypeList = response.path(NOTE_TYPES);
+
+      assertEquals(3, noteTypeList.size());
+      assertEquals(3, totalRecords);
+    } finally {
+      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn200WithLimitNull() throws IOException, URISyntaxException {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
+
+      for (NoteType noteType : noteTypes) {
+        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+      }
+      Response response = RestAssured.given()
+        .spec(getRequestSpecification())
+        .when()
+        .get(NOTE_TYPES_ENDPOINT + "?limit=" + NULL_LIMIT_AND_OFFSET)
+        .then()
+        .statusCode(200)
+        .extract().response();
+
+      int totalRecords = response.path(TOTAL_RECORDS);
+      List<NoteType> noteTypeList = response.path(NOTE_TYPES);
+
+      assertEquals(0, noteTypeList.size());
+      assertEquals(3, totalRecords);
+    } finally {
+      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn400WhenLimitInvalid() {
+    try {
+      RestAssured.given()
+        .spec(getRequestSpecification())
+        .when()
+        .get(NOTE_TYPES_ENDPOINT + "&limit=-1")
+        .then()
+        .statusCode(400)
+        .extract().asString();
+    } finally {
+      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn400WhenOffsetInvalid() {
+    try {
+      RestAssured.given()
+        .spec(getRequestSpecification())
+        .when()
+        .get(NOTE_TYPES_ENDPOINT + "&offset=-1")
+        .then()
+        .statusCode(400)
+        .extract().asString();
+    } finally {
+      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn200WithThreeNoteTypeElements() throws IOException, URISyntaxException {
     try {
       ObjectMapper mapper = new ObjectMapper();
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
