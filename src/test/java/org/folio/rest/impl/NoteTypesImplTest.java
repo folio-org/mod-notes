@@ -2,7 +2,6 @@ package org.folio.rest.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
@@ -36,14 +35,12 @@ public class NoteTypesImplTest extends TestBase {
   private static final String STUB_NOTE_TYPE_ID = "2cf21797-d25b-46dc-8427-1759d1db2057";
   private static final String NOT_EXISTING_STUB_ID = "9798274e-ce9d-46ab-aa28-00ca9cf4698a";
   private static final String NOTE_TYPES_ENDPOINT = "/note-types";
-  private static final Header CONTENT_TYPE_HEADER = new Header(HTTP.CONTENT_TYPE, "application/json");
   private static final String TOTAL_RECORDS = "totalRecords";
   private static final String NOTE_TYPES = "noteTypes";
-  private static final String POST_NOTE_TYPE_JSON = "post_note_type.json";
-  private static final String ID = "9c1e6f3c-682d-4af4-bd6b-20dad912ff94";
   private static final String COLLECTION_NOTE_TYPE_JSON = "post_collection_note_type.json";
   private static final int MAX_LIMIT_AND_OFFSET = 2147483647;
   private static final int NULL_LIMIT_AND_OFFSET = 0;
+  private static final Header CONTENT_TYPE_HEADER = new Header(HTTP.CONTENT_TYPE, "application/json");
 
   private ObjectMapper mapper = new ObjectMapper();
 
@@ -51,27 +48,26 @@ public class NoteTypesImplTest extends TestBase {
   public void shouldReturn200WithNoteTypeWhenValidId() throws IOException, URISyntaxException {
     try {
       final String stubNoteType = readFile("post_note_type.json");
-      final String stubId = "9c1e6f3c-682d-4af4-bd6b-20dad912ff94";
 
-      DBTestUtil.insertNoteType(vertx, stubId, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
 
       RestAssured.given()
         .spec(getRequestSpecification())
         .when()
-        .get(NOTE_TYPES_ENDPOINT + "/" + stubId)
+        .get(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID)
         .then()
         .statusCode(200).extract().asString();
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
   @Test
   public void shouldReturn200WithNoteTypeCollection() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile(POST_NOTE_TYPE_JSON);
+      final String stubNoteType = readFile("post_note_type.json");
 
-      NoteTypesTestUtil.insertNoteType(vertx, ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
 
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -87,7 +83,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(1, noteTypes.size());
       assertEquals(1, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -98,7 +94,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -114,7 +110,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(1, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -125,7 +121,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -141,7 +137,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -152,7 +148,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -168,7 +164,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(0, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -179,7 +175,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -195,7 +191,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -206,7 +202,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -222,7 +218,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(0, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -237,7 +233,7 @@ public class NoteTypesImplTest extends TestBase {
         .statusCode(400)
         .extract().asString();
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -252,7 +248,7 @@ public class NoteTypesImplTest extends TestBase {
         .statusCode(400)
         .extract().asString();
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -263,7 +259,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        NoteTypesTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -279,16 +275,16 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
   @Test
   public void shouldReturn200WithNoteTypeCollectionAndIncompleteWay() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile(POST_NOTE_TYPE_JSON);
+      final String stubNoteType = readFile("post_note_type.json");
 
-      NoteTypesTestUtil.insertNoteType(vertx, ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
 
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -304,7 +300,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(1, noteTypes.size());
       assertEquals(1, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
@@ -325,16 +321,16 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(0, noteTypes.size());
       assertEquals(0, totalRecords);
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
   @Test
   public void shouldReturn400InvalidRequest() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile(POST_NOTE_TYPE_JSON);
+      final String stubNoteType = readFile("post_note_type.json");
 
-      NoteTypesTestUtil.insertNoteType(vertx, ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
 
       RestAssured.given()
         .spec(getRequestSpecification())
@@ -344,16 +340,16 @@ public class NoteTypesImplTest extends TestBase {
         .statusCode(400)
         .extract().asString();
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 
   @Test
   public void shouldReturn400InvalidLimit() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile(POST_NOTE_TYPE_JSON);
+      final String stubNoteType = readFile("post_note_type.json");
 
-      NoteTypesTestUtil.insertNoteType(vertx, ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
 
       RestAssured.given()
         .spec(getRequestSpecification())
@@ -363,7 +359,7 @@ public class NoteTypesImplTest extends TestBase {
         .statusCode(400)
         .extract().asString();
     } finally {
-      NoteTypesTestUtil.deleteAllNoteTypes(vertx);
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
 

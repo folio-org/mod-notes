@@ -48,9 +48,6 @@
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/note-types"
-        },
-        {
           "pathPattern": "/note-types",
           "permissionsRequired": ["note.types.collection.get"]
         }, {
@@ -184,7 +181,6 @@
       "subPermissions": [
         "note.types.item.get",
         "note.types.collection.get",
-        "note.types.item.get",
         "note.types.item.post",
         "note.types.item.put"
       ],

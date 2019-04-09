@@ -16,7 +16,6 @@ import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -60,12 +59,9 @@ public class NoteTypesImpl implements NoteTypes {
                   lang, MessageConsts.InternalServerError)))));
             }
           });
-      } catch (FieldException fe) {
+      } catch (Exception fe) {
         asyncResultHandler.handle(succeededFuture(GetNoteTypesResponse.respond400WithTextPlain(
           "CQL Parsing Error for '" + query + "': " + fe.getLocalizedMessage())));
-      } catch (Exception e) {
-        asyncResultHandler.handle(succeededFuture(GetNoteTypesResponse
-          .respond500WithTextPlain(messages.getMessage(lang, MessageConsts.InternalServerError))));
       }
     });
   }
