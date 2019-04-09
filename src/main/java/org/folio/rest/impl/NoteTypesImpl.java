@@ -10,15 +10,22 @@ import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.jaxrs.resource.NoteTypes;
 import org.folio.rest.persist.PgUtil;
+import org.folio.rest.persist.PostgresClient;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 public class NoteTypesImpl implements NoteTypes {
 
   private static final String NOTE_TYPE_TABLE = "note_type";
+  private static final String IDFIELDNAME = "id";
+
+  public NoteTypesImpl(Vertx vertx, String tenantId) {
+    PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
+  }
 
   @Override
   public void getNoteTypes(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,

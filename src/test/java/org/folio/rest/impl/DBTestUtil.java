@@ -26,7 +26,7 @@ class DBTestUtil {
   public static void insertNoteType(Vertx vertx, String stubId, String json) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     PostgresClient.getInstance(vertx).execute(
-      "INSERT INTO " + getNoteTypesTableName() + "(" + " _id, " + JSONB_COLUMN + ") VALUES ('" + stubId + "' , '" + json + "');" ,
+      "INSERT INTO " + getNoteTypesTableName() + "(" + " id, " + JSONB_COLUMN + ") VALUES ('" + stubId + "' , '" + json + "');" ,
       event -> future.complete(null));
     future.join();
   }
