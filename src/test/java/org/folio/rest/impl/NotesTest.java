@@ -634,13 +634,13 @@ public class NotesTest {
   }
 
   @Test
-  public void shouldReturn400WhenDeleteRequestHasInvalidUUID() {
+  public void shouldReturn500WhenDeleteRequestHasInvalidUUID() {
     givenWithUrl() // Bad UUID
       .header(TEN)
       .delete("/notes/11111111-3-1111-333-111111111111")
       .then()
       .log().ifValidationFails()
-      .statusCode(400);
+      .statusCode(500);
   }
 
   @Test
