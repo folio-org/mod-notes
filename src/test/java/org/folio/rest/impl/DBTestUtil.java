@@ -14,12 +14,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vertx.core.Vertx;
 
-class NoteTypesTestUtil {
+class DBTestUtil {
 
   private static final String JSONB_COLUMN = "jsonb";
-  private static final String NOTE_TYPE_TABLE = "note_type";
+  public static final String NOTE_TYPE_TABLE = "note_type";
+  public static final String NOTE_TABLE = "note_data";
 
-  private NoteTypesTestUtil() {
+  private DBTestUtil() {
   }
 
   public static void insertNoteType(Vertx vertx, String stubId, String json) {
@@ -47,10 +48,10 @@ class NoteTypesTestUtil {
     return future.join();
   }
 
-  public static void deleteAllNoteTypes(Vertx vertx) {
+  public static void deleteFromTable(Vertx vertx, String tableName) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     PostgresClient.getInstance(vertx).execute(
-      "DELETE FROM " + getNoteTypesTableName(),
+      "DELETE FROM " + tableName,
       event -> future.complete(null));
     future.join();
   }
