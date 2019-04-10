@@ -1,6 +1,7 @@
 package org.folio.rest.impl;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.jeasy.random.FieldPredicates.named;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -18,11 +19,9 @@ import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
-import io.restassured.http.Header;
 import io.restassured.response.Response;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.apache.http.HttpStatus;
-import org.apache.http.protocol.HTTP;
 import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
 import org.junit.Test;
@@ -375,8 +374,16 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn404WhenInvalidId() {
-    getWithStatus(NOTE_TYPES_ENDPOINT + "/" + NOT_EXISTING_STUB_ID, HttpStatus.SC_NOT_FOUND).asString();
+  public void shouldReturn404WhenInvalidNotExistingId() {
+    final String response = getWithStatus(NOTE_TYPES_ENDPOINT + "/" + NOT_EXISTING_STUB_ID, HttpStatus.SC_NOT_FOUND).asString();
+    assertThat(response, equalTo("Not found"));
+  }
+
+  @Test
+  public void shouldReturn500WhenInvalidId() {
+
+    final String invalidStubId = "11111111-222-1111-2-111111111111";
+    getWithStatus(NOTE_TYPES_ENDPOINT + "/" + invalidStubId, HttpStatus.SC_INTERNAL_SERVER_ERROR).asString();
   }
 
   @Test

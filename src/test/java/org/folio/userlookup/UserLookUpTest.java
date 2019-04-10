@@ -3,6 +3,7 @@ package org.folio.userlookup;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 
+import io.vertx.core.Future;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,17 +52,17 @@ public class UserLookUpTest {
     final String stubUserIdEndpoint = GET_USER_ENDPOINT + stubUserId;
     Async async = context.async();
     
-    okapiHeaders.put("X-Okapi-tenant", TestBase.STUB_TENANT);
-    okapiHeaders.put("X-Okapi-Url", getWiremockUrl());
-    okapiHeaders.put("X-Okapi-User-Id", stubUserId);
+    okapiHeaders.put(XOkapiHeaders.TENANT, TestBase.STUB_TENANT);
+    okapiHeaders.put(XOkapiHeaders.URL, getWiremockUrl());
+    okapiHeaders.put(XOkapiHeaders.USER_ID, stubUserId);
     
     stubFor(
         get(new UrlPathPattern(new RegexPattern(stubUserIdEndpoint), true))
         .willReturn(new ResponseDefinitionBuilder()
             .withBody(TestUtil.readFile(USER_INFO_STUB_FILE))));
     
-    CompletableFuture<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
-    info.whenComplete((result, exception) -> {
+    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    info.compose(result -> {
       context.assertNotNull(result);
 
       UserLookUp userInfo = result;
@@ -70,7 +72,9 @@ public class UserLookUpTest {
       context.assertEquals("lastname_test", userInfo.getLastName());
 
       async.complete();
-    }).exceptionally(throwable -> {
+
+    return null;
+    }).otherwise(throwable -> {
       context.fail(throwable);
       async.complete();
       return null;
@@ -78,13 +82,13 @@ public class UserLookUpTest {
   }
   
   @Test
-  public void ShouldReturn401WhenUnauthorizedAccess(TestContext context) throws IOException, URISyntaxException {
+  public void ShouldReturn401WhenUnauthorizedAccess(TestContext context) {
     final String stubUserId = "a49cefad-7447-4f2f-9004-de32e7a6cc53";
     final String stubUserIdEndpoint = GET_USER_ENDPOINT + stubUserId;
     Async async = context.async();
     
-    okapiHeaders.put("X-Okapi-Url", getWiremockUrl());
-    okapiHeaders.put("X-Okapi-User-Id", stubUserId);
+    okapiHeaders.put(XOkapiHeaders.URL, getWiremockUrl());
+    okapiHeaders.put(XOkapiHeaders.USER_ID, stubUserId);
     
     stubFor(
         get(new UrlPathPattern(new RegexPattern(stubUserIdEndpoint), true))
@@ -92,24 +96,27 @@ public class UserLookUpTest {
             .withStatus(401)
             .withStatusMessage("Authorization Failure")));
     
-    CompletableFuture<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
-    info.whenComplete((result, exception) -> {
+    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    info.compose(result -> {
       context.assertNull(result);
-      context.assertTrue(exception.getCause() instanceof NotAuthorizedException);
-    
       async.complete();
+      return null;
+    }).otherwise(exception -> {
+      context.assertTrue(exception.getCause() instanceof NotAuthorizedException);
+      async.complete();
+      return null;
     });
   }
   
   @Test
-  public void ShouldReturn404WhenUserNotFound(TestContext context) throws IOException, URISyntaxException {
+  public void ShouldReturn404WhenUserNotFound(TestContext context) {
     final String stubUserId = "xyz";
     final String stubUserIdEndpoint = GET_USER_ENDPOINT + stubUserId;
     Async async = context.async();
     
-    okapiHeaders.put("X-Okapi-tenant", STUB_TENANT);
-    okapiHeaders.put("X-Okapi-Url", getWiremockUrl());
-    okapiHeaders.put("X-Okapi-User-Id", stubUserId);
+    okapiHeaders.put(XOkapiHeaders.TENANT, STUB_TENANT);
+    okapiHeaders.put(XOkapiHeaders.URL, getWiremockUrl());
+    okapiHeaders.put(XOkapiHeaders.USER_ID, stubUserId);
     
     stubFor(
         get(new UrlPathPattern(new RegexPattern(stubUserIdEndpoint), true))
@@ -117,12 +124,15 @@ public class UserLookUpTest {
             .withStatus(404)
             .withStatusMessage("User Not Found")));
     
-    CompletableFuture<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
-    info.whenComplete((result, exception) -> {
+    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    info.compose(result -> {
       context.assertNull(result);
-      context.assertTrue(exception.getCause() instanceof NotFoundException);
-    
       async.complete();
+      return null;
+    }).otherwise(exception -> {
+      context.assertTrue(exception.getCause() instanceof NotFoundException);
+      async.complete();
+      return null;
     });
   }
   
@@ -130,14 +140,17 @@ public class UserLookUpTest {
   public void missingOkapiURLHeaderShouldReturn500Test(TestContext context) {
     Async async = context.async();
 
-    okapiHeaders.put("X-Okapi-tenant", STUB_TENANT);
+    okapiHeaders.put(XOkapiHeaders.TENANT, STUB_TENANT);
 
-    CompletableFuture<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
-    info.whenComplete((result, exception) -> {
+    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    info.compose(result -> {
       context.assertNull(result);
-      context.assertTrue(exception.getCause() instanceof IllegalStateException);
-
       async.complete();
+      return null;
+    }).otherwise(exception -> {
+      context.assertTrue(exception.getCause() instanceof IllegalStateException);
+      async.complete();
+      return null;
     });
   }
 

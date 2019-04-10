@@ -1,20 +1,21 @@
 package org.folio.userlookup;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
+
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.folio.rest.RestVerticle;
 import org.folio.rest.tools.client.HttpClientFactory;
 import org.folio.rest.tools.client.Response;
 import org.folio.rest.tools.client.interfaces.HttpClientInterface;
 import org.folio.rest.tools.utils.TenantTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.vertx.core.json.JsonObject;
 
 /**
  * Retrieves user information from mod-users /users/{userId} endpoint.
@@ -80,22 +81,21 @@ public class UserLookUp {
    * @param okapiHeaders The headers for the current API call.
    * @return User information based on userid from header.
    */
-  public static CompletableFuture<UserLookUp> getUserInfo(final Map<String, String> okapiHeaders) {
+  public static Future<UserLookUp> getUserInfo(final Map<String, String> okapiHeaders) {
     final String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
     final String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
-    
-    CompletableFuture<UserLookUp> future = new CompletableFuture<>();
+    Future<UserLookUp> future = Future.future();
     if (userId == null) {
       logger.error("No userid header");
-      future.completeExceptionally(new IllegalArgumentException("Missing user id header, cannot look up user"));
+      future.fail(new IllegalArgumentException("Missing user id header, cannot look up user"));
       return future;
     }
     
-    String okapiURL = okapiHeaders.get("X-Okapi-Url");
+    String okapiURL = okapiHeaders.get(XOkapiHeaders.URL);
     String url = "/users/" + userId;
     try {
       final HttpClientInterface httpClient = HttpClientFactory.getHttpClient(okapiURL, tenantId);
-      future = httpClient.request(url, okapiHeaders)
+      httpClient.request(url, okapiHeaders)
         .thenApply(response -> {
           try {
             if (Response.isSuccess(response.getCode())) {
@@ -113,10 +113,15 @@ public class UserLookUp {
           } finally {
             httpClient.closeClient();
           }
+        })
+        .thenAccept(future::complete)
+        .exceptionally(e -> {
+          future.fail(e);
+          return null;
         });
     } catch (Exception e) {
       logger.error("Cannot get user data: " + e.getMessage(), e);
-      future.completeExceptionally(e);
+      future.fail(e);
     }
 
     return future;
