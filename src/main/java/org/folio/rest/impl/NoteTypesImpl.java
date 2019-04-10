@@ -8,32 +8,30 @@ import java.util.Objects;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
-
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.jaxrs.resource.NoteTypes;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
+import org.folio.rest.persist.PgUtil;
+import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 public class NoteTypesImpl implements NoteTypes {
-
   private static final String NOTE_TYPE_TABLE = "note_type";
 
   private final Messages messages = Messages.getInstance();
-
 
   public NoteTypesImpl(Vertx vertx, String tenantId) {
     PostgresClient.getInstance(vertx, tenantId).setIdField("id");
@@ -85,7 +83,7 @@ public class NoteTypesImpl implements NoteTypes {
   @Validate
   @Override
   public void getNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+                                   Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
     Handler<AsyncResult<Response>> handlerWrapper = event -> {
       if (event.succeeded() && Response.Status.OK.getStatusCode() == event.result().getStatus()) {
@@ -99,7 +97,7 @@ public class NoteTypesImpl implements NoteTypes {
     };
 
     PgUtil.getById(NOTE_TYPE_TABLE, NoteType.class, typeId, okapiHeaders, vertxContext, GetNoteTypesByTypeIdResponse.class,
-        handlerWrapper);
+      handlerWrapper);
 
   }
 

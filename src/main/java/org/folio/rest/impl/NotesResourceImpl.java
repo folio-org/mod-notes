@@ -1,28 +1,30 @@
 package org.folio.rest.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
 import static io.vertx.core.Future.succeededFuture;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import static org.folio.okapi.common.ErrorType.INTERNAL;
+import static org.folio.okapi.common.ErrorType.NOT_FOUND;
+import static org.folio.okapi.common.ErrorType.USER;
+
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 import javax.ws.rs.core.Response;
+
 import org.apache.commons.io.IOUtils;
-import static org.folio.okapi.common.ErrorType.*;
 import org.folio.okapi.common.ExtendedAsyncResult;
 import org.folio.okapi.common.Failure;
 import org.folio.okapi.common.Success;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.*;
+import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.jaxrs.model.UserDisplayInfo;
 import org.folio.rest.jaxrs.resource.Notes;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -38,9 +40,19 @@ import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
+import org.folio.type.NoteTypeRepository;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 import org.z3950.zing.cql.cql2pgjson.SchemaException;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 
 @java.lang.SuppressWarnings({"squid:S1192"}) // This can be removed once John sets SQ up properly
@@ -52,6 +64,7 @@ public class NotesResourceImpl implements Notes {
   private static final String IDFIELDNAME = "id";
   private String noteSchema = null;
   private static final String NOTE_SCHEMA_NAME = "ramls/note.json";
+  private final NoteTypeRepository typeRepository;
   // Get this from the restVerticle, like the rest, when it gets defined there.
 
   private void initCQLValidation() {
@@ -66,10 +79,15 @@ public class NotesResourceImpl implements Notes {
   }
 
   public NotesResourceImpl(Vertx vertx, String tenantId) {
+    this(vertx, tenantId, new NoteTypeRepository());
+  }
+
+  public NotesResourceImpl(Vertx vertx, String tenantId, NoteTypeRepository typeRepository) {
     if (noteSchema == null) {
       initCQLValidation();
     }
     PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
+    this.typeRepository = typeRepository;
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset,
@@ -93,20 +111,6 @@ public class NotesResourceImpl implements Notes {
     Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
 
-    getNotesBoth(query, offset, limit,
-      lang, okapiHeaders,
-      asyncResultHandler, vertxContext);
-  }
-
-  /*
-   * Combined handler for get _self and plain get (collection)
-   */
-  @java.lang.SuppressWarnings({"squid:S00107"}) // 8 parameters, I know
-  private void getNotesBoth(String query, int offset, int limit,
-    String lang, Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) {
-
     logger.debug("Getting notes. " + offset + "+" + limit + " q=" + query);
 
     String tenantId = TenantTool.calculateTenantId(
@@ -120,6 +124,19 @@ public class NotesResourceImpl implements Notes {
       ValidationHelper.handleError(e, asyncResultHandler);
       return;
     }
+    getNotes(vertxContext, tenantId, cql)
+      .thenCompose(notes ->
+        loadTypeNames(notes.getNotes(), okapiHeaders, vertxContext, tenantId)
+          .thenAccept(o ->
+            asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)))))
+      .exceptionally(e -> {
+        ValidationHelper.handleError(e.getCause(), asyncResultHandler);
+        return null;
+      });
+  }
+
+  private CompletableFuture<NoteCollection> getNotes(Context vertxContext, String tenantId, CQLWrapper cql) {
+    CompletableFuture<NoteCollection> future = new CompletableFuture<>();
     PostgresClient.getInstance(vertxContext.owner(), tenantId)
       .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
         true /*get count too*/, false /* set id */,
@@ -131,12 +148,12 @@ public class NotesResourceImpl implements Notes {
             notes.setNotes(notelist);
             Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
             notes.setTotalRecords(totalRecords);
-            asyncResultHandler.handle(succeededFuture(
-              GetNotesResponse.respond200WithApplicationJson(notes)));
+            future.complete(notes);
           } else {
-            ValidationHelper.handleError(reply.cause(), asyncResultHandler);
+            future.completeExceptionally(reply.cause());
           }
         });
+    return future;
   }
 
   /**
@@ -331,10 +348,22 @@ public class NotesResourceImpl implements Notes {
   @Override
   @Validate
   public void getNotesById(String id,
-    String lang, Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
-    Context context) {
-    PgUtil.getById(NOTE_TABLE, Note.class, id, okapiHeaders, context, GetNotesByIdResponse.class, asyncResultHandler);
+                           String lang, Map<String, String> okapiHeaders,
+                           Handler<AsyncResult<Response>> asyncResultHandler,
+                           Context context) {
+    String tenantId = TenantTool.calculateTenantId(
+      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    Handler<AsyncResult<Response>> handlerWrapper = result -> {
+      if (isResponseOk(result)) {
+        final Note note = (Note) result.result().getEntity();
+        loadTypeNames(Collections.singletonList(note), okapiHeaders, context, tenantId)
+          .thenAccept(o -> asyncResultHandler.handle(result));
+      }else{
+        asyncResultHandler.handle(result);
+      }
+    };
+
+    PgUtil.getById(NOTE_TABLE, Note.class, id, okapiHeaders, context, GetNotesByIdResponse.class, handlerWrapper);
   }
 
   @Override
@@ -474,5 +503,17 @@ public class NotesResourceImpl implements Notes {
           ValidationHelper.handleError(reply.cause(), asyncResultHandler);
         }
       });
+  }
+
+  private CompletableFuture<Void> loadTypeNames(List<Note> noteList, Map<String, String> okapiHeaders, Context context, String tenantId) {
+    List<String> typeIds = noteList.stream().map(Note::getTypeId).collect(Collectors.toList());
+    return typeRepository.getTypesByIds(typeIds, okapiHeaders, context, tenantId)
+      .thenAccept(
+        typeNames -> noteList.forEach(
+          note -> note.setType(typeNames.get(note.getTypeId()))));
+  }
+
+  private boolean isResponseOk(AsyncResult<Response> result) {
+    return result.succeeded() && Response.Status.OK.getStatusCode() == result.result().getStatus();
   }
 }

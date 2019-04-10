@@ -45,7 +45,6 @@ public class NoteTypesImplTest extends TestBase {
   private static final String COLLECTION_NOTE_TYPE_JSON = "post_collection_note_type.json";
   private static final int MAX_LIMIT_AND_OFFSET = 2147483647;
   private static final int NULL_LIMIT_AND_OFFSET = 0;
-  private static final Header CONTENT_TYPE_HEADER = new Header(HTTP.CONTENT_TYPE, "application/json");
 
   private ObjectMapper mapper = new ObjectMapper();
   private EasyRandom noteTypeRandom;
@@ -66,7 +65,7 @@ public class NoteTypesImplTest extends TestBase {
     try {
       final String stubNoteType = readFile("post_note_type.json");
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
 
       getWithOk(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID).asString();
     } finally {
@@ -79,7 +78,7 @@ public class NoteTypesImplTest extends TestBase {
     try {
       final String stubNoteType = readFile("post_note_type.json");
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
 
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -106,7 +105,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -133,7 +132,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -160,7 +159,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -187,7 +186,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -214,7 +213,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -271,7 +270,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), mapper.writeValueAsString(noteType));
+        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
       }
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -296,7 +295,7 @@ public class NoteTypesImplTest extends TestBase {
     try {
       final String stubNoteType = readFile("post_note_type.json");
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
 
       Response response = RestAssured.given()
         .spec(getRequestSpecification())
@@ -342,7 +341,7 @@ public class NoteTypesImplTest extends TestBase {
     try {
       final String stubNoteType = readFile("post_note_type.json");
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
 
       RestAssured.given()
         .spec(getRequestSpecification())
@@ -361,7 +360,7 @@ public class NoteTypesImplTest extends TestBase {
     try {
       final String stubNoteType = readFile("post_note_type.json");
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, stubNoteType);
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
 
       RestAssured.given()
         .spec(getRequestSpecification())
@@ -383,7 +382,7 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldUpdateNoteNameTypeOnPut() throws IOException, URISyntaxException {
     try {
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, readFile("post_note.json"));
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, readFile("post_note.json"));
       NoteType updatedNoteType = mapper.readValue(readFile("put_note.json"), NoteType.class);
       updateNoteType(updatedNoteType);
 
@@ -397,7 +396,7 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldNotSetNoteUsageOnPut() throws IOException, URISyntaxException {
     try {
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, readFile("post_note.json"));
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, readFile("post_note.json"));
       NoteType updatedNoteType = mapper.readValue(readFile("put_note.json"), NoteType.class);
       updatedNoteType.withUsage(new NoteTypeUsage().withNoteTotal(NOTE_TOTAL));
 
@@ -456,7 +455,7 @@ public class NoteTypesImplTest extends TestBase {
   public void shouldFailOnPostWith400IfTypeAlreadyExists() {
     try {
       NoteType existing = nextRandomNoteType();
-      DBTestUtil.insertNoteType(vertx, existing.getId(), toJson(existing));
+      DBTestUtil.insertNoteType(vertx, existing.getId(), STUB_TENANT, toJson(existing));
 
       NoteType creating = new NoteType().withName(existing.getName());
       String error = postWithStatus("note-types/", toJson(creating), HttpStatus.SC_BAD_REQUEST)
@@ -472,7 +471,7 @@ public class NoteTypesImplTest extends TestBase {
   public void shouldDeleteExistingNoteTypeById() {
     try {
       NoteType existing = nextRandomNoteType();
-      DBTestUtil.insertNoteType(vertx, existing.getId(), toJson(existing));
+      DBTestUtil.insertNoteType(vertx, existing.getId(), STUB_TENANT, toJson(existing));
 
       deleteWithStatus("note-types/" + existing.getId(), HttpStatus.SC_NO_CONTENT);
 

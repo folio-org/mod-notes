@@ -4,7 +4,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.jayway.restassured.RestAssured.given;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 
@@ -12,6 +16,20 @@ import static org.folio.util.TestUtil.readFile;
 
 import java.io.IOException;
 import java.util.Locale;
+
+import org.folio.rest.RestVerticle;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.PomReader;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
@@ -32,20 +50,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import org.folio.rest.RestVerticle;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.PomReader;
-import org.folio.rest.tools.utils.NetworkUtils;
 
 /**
  * Interface test for mod-notes. Tests the API with restAssured, directly
@@ -73,23 +78,31 @@ public class NotesTest {
     "77777777-7777-4777-a777-777777777777");
   private static final Header JSON = new Header("Content-Type", "application/json");
   private static final String NOT_JSON = "This is not json";
+
+  private static final String NOTE_TYPE_ID = "2af21797-d25b-46dc-8427-1759d1db2057";
+  private static final String NOTE_TYPE2_ID = "13f21797-d25b-46dc-8427-1759d1db2057";
+  private static final String NOTE_TYPE_NAME = "High Priority";
+  private static final String NOTE_TYPE2_NAME = "test note";
+  private static final String NOTE_TYPE = "{\"id\":\""+ NOTE_TYPE_ID+ "\", \"name\":\"" + NOTE_TYPE_NAME + "\"}";
+  private static final String NOTE_TYPE2 = "{\"id\":\""+ NOTE_TYPE2_ID+ "\", \"name\":\"" + NOTE_TYPE2_NAME + "\"}";
+
   private static final String NOTE_1 = "{"
     + "\"id\" : \"11111111-1111-1111-a111-111111111111\"," + LS
-    + "\"type\" : \"test note\"," + LS
+    + "\"typeId\" : \"" + NOTE_TYPE_ID + "\"," + LS
     + "\"title\" : \"test note title\"," + LS
     + "\"content\" : \"First note email@folio.org\"}" + LS;
   private static final String NOTE_2 = "{"
     + "\"id\" : \"22222222-2222-2222-a222-222222222222\"," + LS
-    + "\"type\" : \"High Priority\"," + LS
+    + "\"typeId\" : \"" + NOTE_TYPE2_ID + "\"," + LS
     + "\"title\" : \"things\"," + LS
     + "\"content\" : \"Test on things\"}" + LS;
   private static final String UPDATE_NOTE_REQUEST = "{"
     + "\"id\" : \"11111111-1111-1111-a111-111111111111\"," + LS
-    + "\"type\" : \"low priority\"," + LS
+    + "\"typeId\" : \"" + NOTE_TYPE_ID + "\"," + LS
     + "\"title\" : \"more things\"," + LS
     + "\"content\" : \"First note with a comment\"}" + LS;
   private static final String NOTE_3 = "{"
-    + "\"type\" : \"test type\"," + LS
+    + "\"typeId\" : \"" + NOTE_TYPE_ID + "\"," + LS
     + "\"title\" : \"testing\"," + LS
     + "\"content\" : \"Note with no id\"}" + LS;
   private static String moduleName; //  "mod-notes"
@@ -132,6 +145,8 @@ public class NotesTest {
     DeploymentOptions opt = new DeploymentOptions()
       .setConfig(conf);
 
+    RestAssured.port = port;
+
     async = context.async();
     vertx.deployVerticle(RestVerticle.class.getName(),
       opt, result -> {
@@ -153,9 +168,15 @@ public class NotesTest {
           .log().all()
           .statusCode(200);
 
-        NotesTest.async.complete();
+        vertx.executeBlocking(future -> {
+            DBTestUtil.insertNoteType(vertx, NOTE_TYPE_ID, TENANT, NOTE_TYPE);
+            DBTestUtil.insertNoteType(vertx, NOTE_TYPE2_ID, TENANT, NOTE_TYPE2);
+            future.complete();
+          },
+          vertxResult -> async.complete());
+
       });
-    RestAssured.port = port;
+
     logger.info("notesTest: setup done. Using port " + port);
   }
 
@@ -281,9 +302,9 @@ public class NotesTest {
   }
 
   @Test
-  public void shouldReturn422WhenRequestHasTypeSetToNull() {
-    String badJson = NOTE_1.replaceFirst("type", "status")
-      .replaceFirst("test note", "ASSIGNED");
+  public void shouldReturn422WhenRequestHasTypeIdSetToNull() {
+    String badJson = NOTE_1.replaceFirst("typeId", "status")
+      .replaceFirst(NOTE_TYPE_ID, "ASSIGNED");
     givenWithUrl()
       .header(TEN).header(JSON)
       .body(badJson)
@@ -293,7 +314,7 @@ public class NotesTest {
       .statusCode(422)
       // English error message for Locale.US, see @Before
       .body("errors[0].message", is("may not be null"))
-      .body("errors[0].parameters[0].key", is("type"));
+      .body("errors[0].parameters[0].key", is("typeId"));
   }
 
   @Test
@@ -359,6 +380,43 @@ public class NotesTest {
       .log().ifValidationFails()
       .statusCode(200)
       .body(containsString("First note"));
+  }
+
+  @Test
+  public void shouldFindNoteByIdWithType() {
+    sendOkPostRequest(NOTE_1, USER9);
+    Note note = givenWithUrl()
+      .header(TEN)
+      .get("/notes/11111111-1111-1111-a111-111111111111")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(200)
+      .extract().as(Note.class);
+
+    assertEquals(NOTE_TYPE_ID, note.getTypeId());
+    assertEquals(NOTE_TYPE_NAME , note.getType());
+  }
+
+  @Test
+  public void shouldGetNoteListWithTypes() {
+    sendOkPostRequest(NOTE_1, USER9);
+    sendOkPostRequest(NOTE_2, USER8);
+    NoteCollection notes = givenWithUrl()
+      .header(TEN)
+      .get("/notes")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(200)
+      .extract().as(NoteCollection.class);
+
+    assertThat(notes.getNotes(), hasItem(allOf(
+      hasProperty("typeId", is(NOTE_TYPE_ID)),
+      hasProperty("type", is(NOTE_TYPE_NAME))
+    )));
+    assertThat(notes.getNotes(), hasItem(allOf(
+      hasProperty("typeId", is(NOTE_TYPE2_ID)),
+      hasProperty("type", is(NOTE_TYPE2_NAME)
+    ))));
   }
 
   @Test
