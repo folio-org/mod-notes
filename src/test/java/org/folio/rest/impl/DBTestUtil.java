@@ -7,12 +7,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.core.Vertx;
+
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.persist.PostgresClient;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.vertx.core.Vertx;
 
 class DBTestUtil {
 
@@ -31,9 +30,9 @@ class DBTestUtil {
     future.join();
   }
 
-    private static String getNoteTypesTableName(String tenantId) {
-      return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TYPE_TABLE;
-    }
+  private static String getNoteTypesTableName(String tenantId) {
+    return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TYPE_TABLE;
+  }
 
 
   public static List<NoteType> getAllNoteTypes(Vertx vertx) {
@@ -63,5 +62,9 @@ class DBTestUtil {
       e.printStackTrace();
       throw new IllegalArgumentException("Can't parse note type", e);
     }
+  }
+
+  public static void deleteAllNoteTypes(Vertx vertx) {
+    deleteFromTable(vertx, getNoteTypesTableName(STUB_TENANT));
   }
 }
