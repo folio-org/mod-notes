@@ -1,28 +1,32 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.Future.succeededFuture;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.ws.rs.core.Response;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
+
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.jaxrs.resource.NoteTypes;
+import org.folio.rest.persist.PgUtil;
+import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
-import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
-
-import javax.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import static io.vertx.core.Future.succeededFuture;
 
 public class NoteTypesImpl implements NoteTypes {
 
@@ -30,9 +34,14 @@ public class NoteTypesImpl implements NoteTypes {
 
   private final Messages messages = Messages.getInstance();
 
+
+  public NoteTypesImpl(Vertx vertx, String tenantId) {
+    PostgresClient.getInstance(vertx, tenantId).setIdField("id");
+  }
+
   @Override
   public void getNoteTypes(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
-                           Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     vertxContext.runOnContext(v -> {
       try {
         CQLWrapper cql = getCQL(query, limit, offset);
@@ -66,17 +75,17 @@ public class NoteTypesImpl implements NoteTypes {
     });
   }
 
+  @Validate
   @Override
   public void postNoteTypes(String lang, NoteType entity, Map<String, String> okapiHeaders,
-                            Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-
-    asyncResultHandler.handle(succeededFuture(PostNoteTypesResponse.status(Response.Status.NOT_IMPLEMENTED).build()));
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.post(NOTE_TYPE_TABLE, entity, okapiHeaders, vertxContext, PostNoteTypesResponse.class, asyncResultHandler);
   }
 
   @Validate
   @Override
   public void getNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
-                                   Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
     Handler<AsyncResult<Response>> handlerWrapper = event -> {
       if (event.succeeded() && Response.Status.OK.getStatusCode() == event.result().getStatus()) {
@@ -89,21 +98,25 @@ public class NoteTypesImpl implements NoteTypes {
       asyncResultHandler.handle(event);
     };
 
-    PgUtil.getById(NOTE_TYPE_TABLE, NoteType.class, typeId, okapiHeaders, vertxContext, GetNoteTypesByTypeIdResponse.class, handlerWrapper);
+    PgUtil.getById(NOTE_TYPE_TABLE, NoteType.class, typeId, okapiHeaders, vertxContext, GetNoteTypesByTypeIdResponse.class,
+        handlerWrapper);
 
   }
 
+  @Validate
   @Override
   public void deleteNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
-                                      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-
-    asyncResultHandler.handle(succeededFuture(DeleteNoteTypesByTypeIdResponse.status(Response.Status.NOT_IMPLEMENTED).build()));
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgUtil.deleteById(NOTE_TYPE_TABLE, typeId, okapiHeaders, vertxContext, DeleteNoteTypesByTypeIdResponse.class,
+        asyncResultHandler);
   }
 
   @Override
-  public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     removeNotStoredFields(entity);
-    PgUtil.put(NOTE_TYPE_TABLE, entity, typeId, okapiHeaders, vertxContext, PutNoteTypesByTypeIdResponse.class, asyncResultHandler);
+    PgUtil.put(NOTE_TYPE_TABLE, entity, typeId, okapiHeaders, vertxContext, PutNoteTypesByTypeIdResponse.class,
+        asyncResultHandler);
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws CQL2PgJSONException {

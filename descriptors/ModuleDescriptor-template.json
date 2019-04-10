@@ -50,10 +50,8 @@
           "methods": ["GET"],
           "pathPattern": "/note-types",
           "permissionsRequired": ["note.types.collection.get"]
-        }, {
-          "methods": ["POST"],
-          "pathPattern": "/note-types"
-        }, {
+        },
+        {
           "methods": ["GET"],
           "pathPattern": "/note-types/{typeId}",
           "permissionsRequired": ["note.types.item.get"]
@@ -67,6 +65,11 @@
           "methods": ["PUT"],
           "pathPattern": "/note-types/{id}",
           "permissionsRequired": ["note.types.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/note-types/{id}",
+          "permissionsRequired": ["note.types.item.delete"]
         }
       ]
     },
@@ -142,6 +145,11 @@
       "description": "All domains"
     },
     {
+      "permissionName": "note.types.item.get",
+      "displayName": "Note types - get individual note type from storage",
+      "description": "Get individual note type"
+    },
+    {
       "permissionName": "note.types.item.post",
       "displayName": "Note types - create note type",
       "description": "Create note type"
@@ -150,6 +158,11 @@
       "permissionName": "note.types.item.put",
       "displayName": "Note types - modify note type",
       "description": "Modify note type"
+    },
+    {
+      "permissionName": "note.types.item.delete",
+      "displayName": "Note types - delete note type",
+      "description": "Delete note type"
     },
     {
       "permissionName": "notes.allops",
@@ -165,16 +178,6 @@
       "visible": false
     },
     {
-      "permissionName": "note.types.item.get",
-      "displayName": "Note types - get individual note type from storage",
-      "description": "Get individual note type"
-    },
-    {
-      "permissionName": "note.types.collection.get",
-      "displayName": "Note types - get note types collection",
-      "description": "Get note types collection"
-    },
-    {
       "permissionName": "note.types.allops",
       "displayName": "Note types - all CRUD permissions",
       "description": "Entire set of permissions needed to use the note type for note module",
@@ -182,7 +185,8 @@
         "note.types.item.get",
         "note.types.collection.get",
         "note.types.item.post",
-        "note.types.item.put"
+        "note.types.item.put",
+        "note.types.item.delete"
       ],
       "visible": false
     },

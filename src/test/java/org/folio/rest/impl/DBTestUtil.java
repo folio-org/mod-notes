@@ -7,12 +7,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.core.Vertx;
+
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.persist.PostgresClient;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.vertx.core.Vertx;
 
 class DBTestUtil {
 
@@ -26,14 +25,14 @@ class DBTestUtil {
   public static void insertNoteType(Vertx vertx, String stubId, String json) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     PostgresClient.getInstance(vertx).execute(
-      "INSERT INTO " + getNoteTypesTableName() + "(" + " _id, " + JSONB_COLUMN + ") VALUES ('" + stubId + "' , '" + json + "');" ,
+      "INSERT INTO " + getNoteTypesTableName() + "(" + " id, " + JSONB_COLUMN + ") VALUES ('" + stubId + "' , '" + json + "');" ,
       event -> future.complete(null));
     future.join();
   }
 
-    private static String getNoteTypesTableName() {
-      return PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + NOTE_TYPE_TABLE;
-    }
+  private static String getNoteTypesTableName() {
+    return PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + NOTE_TYPE_TABLE;
+  }
 
 
   public static List<NoteType> getAllNoteTypes(Vertx vertx) {
@@ -64,5 +63,9 @@ class DBTestUtil {
       e.printStackTrace();
       throw new IllegalArgumentException("Can't parse note type", e);
     }
+  }
+
+  public static void deleteAllNoteTypes(Vertx vertx) {
+    deleteFromTable(vertx, getNoteTypesTableName());
   }
 }
