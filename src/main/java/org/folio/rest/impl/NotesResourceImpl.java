@@ -34,6 +34,7 @@ import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.persist.interfaces.Results;
 import org.folio.rest.tools.client.HttpClientFactory;
 import org.folio.rest.tools.client.interfaces.HttpClientInterface;
 import org.folio.rest.tools.messages.MessageConsts;
@@ -47,6 +48,7 @@ import org.z3950.zing.cql.cql2pgjson.SchemaException;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
@@ -125,35 +127,36 @@ public class NotesResourceImpl implements Notes {
       return;
     }
     getNotes(vertxContext, tenantId, cql)
-      .thenCompose(notes ->
+      .compose(notes ->
         loadTypeNames(notes.getNotes(), okapiHeaders, vertxContext, tenantId)
-          .thenAccept(o ->
-            asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)))))
-      .exceptionally(e -> {
-        ValidationHelper.handleError(e.getCause(), asyncResultHandler);
+          .map(o -> {
+            asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)));
+            return null;
+          })
+      )
+      .otherwise(e -> {
+        ValidationHelper.handleError(e, asyncResultHandler);
         return null;
       });
   }
 
-  private CompletableFuture<NoteCollection> getNotes(Context vertxContext, String tenantId, CQLWrapper cql) {
-    CompletableFuture<NoteCollection> future = new CompletableFuture<>();
+  private Future<NoteCollection> getNotes(Context vertxContext, String tenantId, CQLWrapper cql) {
+    Future<Results<Note>> future = Future.future();
     PostgresClient.getInstance(vertxContext.owner(), tenantId)
       .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
         true /*get count too*/, false /* set id */,
-        reply -> {
-          if (reply.succeeded()) {
-            NoteCollection notes = new NoteCollection();
-            @SuppressWarnings("unchecked")
-            List<Note> notelist = reply.result().getResults();
-            notes.setNotes(notelist);
-            Integer totalRecords = reply.result().getResultInfo().getTotalRecords();
-            notes.setTotalRecords(totalRecords);
-            future.complete(notes);
-          } else {
-            future.completeExceptionally(reply.cause());
-          }
-        });
-    return future;
+        future.completer());
+
+    return future
+      .map(results -> {
+        NoteCollection notes = new NoteCollection();
+        @SuppressWarnings("unchecked")
+        List<Note> notelist = results.getResults();
+        notes.setNotes(notelist);
+        Integer totalRecords = results.getResultInfo().getTotalRecords();
+        notes.setTotalRecords(totalRecords);
+        return notes;
+      });
   }
 
   /**
@@ -357,7 +360,7 @@ public class NotesResourceImpl implements Notes {
       if (isResponseOk(result)) {
         final Note note = (Note) result.result().getEntity();
         loadTypeNames(Collections.singletonList(note), okapiHeaders, context, tenantId)
-          .thenAccept(o -> asyncResultHandler.handle(result));
+          .setHandler(o -> asyncResultHandler.handle(result));
       }else{
         asyncResultHandler.handle(result);
       }
@@ -455,12 +458,15 @@ public class NotesResourceImpl implements Notes {
       });
   }
 
-  private CompletableFuture<Void> loadTypeNames(List<Note> noteList, Map<String, String> okapiHeaders, Context context, String tenantId) {
+  private Future<Void> loadTypeNames(List<Note> noteList, Map<String, String> okapiHeaders, Context context, String tenantId) {
     List<String> typeIds = noteList.stream().map(Note::getTypeId).collect(Collectors.toList());
     return typeRepository.getTypesByIds(typeIds, okapiHeaders, context, tenantId)
-      .thenAccept(
-        typeNames -> noteList.forEach(
-          note -> note.setType(typeNames.get(note.getTypeId()))));
+      .map(
+        typeNames -> {
+          noteList.forEach(
+            note -> note.setType(typeNames.get(note.getTypeId())));
+          return null;
+        });
   }
 
   private boolean isResponseOk(AsyncResult<Response> result) {
