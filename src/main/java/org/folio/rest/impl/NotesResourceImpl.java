@@ -368,59 +368,9 @@ public class NotesResourceImpl implements Notes {
 
   @Override
   @Validate
-  public void deleteNotesById(String id,
-    String lang, Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) {
-    String tenantId = TenantTool.calculateTenantId(
-      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    getOneNote(id, okapiHeaders, vertxContext, res -> {
-      if (res.failed()) {
-        switch (res.getType()) {
-          // ValidationHelper can not handle these error types
-          case NOT_FOUND:
-            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .respond404WithTextPlain(res.cause().getMessage())));
-            break;
-          case USER: // bad request
-            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .respond400WithTextPlain(res.cause().getMessage())));
-            break;
-          case FORBIDDEN:
-            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .respond401WithTextPlain(res.cause().getMessage())));
-            break;
-          default: // typically INTERNAL
-            String msg = res.cause().getMessage();
-            ValidationHelper.handleError(res.cause(), asyncResultHandler);
-            break;
-        }
-      } else {    // all well, try to delete it
-        deleteNotesById2(id, tenantId, lang,
-          vertxContext, asyncResultHandler);
-      }
-    }); // getOneNote
-  }
-
-  private void deleteNotesById2(String id, String tenantId, String lang,
-    Context vertxContext, Handler<AsyncResult<Response>> asyncResultHandler) {
-    PostgresClient.getInstance(vertxContext.owner(), tenantId)
-      .delete(NOTE_TABLE, id, reply -> {
-        if (reply.succeeded()) {
-          if (reply.result().getUpdated() == 1) {
-            asyncResultHandler.handle(succeededFuture(
-              DeleteNotesByIdResponse.respond204()));
-          } else {
-            logger.error(messages.getMessage(lang,
-              MessageConsts.DeletedCountError, 1, reply.result().getUpdated()));
-            asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse
-              .respond404WithTextPlain(messages.getMessage(lang,
-                MessageConsts.DeletedCountError, 1, reply.result().getUpdated()))));
-          }
-        } else {
-          ValidationHelper.handleError(reply.cause(), asyncResultHandler);
-        }
-      });
+  public void deleteNotesById(String id, String lang, Map<String, String> okapiHeaders,
+                              Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+   PgUtil.deleteById(NOTE_TABLE,id,okapiHeaders, vertxContext, DeleteNotesByIdResponse.class, asyncResultHandler);
   }
 
 
