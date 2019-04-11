@@ -7,12 +7,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.core.Vertx;
+
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.persist.PostgresClient;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.vertx.core.Vertx;
 
 class DBTestUtil {
 
@@ -23,24 +22,24 @@ class DBTestUtil {
   private DBTestUtil() {
   }
 
-  public static void insertNoteType(Vertx vertx, String stubId, String json) {
+  public static void insertNoteType(Vertx vertx, String stubId, String tenantId, String json) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     PostgresClient.getInstance(vertx).execute(
-      "INSERT INTO " + getNoteTypesTableName() + "(" + " _id, " + JSONB_COLUMN + ") VALUES ('" + stubId + "' , '" + json + "');" ,
+      "INSERT INTO " + getNoteTypesTableName(tenantId) + "(" + " id, " + JSONB_COLUMN + ") VALUES ('" + stubId + "' , '" + json + "');" ,
       event -> future.complete(null));
     future.join();
   }
 
-    private static String getNoteTypesTableName() {
-      return PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + NOTE_TYPE_TABLE;
-    }
+  private static String getNoteTypesTableName(String tenantId) {
+    return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TYPE_TABLE;
+  }
 
 
   public static List<NoteType> getAllNoteTypes(Vertx vertx) {
     ObjectMapper mapper = new ObjectMapper();
     CompletableFuture<List<NoteType>> future = new CompletableFuture<>();
     PostgresClient.getInstance(vertx).select(
-      "SELECT * FROM " + getNoteTypesTableName(),
+      "SELECT * FROM " + getNoteTypesTableName(STUB_TENANT),
       event -> future.complete(event.result().getRows().stream()
         .map(row -> row.getString(JSONB_COLUMN))
         .map(json -> parseNoteType(mapper, json))
@@ -56,7 +55,6 @@ class DBTestUtil {
     future.join();
   }
 
-
   private static NoteType parseNoteType(ObjectMapper mapper, String json) {
     try {
       return mapper.readValue(json, NoteType.class);
@@ -64,5 +62,9 @@ class DBTestUtil {
       e.printStackTrace();
       throw new IllegalArgumentException("Can't parse note type", e);
     }
+  }
+
+  public static void deleteAllNoteTypes(Vertx vertx) {
+    deleteFromTable(vertx, getNoteTypesTableName(STUB_TENANT));
   }
 }

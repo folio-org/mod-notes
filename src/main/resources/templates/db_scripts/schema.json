@@ -16,7 +16,6 @@
     },
     {
       "tableName": "note_type",
-      "pkColumnName": "_id",
       "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
