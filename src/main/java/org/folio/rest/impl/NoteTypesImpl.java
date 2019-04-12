@@ -112,7 +112,6 @@ public class NoteTypesImpl implements NoteTypes {
   @Override
   public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    removeNotStoredFields(entity);
     PgUtil.put(NOTE_TYPE_TABLE, entity, typeId, okapiHeaders, vertxContext, PutNoteTypesByTypeIdResponse.class,
         asyncResultHandler);
   }
@@ -120,9 +119,5 @@ public class NoteTypesImpl implements NoteTypes {
   private CQLWrapper getCQL(String query, int limit, int offset) throws CQL2PgJSONException {
     CQL2PgJSON cql2pgJson = new CQL2PgJSON(NOTE_TYPE_TABLE + ".jsonb");
     return new CQLWrapper(cql2pgJson, query).setLimit(new Limit(limit)).setOffset(new Offset(offset));
-  }
-
-  private void removeNotStoredFields(NoteType entity) {
-    entity.setUsage(null);
   }
 }

@@ -158,8 +158,7 @@ public class NotesTest {
           .body(tenants)
           .post("/_/tenant")
           .then()
-          .log().ifValidationFails()
-          .statusCode(201);
+          .log().ifValidationFails();
 
         // Simple GET request to see the module is running and we can talk to it.
         given()

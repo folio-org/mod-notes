@@ -4,15 +4,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantTool;
 
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.sql.ResultSet;
 
 public class NoteTypeRepository {
 
@@ -25,11 +26,11 @@ public class NoteTypeRepository {
 
   private final Logger logger = LoggerFactory.getLogger(NoteTypeRepository.class);
 
-  public CompletableFuture<Map<String, String>> getTypesByIds(List<String> ids, Map<String, String> okapiHeaders, Context vertxContext, String tenantId) {
-    if(ids.isEmpty()){
-      return CompletableFuture.completedFuture(Collections.emptyMap());
+  public Future<Map<String, String>> getTypesByIds(List<String> ids, Map<String, String> okapiHeaders, Context vertxContext, String tenantId) {
+    if (ids.isEmpty()) {
+      return Future.succeededFuture(Collections.emptyMap());
     }
-    CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
+    Future<ResultSet> future = Future.future();
 
     JsonArray parameters = new JsonArray(ids);
     String parameterPlaceholders = String.join(",", Collections.nCopies(ids.size(), "?"));
@@ -39,18 +40,15 @@ public class NoteTypeRepository {
 
     logger.info("Do select query to get type names = {} for ids {}", query, parameters);
     PostgresClient.getInstance(vertxContext.owner(), TenantTool.tenantId(okapiHeaders))
-      .select(query, parameters,  result -> {
-        if(result.succeeded()){
-          Map<String, String> nameMap = new HashMap<>();
-          result.result().getRows()
-            .forEach(row -> nameMap.put(row.getString(ID_COLUMN), row.getString(NAME_COLUMN)));
-          future.complete(nameMap);
-        }else{
-          future.completeExceptionally(result.cause());
-        }
-      });
+      .select(query, parameters, future.completer());
 
-    return future;
+    return future
+      .map(resultSet -> {
+        Map<String, String> nameMap = new HashMap<>();
+        resultSet.getRows()
+          .forEach(row -> nameMap.put(row.getString(ID_COLUMN), row.getString(NAME_COLUMN)));
+        return nameMap;
+      });
   }
 
   private String getFullTableName(String tenantId, String tableName) {
