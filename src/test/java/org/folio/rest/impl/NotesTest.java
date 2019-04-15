@@ -17,20 +17,6 @@ import static org.folio.util.TestUtil.readFile;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.folio.rest.RestVerticle;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.PomReader;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -51,7 +37,21 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.PomReader;
+import org.folio.rest.tools.utils.NetworkUtils;
 
 /**
  * Interface test for mod-notes. Tests the API with restAssured, directly
@@ -68,20 +68,18 @@ public class NotesTest {
   private static final String LS = System.lineSeparator();
   private static final String HOST = "http://127.0.0.1";
   private static final String TENANT = "modnotestest";
-  private static final Header TEN = new Header("X-Okapi-Tenant", TENANT);
-  private static final Header USER9 = new Header("X-Okapi-User-Id",
-    "99999999-9999-4999-9999-999999999999");
-  private static final Header USER19 = new Header("X-Okapi-User-Id",
-    "11999999-9999-4999-9999-999999999911");  // One that is not found in the mock data
-  private static final Header USER8 = new Header("X-Okapi-User-Id",
-    "88888888-8888-4888-8888-888888888888");
-  private static final Header USER7 = new Header("X-Okapi-User-Id",
-    "77777777-7777-4777-a777-777777777777");
+  private static final Header TEN = new Header(XOkapiHeaders.TENANT, TENANT);
+  private static final Header USER9 = new Header(XOkapiHeaders.USER_ID, "99999999-9999-4999-9999-999999999999");
+  // One that is not found in the mock data
+  private static final Header USER19 = new Header(XOkapiHeaders.USER_ID, "11999999-9999-4999-9999-999999999911");
+  private static final Header USER8 = new Header(XOkapiHeaders.USER_ID, "88888888-8888-4888-8888-888888888888");
+  private static final Header USER7 = new Header(XOkapiHeaders.USER_ID, "77777777-7777-4777-a777-777777777777");
   private static final Header JSON = new Header("Content-Type", "application/json");
   private static final String NOT_JSON = "This is not json";
 
   private static final String NOTE_TYPE_ID = "2af21797-d25b-46dc-8427-1759d1db2057";
   private static final String NOTE_TYPE2_ID = "13f21797-d25b-46dc-8427-1759d1db2057";
+  private static final String NOTE_TYPE3_ID_NON_EXISTING = "09c5042e-182a-4aad-aab8-a4501d621541";
   private static final String NOTE_TYPE_NAME = "High Priority";
   private static final String NOTE_TYPE2_NAME = "test note";
   private static final String NOTE_TYPE = "{\"id\":\""+ NOTE_TYPE_ID+ "\", \"name\":\"" + NOTE_TYPE_NAME + "\"}";
@@ -118,10 +116,51 @@ public class NotesTest {
     + "\"typeId\" : \"" + NOTE_TYPE_ID + "\"," + LS
     + "\"title\" : \"more things\"," + LS
     + "\"content\" : \"First note with a comment\"}" + LS;
+  private static final String UPDATE_NOTE_REQUEST_WITH_LINKS = "{"
+    + "\"id\" : \"11111111-1111-1111-a111-111111111111\"," + LS
+    + "\"typeId\" : \"" + NOTE_TYPE2_ID + "\"," + LS
+    + "\"title\" : \"more things\"," + LS
+    + "\"content\" : \"First note with a comment\","
+    + "\"links\" : [ "
+    +  "{"
+    +   "\"id\" : \"123-456789\","
+    +   "\"type\" : \"package\","
+    +   "\"domain\" : \"eholdings\""
+    +  "},"
+    +  "{"
+    +   "\"id\" : \"123-456789\","
+    +   "\"type\" : \"resource\","
+    +   "\"domain\" : \"eholdings\""
+    +  "}"
+    +  "]"
+    + "}" + LS;
   private static final String NOTE_3 = "{"
     + "\"typeId\" : \"" + NOTE_TYPE_ID + "\"," + LS
     + "\"title\" : \"testing\"," + LS
     + "\"content\" : \"Note with no id\"}" + LS;
+  private static final String NOTE_4 = "{"
+    + "\"id\" : \"33333333-1111-1111-a333-333333333333\"," + LS
+    + "\"typeId\" : \"" + NOTE_TYPE2_ID + "\"," + LS
+    + "\"title\" : \"things\"," + LS
+    + "\"content\" : \"Test on things\"}" + LS;
+  private static final String UPDATE_NOTE_4_REQUEST = "{"
+    + "\"id\" : \"33333333-1111-1111-a333-333333333333\"," + LS
+    + "\"typeId\" : \"" + NOTE_TYPE2_ID + "\"," + LS
+    + "\"title\" : \"more things\"," + LS
+    + "\"content\" : \"Test on things\"}" + LS;
+  private static final String UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID = "{"
+    + "\"id\" : \"33333333-1111-1111-a333-333333333333\"," + LS
+    + "\"typeId\" : \"" + NOTE_TYPE3_ID_NON_EXISTING + "\"," + LS
+    + "\"title\" : \"more things\"," + LS
+    + "\"content\" : \"Test on things\","
+    + "\"links\" : [ "
+    +  "{"
+    +   "\"id\" : \"123-456789\","
+    +   "\"type\" : \"package\","
+    +   "\"domain\" : \"eholdings\""
+    +  "}"
+    +  "]"
+    + "}" + LS;
   private static String moduleName; //  "mod-notes"
   private static String moduleVersion; // "1.0.0" or "0.1.2-SNAPSHOT"
   private static String moduleId; // "mod-notes-1.0.1-SNAPSHOT"
@@ -563,30 +602,6 @@ public class NotesTest {
       .body(containsString("no serverChoiceIndexes defined"));
   }
 
-
-  @Test
-  @Ignore
-  public void shouldReturn422WhenCQLQueryContainsUnknownField() {
-    // Why do the next two not fail with a QueryValidationException ??
-    // When run manually (run.sh), they return a 422 all right
-    // See MODNOTES-15, and the comments in NotesResourceImpl.java around initCQLValidation()
-    givenWithUrl()
-      .header(TEN)
-      .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(422)
-      .body(containsString("is not present in index"));
-
-    givenWithUrl()
-      .header(TEN)
-      .get("/notes?query=UNKNOWNFIELD=foobar")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(422)
-      .body(containsString("is not present in index"));
-  }
-
   @Test
   public void shouldReturn400WhenUserIdIsMissing() {
     givenWithUrl()
@@ -689,7 +704,7 @@ public class NotesTest {
     sendOkPostRequest(NOTE_1, USER8);
     givenWithUrl() // This should work
       .header(TEN).header(USER8).header(JSON)
-      .body(UPDATE_NOTE_REQUEST)
+      .body(UPDATE_NOTE_REQUEST_WITH_LINKS)
       .put("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
@@ -729,12 +744,45 @@ public class NotesTest {
     logger.info("About to PUT note: " + newNote2);
 
     givenWithUrl() // ok update
-      .header(TEN).header(USER7).header(JSON)
+      .header(TEN).header(USER9).header(JSON)
       .body(newNote2)
       .put("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
       .statusCode(204);
+  }
+
+  @Test
+  public void shouldDeleteNoteWhenPutRequestHasNoLinks(){
+
+    sendOkPostRequest(NOTE_4, USER8);
+    givenWithUrl() // This should work
+      .header(TEN).header(USER8).header(JSON)
+      .body(UPDATE_NOTE_4_REQUEST)
+      .put("/notes/33333333-1111-1111-a333-333333333333")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(204);
+
+    givenWithUrl()
+      .header(TEN)
+      .get("/notes/33333333-1111-1111-a333-333333333333")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(404)
+      .body(containsString("not found"));
+  }
+
+  @Test
+  public void shouldReturn400WhenNonExistingTypeIdInPutRequest(){
+    sendOkPostRequest(NOTE_4, USER8);
+    givenWithUrl() // This should work
+      .header(TEN).header(USER8).header(JSON)
+      .body(UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID)
+      .put("/notes/33333333-1111-1111-a333-333333333333")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(400);
   }
 
   @Test
@@ -874,7 +922,7 @@ public class NotesTest {
 
   private RequestSpecification givenWithUrl() {
     return given()
-      .header(new Header("X-Okapi-Url", getWiremockUrl()));
+      .header(new Header(XOkapiHeaders.URL, getWiremockUrl()));
   }
 
   private String getWiremockUrl() {

@@ -17,7 +17,8 @@
     "type": {
       "type": "string",
       "description": "Type of note (configured in settings)",
-      "example": "Access issues"
+      "example": "Access issues",
+      "readonly": true
     },
     "title": {
       "type": "string",
