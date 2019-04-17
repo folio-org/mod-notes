@@ -27,6 +27,7 @@ import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Header;
 import com.jayway.restassured.response.ValidatableResponse;
 import com.jayway.restassured.specification.RequestSpecification;
+
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
@@ -84,10 +85,26 @@ public class NotesTest {
   private static final String NOTE_TYPE = "{\"id\":\""+ NOTE_TYPE_ID+ "\", \"name\":\"" + NOTE_TYPE_NAME + "\"}";
   private static final String NOTE_TYPE2 = "{\"id\":\""+ NOTE_TYPE2_ID+ "\", \"name\":\"" + NOTE_TYPE2_NAME + "\"}";
 
+  private static final String PACKAGE_ID = "18-2356521";
+  private static final String PACKAGE_TYPE = "package";
+  private static final String DOMAIN = "eholdings";
+  private static final String RESOURCE_ID = "19-2356521-758038";
+  private static final String RESOURCE_TYPE = "resource";
   private static final String NOTE_1 = "{"
     + "\"id\" : \"11111111-1111-1111-a111-111111111111\"," + LS
     + "\"typeId\" : \"" + NOTE_TYPE_ID + "\"," + LS
     + "\"title\" : \"test note title\"," + LS
+    + "\"links\" : [" + LS
+    +"{" + LS
+    + "  \"id\": \"" + PACKAGE_ID + "\"," + LS
+    + "  \"type\": \"" + PACKAGE_TYPE + "\"," + LS
+    + "  \"domain\": \"" + DOMAIN + "\"" + LS
+    + "}," + LS
+    + "{" + LS
+    + "  \"id\": \"" + RESOURCE_ID + "\"," + LS
+    + "  \"type\": \"" + RESOURCE_TYPE + "\"," + LS
+    + "  \"domain\": \"" + DOMAIN + "\"" + LS
+    + "}]," + LS
     + "\"content\" : \"First note email@folio.org\"}" + LS;
   private static final String NOTE_2 = "{"
     + "\"id\" : \"22222222-2222-2222-a222-222222222222\"," + LS
@@ -341,7 +358,7 @@ public class NotesTest {
 
   @Test
   public void shouldReturn422WhenRequestHasTypeIdSetToNull() {
-    String badJson = NOTE_1.replaceFirst("typeId", "status")
+    String badJson = NOTE_1.replaceFirst("typeId", "type")
       .replaceFirst(NOTE_TYPE_ID, "ASSIGNED");
     givenWithUrl()
       .header(TEN).header(JSON)
@@ -393,19 +410,30 @@ public class NotesTest {
   public void shouldFindNoteAfterPost() {
     sendOkPostRequest(NOTE_1, USER9);
 
-    // Fetch the note in various ways
-    givenWithUrl()
+    NoteCollection notes = givenWithUrl()
       .header(TEN)
       .get("/notes")
       .then()
       .log().ifValidationFails()
       .statusCode(200)
-      .body(containsString("First note"))
-      .body(containsString("-9999-")) // CreatedBy userid in metadata
-      .body(containsString("Mockerson")) // Creator lastName
-      .body(containsString("Mockey")) // Creator firstName
-      .body(containsString("M.")) // Creator middleName
-      .body(containsString("\"totalRecords\" : 1"));
+      .extract().as(NoteCollection.class);
+
+    Note note = notes.getNotes().get(0);
+    assertThat(note.getMetadata().getCreatedByUserId(), containsString("-9999-"));
+    assertEquals(NOTE_TYPE_NAME, note.getType());
+    assertEquals(NOTE_TYPE_ID, note.getTypeId());
+    assertEquals("test note title", note.getTitle());
+    assertThat(note.getContent(), containsString("First note"));
+    assertEquals("Mockerson", note.getCreator().getLastName());
+    assertEquals("Mockey", note.getCreator().getFirstName());
+    assertEquals("M.", note.getCreator().getMiddleName());
+    assertEquals(1, (int) notes.getTotalRecords());
+
+    assertThat(note.getLinks(), hasItem(allOf(
+      hasProperty("id", is(PACKAGE_ID)),
+      hasProperty("type", is(PACKAGE_TYPE)),
+      hasProperty("domain", is(DOMAIN))
+    )));
   }
 
   @Test
@@ -480,30 +508,47 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(404)
-      .body(containsString("Not found"));
+      .body(containsString("not found"));
   }
 
   @Test
-  public void shouldReturn500WhenUUIDNotValid() {
+  public void shouldReturn400WhenUUIDNotValid() {
     givenWithUrl()
       .header(TEN)
       .get("/notes/777")
       .then()
       .log().ifValidationFails()
-      .statusCode(500);
+      .statusCode(400);
   }
 
   @Test
   public void shouldFindNoteByContent() {
     sendOkPostRequest(NOTE_1, USER9);
-    givenWithUrl()
-      .header(TEN)
-      .get("/notes?query=content=fiRST")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(200)
-      .body(containsString("First note"))
-      .body(containsString("id"));
+    getNoteAndCheckContent("?query=content=fiRST", "First note");
+  }
+
+  @Test
+  public void shouldFindNoteByEntityId() {
+    sendOkPostRequest(NOTE_1, USER9);
+    getNoteAndCheckContent("?query=linkIds=" + PACKAGE_ID, "First note");
+  }
+
+  @Test
+  public void shouldFindNoteByLinkType() {
+    sendOkPostRequest(NOTE_1, USER9);
+    getNoteAndCheckContent("?query=linkTypes=" + PACKAGE_TYPE, "First note");
+  }
+
+  @Test
+  public void shouldFindNoteByLinkDomain() {
+    sendOkPostRequest(NOTE_1, USER9);
+    getNoteAndCheckContent("?query=linkDomains=" + DOMAIN, "First note");
+  }
+
+  @Test
+  public void shouldFindNoteByNoteType() {
+    sendOkPostRequest(NOTE_1, USER9);
+    getNoteAndCheckContent("?query=type=" + NOTE_TYPE_NAME, "First note");
   }
 
   @Test
@@ -555,29 +600,6 @@ public class NotesTest {
       .log().ifValidationFails()
       .statusCode(422)
       .body(containsString("no serverChoiceIndexes defined"));
-  }
-
-
-  @Test
-  public void shouldReturn422WhenCQLQueryContainsUnknownField() {
-    // Why do the next two not fail with a QueryValidationException ??
-    // When run manually (run.sh), they return a 422 all right
-    // See MODNOTES-15, and the comments in NotesResourceImpl.java around initCQLValidation()
-    givenWithUrl()
-      .header(TEN)
-      .get("/notes?query=metadata.UNKNOWNFIELD=foobar")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(422)
-      .body(containsString("is not present in index"));
-
-    givenWithUrl()
-      .header(TEN)
-      .get("/notes?query=UNKNOWNFIELD=foobar")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(422)
-      .body(containsString("is not present in index"));
   }
 
   @Test
@@ -748,7 +770,7 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(404)
-      .body(containsString("Not found"));
+      .body(containsString("not found"));
   }
 
   @Test
@@ -886,6 +908,16 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails();
+  }
+
+  private void getNoteAndCheckContent(String query, String content) {
+    givenWithUrl()
+      .header(TEN)
+      .get("/notes" + query)
+      .then()
+      .log().ifValidationFails()
+      .statusCode(200)
+      .body(containsString(content));
   }
 
   private RequestSpecification givenWithUrl() {

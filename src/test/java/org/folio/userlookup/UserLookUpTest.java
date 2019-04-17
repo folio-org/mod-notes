@@ -33,39 +33,38 @@ import org.folio.util.TestUtil;
 
 @RunWith(VertxUnitRunner.class)
 public class UserLookUpTest {
-  public static final String STUB_TENANT = "testlib";
+  private static final String STUB_TENANT = "testlib";
   private static final String host = "http://127.0.0.1";
   protected static Vertx vertx;
-  public static Map<String, String> okapiHeaders = new HashMap<>();
+  private static Map<String, String> okapiHeaders = new HashMap<>();
   private final String GET_USER_ENDPOINT = "/users/";
   private static final String USER_INFO_STUB_FILE = "responses/userlookup/mock_user_response_200.json";
-  
+
   @Rule
   public WireMockRule userMockServer = new WireMockRule(
     WireMockConfiguration.wireMockConfig()
       .dynamicPort()
       .notifier(new Slf4jNotifier(true)));
-  
+
   @Test
   public void shouldReturn200WhenUserIdIsValid(TestContext context) throws IOException, URISyntaxException {
     final String stubUserId = "a49cefad-7447-4f2f-9004-de32e7a6cc53";
     final String stubUserIdEndpoint = GET_USER_ENDPOINT + stubUserId;
     Async async = context.async();
-    
+
     okapiHeaders.put(XOkapiHeaders.TENANT, TestBase.STUB_TENANT);
     okapiHeaders.put(XOkapiHeaders.URL, getWiremockUrl());
     okapiHeaders.put(XOkapiHeaders.USER_ID, stubUserId);
-    
+
     stubFor(
         get(new UrlPathPattern(new RegexPattern(stubUserIdEndpoint), true))
         .willReturn(new ResponseDefinitionBuilder()
             .withBody(TestUtil.readFile(USER_INFO_STUB_FILE))));
-    
-    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
-    info.compose(result -> {
-      context.assertNotNull(result);
 
-      UserLookUp userInfo = result;
+    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    info.compose(userInfo -> {
+      context.assertNotNull(userInfo);
+
       context.assertEquals("cedrick", userInfo.getUserName());
       context.assertEquals("firstname_test", userInfo.getFirstName());
       context.assertNull(userInfo.getMiddleName());
@@ -80,22 +79,22 @@ public class UserLookUpTest {
       return null;
     });
   }
-  
+
   @Test
   public void ShouldReturn401WhenUnauthorizedAccess(TestContext context) {
     final String stubUserId = "a49cefad-7447-4f2f-9004-de32e7a6cc53";
     final String stubUserIdEndpoint = GET_USER_ENDPOINT + stubUserId;
     Async async = context.async();
-    
+
     okapiHeaders.put(XOkapiHeaders.URL, getWiremockUrl());
     okapiHeaders.put(XOkapiHeaders.USER_ID, stubUserId);
-    
+
     stubFor(
         get(new UrlPathPattern(new RegexPattern(stubUserIdEndpoint), true))
         .willReturn(new ResponseDefinitionBuilder()
             .withStatus(401)
             .withStatusMessage("Authorization Failure")));
-    
+
     Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
     info.compose(result -> {
       context.assertNull(result);
@@ -107,23 +106,23 @@ public class UserLookUpTest {
       return null;
     });
   }
-  
+
   @Test
   public void ShouldReturn404WhenUserNotFound(TestContext context) {
     final String stubUserId = "xyz";
     final String stubUserIdEndpoint = GET_USER_ENDPOINT + stubUserId;
     Async async = context.async();
-    
+
     okapiHeaders.put(XOkapiHeaders.TENANT, STUB_TENANT);
     okapiHeaders.put(XOkapiHeaders.URL, getWiremockUrl());
     okapiHeaders.put(XOkapiHeaders.USER_ID, stubUserId);
-    
+
     stubFor(
         get(new UrlPathPattern(new RegexPattern(stubUserIdEndpoint), true))
         .willReturn(new ResponseDefinitionBuilder()
             .withStatus(404)
             .withStatusMessage("User Not Found")));
-    
+
     Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
     info.compose(result -> {
       context.assertNull(result);
@@ -135,7 +134,7 @@ public class UserLookUpTest {
       return null;
     });
   }
-  
+
   @Test
   public void missingOkapiURLHeaderShouldReturn500Test(TestContext context) {
     Async async = context.async();

@@ -3,8 +3,6 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -14,21 +12,7 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
-import org.apache.commons.io.IOUtils;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
-import org.z3950.zing.cql.cql2pgjson.SchemaException;
-
+import org.folio.db.model.NoteView;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Errors;
@@ -49,52 +33,45 @@ import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
-import org.folio.type.NoteTypeRepository;
 import org.folio.userlookup.UserLookUp;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
+import org.z3950.zing.cql.cql2pgjson.FieldException;
+import org.z3950.zing.cql.cql2pgjson.SchemaException;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 
 @java.lang.SuppressWarnings({"squid:S1192"}) // This can be removed once John sets SQ up properly
 public class NotesResourceImpl implements Notes {
-  private final Logger logger = LoggerFactory.getLogger("mod-notes");
-  private final Messages messages = Messages.getInstance();
   private static final String NOTE_TABLE = "note_data";
+  private static final String NOTE_VIEW = "note_view";
   private static final String LOCATION_PREFIX = "/notes/";
   private static final String IDFIELDNAME = "id";
+  private final Logger logger = LoggerFactory.getLogger("mod-notes");
+  private final Messages messages = Messages.getInstance();
   private String noteSchema = null;
-  private static final String NOTE_SCHEMA_NAME = "ramls/types/notes/note.json";
-  private final NoteTypeRepository typeRepository;
   // Get this from the restVerticle, like the rest, when it gets defined there.
 
-  private void initCQLValidation() {
-    String path = NOTE_SCHEMA_NAME;
-    try {
-      noteSchema = IOUtils.toString(
-        getClass().getClassLoader().getResourceAsStream(path), StandardCharsets.UTF_8);
-    } catch (Exception e) {
-      logger.error("unable to load schema - " + path
-        + ", validation of query fields will not be active");
-    }
-  }
-
   public NotesResourceImpl(Vertx vertx, String tenantId) {
-    this(vertx, tenantId, new NoteTypeRepository());
-  }
-
-  public NotesResourceImpl(Vertx vertx, String tenantId, NoteTypeRepository typeRepository) {
-    if (noteSchema == null) {
-      initCQLValidation();
-    }
     PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
-    this.typeRepository = typeRepository;
   }
 
-  private CQLWrapper getCQL(String query, int limit, int offset,
-    String schema) throws IOException, FieldException, SchemaException  {
+  private CQLWrapper getCQLForNoteView(String query, int limit, int offset,
+                                       String schema) throws IOException, FieldException, SchemaException  {
     CQL2PgJSON cql2pgJson;
     if (schema != null) {
-      cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb", schema);
+      cql2pgJson = new CQL2PgJSON(NOTE_VIEW + ".jsonb", schema);
     } else {
-      cql2pgJson = new CQL2PgJSON(NOTE_TABLE + ".jsonb");
+      cql2pgJson = new CQL2PgJSON(NOTE_VIEW + ".jsonb");
     }
     return new CQLWrapper(cql2pgJson, query)
       .setLimit(new Limit(limit))
@@ -117,19 +94,16 @@ public class NotesResourceImpl implements Notes {
     logger.debug("Getting notes. new query:" + query);
     CQLWrapper cql;
     try {
-      cql = getCQL(query, limit, offset, noteSchema);
+      cql = getCQLForNoteView(query, limit, offset, noteSchema);
     } catch (Exception e) {
       ValidationHelper.handleError(e, asyncResultHandler);
       return;
     }
     getNotes(vertxContext, tenantId, cql)
-      .compose(notes ->
-        loadTypeNames(notes.getNotes(), okapiHeaders, vertxContext)
-          .map(o -> {
-            asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)));
-            return null;
-          })
-      )
+      .map(notes -> {
+        asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)));
+        return null;
+      })
       .otherwise(e -> {
         ValidationHelper.handleError(e, asyncResultHandler);
         return null;
@@ -137,22 +111,39 @@ public class NotesResourceImpl implements Notes {
   }
 
   private Future<NoteCollection> getNotes(Context vertxContext, String tenantId, CQLWrapper cql) {
-    Future<Results<Note>> future = Future.future();
+    Future<Results<NoteView>> future = Future.future();
     PostgresClient.getInstance(vertxContext.owner(), tenantId)
-      .get(NOTE_TABLE, Note.class, new String[]{"*"}, cql,
+      .get(NOTE_VIEW, NoteView.class, new String[]{"*"}, cql,
         true /*get count too*/, false /* set id */,
         future.completer());
 
     return future
-      .map(results -> {
-        NoteCollection notes = new NoteCollection();
-        @SuppressWarnings("unchecked")
-        List<Note> notelist = results.getResults();
-        notes.setNotes(notelist);
-        Integer totalRecords = results.getResultInfo().getTotalRecords();
-        notes.setTotalRecords(totalRecords);
-        return notes;
-      });
+      .map(this::mapNoteResults);
+  }
+
+  private NoteCollection mapNoteResults(Results<NoteView> results) {
+    List<Note> notes = results.getResults().stream()
+      .map(this::mapNoteView)
+      .collect(Collectors.toList());
+
+    NoteCollection noteCollection = new NoteCollection();
+    noteCollection.setNotes(notes);
+    Integer totalRecords = results.getResultInfo().getTotalRecords();
+    noteCollection.setTotalRecords(totalRecords);
+    return noteCollection;
+  }
+
+  private Note mapNoteView(NoteView noteView) {
+    return new Note()
+      .withId(noteView.getId())
+      .withTypeId(noteView.getTypeId())
+      .withType(noteView.getType())
+      .withTitle(noteView.getTitle())
+      .withContent(noteView.getContent())
+      .withCreator(noteView.getCreator())
+      .withUpdater(noteView.getUpdater())
+      .withMetadata(noteView.getMetadata())
+      .withLinks(noteView.getLinks());
   }
 
   /**
@@ -306,25 +297,24 @@ public class NotesResourceImpl implements Notes {
 
 
   /**
-   * Helper to get a note and check permissions. Fetches the record from the
-   * database, and verifies that the user has permissions to access its domain.
+   * Fetches a note record from the database
    *
-   * @param id
-   * @param okapiHeaders
+   * @param id id of note to get
+   * @param okapiHeaders okapiHeaders headers with tenant id
    */
   private Future<Note> getOneNote(String id, Map<String, String> okapiHeaders, Context context) {
 
     Future<Note> future = Future.future();
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
     PostgresClient.getInstance(context.owner(), tenantId)
-      .getById(NOTE_TABLE, id, Note.class,
+      .getById(NOTE_VIEW, id, NoteView.class,
         reply -> {
           if (reply.succeeded()) {
-            Note note = reply.result();
-            if (Objects.isNull(note)) {
+            NoteView noteView = reply.result();
+            if (Objects.isNull(noteView)) {
               future.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Note " + id + " not found"));
             } else {
-              future.complete(note);
+              future.complete(mapNoteView(noteView));
             }
           } else {
             String error = PgExceptionUtil.badRequestMessage(reply.cause());
@@ -345,18 +335,32 @@ public class NotesResourceImpl implements Notes {
                            String lang, Map<String, String> okapiHeaders,
                            Handler<AsyncResult<Response>> asyncResultHandler,
                            Context context) {
+    getOneNote(id, okapiHeaders, context)
+      .map(note -> {
+        asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
+          .respond200WithApplicationJson(note)));
+        return null;
+      })
+      .otherwise(exception -> {
+        if (exception instanceof HttpStatusException) {
 
-    Handler<AsyncResult<Response>> handlerWrapper = result -> {
-      if (isResponseOk(result)) {
-        final Note note = (Note) result.result().getEntity();
-        loadTypeNames(Collections.singletonList(note), okapiHeaders, context)
-          .setHandler(o -> asyncResultHandler.handle(result));
-      }else{
-        asyncResultHandler.handle(result);
-      }
-    };
+          final int cause =  ((HttpStatusException) exception).getStatusCode();
 
-    PgUtil.getById(NOTE_TABLE, Note.class, id, okapiHeaders, context, GetNotesByIdResponse.class, handlerWrapper);
+          if (Response.Status.NOT_FOUND.getStatusCode() == cause) {
+            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse.respond404WithTextPlain(
+              ((HttpStatusException) exception).getPayload())));
+          } else if (Response.Status.BAD_REQUEST.getStatusCode() == cause) {
+            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse.respond400WithTextPlain(
+              ((HttpStatusException) exception).getPayload())));
+          } else {
+            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse.respond500WithTextPlain(
+              exception.getMessage())));
+          }
+        } else {
+          asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse.respond500WithTextPlain(exception.getMessage())));
+        }
+        return null;
+      });
   }
 
   @Override
@@ -447,21 +451,5 @@ public class NotesResourceImpl implements Notes {
     userDisplayInfo.setMiddleName(middleName);
     userDisplayInfo.setLastName(lastName);
     return userDisplayInfo;
-  }
-
-  private Future<Void> loadTypeNames(List<Note> noteList, Map<String, String> okapiHeaders, Context context) {
-    String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    List<String> typeIds = noteList.stream().map(Note::getTypeId).collect(Collectors.toList());
-    return typeRepository.getTypesByIds(typeIds, okapiHeaders, context, tenantId)
-      .map(
-        typeNames -> {
-          noteList.forEach(
-            note -> note.setType(typeNames.get(note.getTypeId())));
-          return null;
-        });
-  }
-
-  private boolean isResponseOk(AsyncResult<Response> result) {
-    return result.succeeded() && Response.Status.OK.getStatusCode() == result.result().getStatus();
   }
 }
