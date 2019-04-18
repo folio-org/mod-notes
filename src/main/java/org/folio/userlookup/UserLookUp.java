@@ -7,10 +7,10 @@ import javax.ws.rs.NotFoundException;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import org.folio.okapi.common.XOkapiHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.tools.client.HttpClientFactory;
 import org.folio.rest.tools.client.Response;
@@ -139,6 +139,8 @@ public class UserLookUp {
         userInfo.middleName = personalInfo.getString("middleName");
         userInfo.lastName = personalInfo.getString("lastName");
       }
+    } else {
+      throw new IllegalArgumentException("Missing fields");
     }
     return userInfo;
   }
