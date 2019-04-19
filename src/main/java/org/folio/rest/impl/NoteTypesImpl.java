@@ -25,6 +25,7 @@ import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
@@ -77,7 +78,21 @@ public class NoteTypesImpl implements NoteTypes {
   @Override
   public void postNoteTypes(String lang, NoteType entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.post(NOTE_TYPE_TABLE, entity, okapiHeaders, vertxContext, PostNoteTypesResponse.class, asyncResultHandler);
+    Future<Boolean> idExistsFuture = Future.succeededFuture(false);
+    if(entity.getId() != null) {
+      idExistsFuture = checkIdExists(okapiHeaders, vertxContext, entity.getId());
+    }
+    idExistsFuture.map(idExists -> {
+      if(idExists){
+        asyncResultHandler.handle(succeededFuture(PostNoteTypesResponse
+          .respond400WithTextPlain("Note type with specified UUID already exists")));
+      }
+      else{
+        PgUtil.post(NOTE_TYPE_TABLE, entity, okapiHeaders, vertxContext, PostNoteTypesResponse.class, asyncResultHandler);
+      }
+      return null;
+    });
+
   }
 
   @Validate
@@ -87,7 +102,6 @@ public class NoteTypesImpl implements NoteTypes {
 
     Handler<AsyncResult<Response>> handlerWrapper = event -> {
       if (event.succeeded() && Response.Status.OK.getStatusCode() == event.result().getStatus()) {
-
         final NoteType noteType = (NoteType) event.result().getEntity();
         if (Objects.isNull(noteType.getUsage())) {
           noteType.setUsage(new NoteTypeUsage().withNoteTotal(0));
@@ -119,5 +133,17 @@ public class NoteTypesImpl implements NoteTypes {
   private CQLWrapper getCQL(String query, int limit, int offset) throws CQL2PgJSONException {
     CQL2PgJSON cql2pgJson = new CQL2PgJSON(NOTE_TYPE_TABLE + ".jsonb");
     return new CQLWrapper(cql2pgJson, query).setLimit(new Limit(limit)).setOffset(new Offset(offset));
+  }
+
+  private Future<Boolean> checkIdExists(Map<String, String> okapiHeaders, Context vertxContext, String id) {
+    Future<Boolean> future = Future.future();
+    PgUtil.postgresClient(vertxContext, okapiHeaders).getById(NOTE_TYPE_TABLE, id, NoteType.class, result -> {
+      if(result.succeeded() && result.result() != null){
+        future.complete(true);
+      } else{
+        future.complete(false);
+      }
+    });
+    return future;
   }
 }
