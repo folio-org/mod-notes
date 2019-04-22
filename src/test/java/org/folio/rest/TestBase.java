@@ -1,6 +1,10 @@
 package org.folio.rest;
 
 import static io.restassured.RestAssured.given;
+import static org.folio.util.NoteTestData.NOTE_TYPE;
+import static org.folio.util.NoteTestData.NOTE_TYPE2;
+import static org.folio.util.NoteTestData.NOTE_TYPE2_ID;
+import static org.folio.util.NoteTestData.NOTE_TYPE_ID;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -11,6 +15,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.client.TenantClient;
+import org.folio.rest.impl.DBTestUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -39,6 +44,10 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.TestContext;
 
+/**
+ * Base test class for tests that use wiremock and vertx http servers,
+ * test that inherits this class must use VertxUnitRunner as test runner
+ */
 public class TestBase {
 
   public static final String STUB_TENANT = "testlib";
@@ -232,5 +241,14 @@ public class TestBase {
   protected RequestSpecification givenWithUrl() {
     return given()
       .header(new Header(XOkapiHeaders.URL, getWiremockUrl()));
+  }
+
+  protected static void createNoteTypes(TestContext context) {
+    vertx.executeBlocking(future -> {
+        DBTestUtil.insertNoteType(vertx, NOTE_TYPE_ID, STUB_TENANT, NOTE_TYPE);
+        DBTestUtil.insertNoteType(vertx, NOTE_TYPE2_ID, STUB_TENANT, NOTE_TYPE2);
+        future.complete();
+      },
+      context.asyncAssertSuccess());
   }
 }

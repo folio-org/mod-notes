@@ -73,7 +73,7 @@
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/note-links/domain/{domain}/type/{type}/id/{id}/",
+          "pathPattern": "/note-links/domain/{domain}/type/{type}/id/{id}",
           "permissionsRequired": ["note.links.collection.put"]
         }
       ]

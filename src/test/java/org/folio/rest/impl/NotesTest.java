@@ -55,12 +55,7 @@ public class NotesTest extends TestBase {
 
   @BeforeClass
   public static void setUpBeforeClass(TestContext context) {
-    vertx.executeBlocking(future -> {
-        DBTestUtil.insertNoteType(vertx, NOTE_TYPE_ID, STUB_TENANT, NOTE_TYPE);
-        DBTestUtil.insertNoteType(vertx, NOTE_TYPE2_ID, STUB_TENANT, NOTE_TYPE2);
-        future.complete();
-      },
-      context.asyncAssertSuccess());
+    createNoteTypes(context);
   }
 
   @Before
@@ -228,13 +223,7 @@ public class NotesTest extends TestBase {
   public void shouldFindNoteAfterPost() {
     sendOkNotePostRequest(NOTE_1, USER9);
 
-    NoteCollection notes = givenWithUrl()
-      .header(TEN)
-      .get("/notes")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(200)
-      .extract().as(NoteCollection.class);
+    NoteCollection notes = getNotes();
 
     Note note = notes.getNotes().get(0);
     assertThat(note.getMetadata().getCreatedByUserId(), containsString("-9999-"));
@@ -285,13 +274,7 @@ public class NotesTest extends TestBase {
   public void shouldGetNoteListWithTypes() {
     sendOkNotePostRequest(NOTE_1, USER9);
     sendOkNotePostRequest(NOTE_2, USER8);
-    NoteCollection notes = givenWithUrl()
-      .header(TEN)
-      .get("/notes")
-      .then()
-      .log().ifValidationFails()
-      .statusCode(200)
-      .extract().as(NoteCollection.class);
+    NoteCollection notes = getNotes();
 
     assertThat(notes.getNotes(), hasItem(allOf(
       hasProperty("typeId", is(NOTE_TYPE_ID)),
@@ -722,5 +705,9 @@ public class NotesTest extends TestBase {
       .log().ifValidationFails()
       .statusCode(200)
       .body(containsString(content));
+  }
+
+  private NoteCollection getNotes() {
+    return getWithOk("/notes").as(NoteCollection.class);
   }
 }
