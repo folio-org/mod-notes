@@ -27,10 +27,7 @@ a note is created, if necessary. They can be changed later with a PUT request,
 in case the user changes his name.
 
 ## User mentions
-If the note text contains a tag like @foobar, the module will try to send a
-notification to the user whose username is foobar, that he has been mentioned
-in a note. If no user is found, the tag is silently ignored. (This feature was
-added in version 1.1.4)
+Does not supported.
 
 ## Permissions
 The module declares the usual permission bits for the CRUD operations, but it
