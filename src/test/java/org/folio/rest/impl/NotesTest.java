@@ -320,7 +320,6 @@ public class NotesTest {
       .get("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400)
       .body(containsString("Tenant"));
   }
@@ -332,7 +331,6 @@ public class NotesTest {
       .get("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString("\"notes\" : [ ]"));
   }
@@ -345,7 +343,6 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400)
       .body(containsString("Content-type"));
   }
@@ -358,7 +355,6 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400)
       .body(containsString("Json content error"));
   }
@@ -373,7 +369,6 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(422)
       // English error message for Locale.US, see @Before
       .body("errors[0].message", is("may not be null"))
@@ -389,7 +384,6 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(422)
       .body(containsString("Unrecognized field"));
   }
@@ -398,7 +392,6 @@ public class NotesTest {
   public void shouldReturn400WhenUserDoesntExist() {
     // Post by an unknown user 19, lookup fails
     sendPostRequest(NOTE_1, USER19)
-      .assertThat()
       .statusCode(400);
   }
 
@@ -406,7 +399,6 @@ public class NotesTest {
   public void shouldReturn422WhenPostHasInvalidUUID() {
     String bad4 = NOTE_1.replaceAll("-1111-", "-2-");  // make bad UUID
     sendPostRequest(bad4, USER9)
-      .assertThat()
       .statusCode(422)
       .body(containsString("invalid input syntax for type uuid"));
   }
@@ -426,7 +418,6 @@ public class NotesTest {
       .get("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .extract().as(NoteCollection.class);
 
@@ -456,7 +447,6 @@ public class NotesTest {
       .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString("First note"));
   }
@@ -469,7 +459,6 @@ public class NotesTest {
       .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .extract().as(Note.class);
 
@@ -506,7 +495,6 @@ public class NotesTest {
       .header(TEN)
       .get("/notes/22222222-2222-2222-a222-222222222222")
       .then()
-      .assertThat()
       .statusCode(200)
       .log().ifValidationFails()
       .body(containsString("-8888-")) // metadata.createdByUserId
@@ -522,7 +510,6 @@ public class NotesTest {
       .get("/notes/99111111-1111-1111-a111-111111111199")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(404)
       .body(containsString("not found"));
   }
@@ -534,7 +521,6 @@ public class NotesTest {
       .get("/notes/777")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400);
   }
 
@@ -576,7 +562,6 @@ public class NotesTest {
       .get("/notes?query=metadata.createdByUserId=*9999*")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString("First note"));
   }
@@ -589,7 +574,6 @@ public class NotesTest {
       .get("/notes?query=metadata.createdByUserId=\"99999999-9999-4999-9999-999999999999\"")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString("First note"));
   }
@@ -604,7 +588,6 @@ public class NotesTest {
       .get("/notes?query=metadata.createdByUserId=\"99999999-9999-4999-9999-999999999999\"")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .extract().as(NoteCollection.class);
 
@@ -618,7 +601,6 @@ public class NotesTest {
       .get("/notes?query=VERYBADQUERY")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(422)
       .body(containsString("no serverChoiceIndexes defined"));
   }
@@ -631,7 +613,6 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .body(containsString("cannot look up user"))
       .statusCode(400);
   }
@@ -645,7 +626,6 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400)
       .body(containsString("User not found"));
   }
@@ -660,7 +640,6 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400);
   }
 
@@ -673,7 +652,6 @@ public class NotesTest {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400)
       .body(containsString("Missing fields"));
   }
@@ -683,7 +661,6 @@ public class NotesTest {
     sendOkPostRequest(NOTE_2, USER8);
     // Post the same id again
     sendPostRequest(NOTE_2, USER8)
-      .assertThat()
       .statusCode(422)
       .body(containsString("violates unique constraint"));
   }
@@ -691,7 +668,6 @@ public class NotesTest {
   @Test
   public void shouldReturn422WhenPostHasNoLinks() {
     sendPostRequest(UPDATE_NOTE_REQUEST, USER8)
-      .assertThat()
       .statusCode(422);
   }
 
@@ -704,7 +680,6 @@ public class NotesTest {
       .then()
       .log().ifValidationFails()
       .statusCode(422)
-      .assertThat()
       .body(containsString("Can not change Id"));
   }
 
@@ -714,10 +689,9 @@ public class NotesTest {
     givenWithUrl()
       .header(TEN).header(USER8).header(JSON)
       .body(UPDATE_NOTE_REQUEST)
-      .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
+      .put("/notes/21111111-1111-1111-a111-111111111111") // invalid UUID
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(422);  // fails the same-id check before validating the UUID
   }
 
@@ -729,7 +703,6 @@ public class NotesTest {
       .put("/notes/33333333-3333-3333-a333-333333333333")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .body(containsString("333 not found"))
       .statusCode(404);
   }
@@ -743,18 +716,13 @@ public class NotesTest {
       .put("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
-      .assertThat()
-      .statusCode(204)
-      .extract()
-      .body().asString()
-      .contains("11111111-1111-1111-a111-111111111111");
+      .statusCode(204);
 
     givenWithUrl()
       .header(TEN)
       .get("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString("with a comment"))
       //.body(containsString("creatorUserNa=me"))
@@ -773,7 +741,6 @@ public class NotesTest {
       .get("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().all() //.ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .extract().body().asString();
     String newNote2 = rawNote2
@@ -790,7 +757,6 @@ public class NotesTest {
       .put("/notes/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(204);
   }
 
@@ -804,7 +770,6 @@ public class NotesTest {
       .put("/notes/33333333-1111-1111-a333-333333333333")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(204);
 
     givenWithUrl()
@@ -812,7 +777,6 @@ public class NotesTest {
       .get("/notes/33333333-1111-1111-a333-333333333333")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(404)
       .body(containsString("not found"));
   }
@@ -826,19 +790,17 @@ public class NotesTest {
       .put("/notes/33333333-1111-1111-a333-333333333333")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400);
   }
 
   @Test
-  public void shouldReturn500WhenDeleteRequestHasInvalidUUID() {
+  public void shouldReturn400WhenDeleteRequestHasInvalidUUID() {
     givenWithUrl() // Bad UUID
       .header(TEN)
       .delete("/notes/11111111-3-1111-333-111111111111")
       .then()
       .log().ifValidationFails()
-      .assertThat()
-      .statusCode(500);
+      .statusCode(400);
   }
 
   @Test
@@ -848,7 +810,6 @@ public class NotesTest {
       .delete("/notes/11111111-2222-3333-a444-555555555555")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(404);
   }
 
@@ -860,7 +821,6 @@ public class NotesTest {
       .delete("/notes/11111111-1111-1111-a111-111111111111")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(204);
 
     givenWithUrl()
@@ -868,7 +828,6 @@ public class NotesTest {
       .delete("/notes/11111111-1111-1111-a111-111111111111") // no longer there
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(404);
 
     givenWithUrl()
@@ -876,7 +835,6 @@ public class NotesTest {
       .get("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString("\"notes\" : [ ]"));
   }
@@ -890,7 +848,6 @@ public class NotesTest {
       .get("/notes")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString("\"id\" :")) // one given by the module
       .body(containsString("no id"))
@@ -906,7 +863,6 @@ public class NotesTest {
       .get("/notes?query=title=testing&limit=1001")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString("\"id\" :")) // one given by the module
       .body(containsString("no id"))
@@ -921,7 +877,6 @@ public class NotesTest {
       .get("/notes?query=title=testings&offset=-1")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400);
   }
 
@@ -932,7 +887,6 @@ public class NotesTest {
       .get("/notes?query=title=testing&limit=-1")
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(400);
   }
 
@@ -947,13 +901,11 @@ public class NotesTest {
       .delete(location)
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(204);
   }
 
   private void sendOkPostRequest(String noteJson, Header userHeader) {
     sendPostRequest(noteJson, userHeader)
-      .assertThat()
       .statusCode(201);
   }
 
@@ -972,7 +924,6 @@ public class NotesTest {
       .get("/notes" + query)
       .then()
       .log().ifValidationFails()
-      .assertThat()
       .statusCode(200)
       .body(containsString(content));
   }

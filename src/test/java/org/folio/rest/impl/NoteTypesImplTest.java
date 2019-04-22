@@ -380,10 +380,9 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn500WhenInvalidId() {
-
+  public void shouldReturn400WhenInvalidId() {
     final String invalidStubId = "11111111-222-1111-2-111111111111";
-    getWithStatus(NOTE_TYPES_ENDPOINT + "/" + invalidStubId, HttpStatus.SC_INTERNAL_SERVER_ERROR).asString();
+    getWithStatus(NOTE_TYPES_ENDPOINT + "/" + invalidStubId, HttpStatus.SC_BAD_REQUEST).asString();
   }
 
   @Test
@@ -448,6 +447,19 @@ public class NoteTypesImplTest extends TestBase {
       NoteType loaded = loadSingleNote();
       assertEquals(input.getId(), loaded.getId());
       assertEquals(input.getName(), loaded.getName());
+    } finally {
+      DBTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldReturn400ErrorWhenAddingNoteWithExistingUUID() {
+    try {
+      NoteType input = nextRandomNoteType();
+      postWithStatus("note-types/", toJson(input), HttpStatus.SC_CREATED)
+        .as(NoteType.class);
+      String response = postWithStatus("note-types/", toJson(input), HttpStatus.SC_BAD_REQUEST).asString();
+      assertThat(response, containsString("Note type with specified UUID already exists"));
     } finally {
       DBTestUtil.deleteAllNoteTypes(vertx);
     }

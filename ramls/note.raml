@@ -45,6 +45,9 @@ resourceTypes:
   /{id}:
     displayName: Notes
     description: Get, Delete or Update a specific note
+    uriParameters:
+      id:
+        pattern : "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
     type:
       collection-item:
         schema: note
