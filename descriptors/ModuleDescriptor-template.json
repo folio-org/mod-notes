@@ -70,6 +70,11 @@
           "methods": ["DELETE"],
           "pathPattern": "/note-types/{id}",
           "permissionsRequired": ["note.types.item.delete"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/note-links/domain/{domain}/type/{type}/id/{id}/",
+          "permissionsRequired": ["note.links.collection.put"]
         }
       ]
     },
@@ -165,6 +170,11 @@
       "description": "Delete note type"
     },
     {
+      "permissionName": "note.links.collection.put",
+      "displayName": "Note links - update note links",
+      "description": "Update note links"
+    },
+    {
       "permissionName": "notes.allops",
       "displayName": "Notes module - all CRUD permissions",
       "description": "Entire set of permissions needed to use the notes modules, but no domain permissions",
@@ -173,7 +183,8 @@
         "notes.item.get",
         "notes.item.post",
         "notes.item.put",
-        "notes.item.delete"
+        "notes.item.delete",
+        "note.links.collection.put"
       ],
       "visible": false
     },
