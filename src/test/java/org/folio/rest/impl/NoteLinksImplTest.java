@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,6 +37,9 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteLinksImplTest extends TestBase {
+
+  private static final int DEFAULT_NOTE_INDEX = 0;
+  private static final int DEFAULT_NOTE_AMOUNT = 1;
 
   @BeforeClass
   public static void setUpBeforeClass(TestContext context) {
@@ -65,15 +69,15 @@ public class NoteLinksImplTest extends TestBase {
     Note secondResultNote = getNoteById(notes, secondNote.getId());
     Note thirdResultNote = getNoteById(notes, thirdNote.getId());
 
-    assertEquals(DOMAIN, firstResultNote.getLinks().get(0).getDomain());
-    assertEquals(PACKAGE_TYPE, firstResultNote.getLinks().get(0).getType());
-    assertEquals(PACKAGE_ID, firstResultNote.getLinks().get(0).getId());
+    assertEquals(DOMAIN, firstResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getDomain());
+    assertEquals(PACKAGE_TYPE, firstResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getType());
+    assertEquals(PACKAGE_ID, firstResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getId());
 
-    assertThat(secondResultNote.getLinks(), is(empty()));
+    assertEquals(DEFAULT_NOTE_AMOUNT, secondResultNote.getLinks().size());
 
-    assertEquals(DOMAIN, thirdResultNote.getLinks().get(0).getDomain());
-    assertEquals(PACKAGE_TYPE, thirdResultNote.getLinks().get(0).getType());
-    assertEquals(PACKAGE_ID, thirdResultNote.getLinks().get(0).getId());
+    assertEquals(DOMAIN, thirdResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getDomain());
+    assertEquals(PACKAGE_TYPE, thirdResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getType());
+    assertEquals(PACKAGE_ID, thirdResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getId());
   }
 
   @Test
@@ -90,9 +94,9 @@ public class NoteLinksImplTest extends TestBase {
     Note firstResultNote = getNoteById(notes, firstNote.getId());
     Note secondResultNote = getNoteById(notes, secondNote.getId());
     Note thirdResultNote = getNoteById(notes, thirdNote.getId());
-    assertThat(firstResultNote.getLinks(), is(not(empty())));
-    assertThat(secondResultNote.getLinks(), is(empty()));
-    assertThat(thirdResultNote.getLinks(), is(empty()));
+    assertEquals(DEFAULT_NOTE_AMOUNT + 1, firstResultNote.getLinks().size());
+    assertEquals(DEFAULT_NOTE_AMOUNT, secondResultNote.getLinks().size());
+    assertEquals(DEFAULT_NOTE_AMOUNT, thirdResultNote.getLinks().size());
   }
 
   @Test
@@ -116,12 +120,12 @@ public class NoteLinksImplTest extends TestBase {
     Note firstResultNote = getNoteById(notes, firstNote.getId());
     Note secondResultNote = getNoteById(notes, secondNote.getId());
     Note thirdResultNote = getNoteById(notes, thirdNote.getId());
-    assertThat(firstResultNote.getLinks(), is(empty()));
-    assertThat(secondResultNote.getLinks(), is(empty()));
+    assertEquals(DEFAULT_NOTE_AMOUNT, firstResultNote.getLinks().size());
+    assertEquals(DEFAULT_NOTE_AMOUNT, secondResultNote.getLinks().size());
 
-    assertEquals(DOMAIN, thirdResultNote.getLinks().get(0).getDomain());
-    assertEquals(PACKAGE_TYPE, thirdResultNote.getLinks().get(0).getType());
-    assertEquals(PACKAGE_ID, thirdResultNote.getLinks().get(0).getId());
+    assertEquals(DOMAIN, thirdResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getDomain());
+    assertEquals(PACKAGE_TYPE, thirdResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getType());
+    assertEquals(PACKAGE_ID, thirdResultNote.getLinks().get(DEFAULT_NOTE_INDEX + 1).getId());
   }
 
   @Test
@@ -132,7 +136,7 @@ public class NoteLinksImplTest extends TestBase {
 
     List<Note> notes = getNotes();
 
-    assertEquals(1, getNoteById(notes, note.getId()).getLinks().size());
+    assertEquals(DEFAULT_NOTE_AMOUNT + 1, getNoteById(notes, note.getId()).getLinks().size());
   }
 
   @Test
@@ -142,7 +146,7 @@ public class NoteLinksImplTest extends TestBase {
     removeLinks(note.getId());
     removeLinks(note.getId());
     List<Note> notes = getNotes();
-    assertEquals(0, getNoteById(notes, note.getId()).getLinks().size());
+    assertEquals(DEFAULT_NOTE_AMOUNT, getNoteById(notes, note.getId()).getLinks().size());
   }
 
   private void putLinks(NoteLinksPut requestBody) {
@@ -179,7 +183,7 @@ public class NoteLinksImplTest extends TestBase {
 
   private Note createNote() {
     Note note = getNote();
-    sendNotePostRequest(Json.encode(note), USER8);
+    sendOkNotePostRequest(Json.encode(note), USER8);
     return note;
   }
 

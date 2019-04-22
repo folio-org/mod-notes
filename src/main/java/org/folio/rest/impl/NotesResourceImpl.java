@@ -7,15 +7,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
+import org.z3950.zing.cql.cql2pgjson.FieldException;
+import org.z3950.zing.cql.cql2pgjson.SchemaException;
 
 import org.folio.db.model.NoteView;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.UserDisplayInfo;
@@ -27,27 +42,10 @@ import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
-import org.folio.rest.tools.client.HttpClientFactory;
-import org.folio.rest.tools.client.interfaces.HttpClientInterface;
-import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.userlookup.UserLookUp;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
-import org.z3950.zing.cql.cql2pgjson.SchemaException;
-
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 
 @java.lang.SuppressWarnings({"squid:S1192"}) // This can be removed once John sets SQ up properly
@@ -59,6 +57,7 @@ public class NotesResourceImpl implements Notes {
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
   private final Messages messages = Messages.getInstance();
   private String noteSchema = null;
+
   // Get this from the restVerticle, like the rest, when it gets defined there.
 
   public NotesResourceImpl(Vertx vertx, String tenantId) {
@@ -146,155 +145,78 @@ public class NotesResourceImpl implements Notes {
       .withLinks(noteView.getLinks());
   }
 
-  /**
-   * Post a note to the system.
-   *
-   */
   @Override
   @Validate
-  public void postNotes(String lang,
-    Note note, Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
-    Context context) {
+  public void postNotes(String lang, Note note, Map<String, String> okapiHeaders,
+                        Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
 
-    String tenantId = TenantTool.calculateTenantId(
-      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    String idt = note.getId();
-    if (idt == null || idt.isEmpty()) {
-      note.setId(UUID.randomUUID().toString());
-    }
-    // Get the creator names, if not there
-    if (note.getCreator() == null
-      || note.getCreator().getLastName() == null) {
-      pn2LookupUser(okapiHeaders, tenantId, note, lang, res -> {
-        if (res.succeeded()) {
-          // we have a result already, pass it on
-          if (res.result() != null) { // we have a result already, pass it on
-            asyncResultHandler.handle(res);
-          } else { // null indicates successfull lookup
-            pn5InsertNote(context, tenantId, note, asyncResultHandler);
-          }
-        } else { // should not happen
-          asyncResultHandler.handle(
-            succeededFuture(PostNotesResponse.respond500WithTextPlain(
-                messages.getMessage(lang, MessageConsts.InternalServerError))));
-        }
-      });
-    }
-    else { // no need to look anything up, proceed to actual post
-      pn5InsertNote(context, tenantId, note, asyncResultHandler);
-    }
-  }
-
-  // Post notes, part 2: Look up the user (skipped if we already have what we need)
-  private void pn2LookupUser(Map<String, String> okapiHeaders,
-    String tenantId, Note note, String lang,
-    Handler<AsyncResult<Response>> asyncResultHandler) {
-
-    String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
-    if (userId == null) {
-      logger.error("No userid header");
-      asyncResultHandler.handle(succeededFuture(PostNotesResponse
-        .respond400WithTextPlain("No " + RestVerticle.OKAPI_USERID_HEADER
-          + ". Can not look up user")));
+    final List<Link> links = note.getLinks();
+    if (Objects.isNull(links) || links.isEmpty()) {
+      Errors validationErrorMessage = ValidationHelper.createValidationErrorMessage(
+        "links", "links", "At least one link should be present");
+      asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond422WithApplicationJson(validationErrorMessage)));
       return;
     }
-    String okapiURL = okapiHeaders.get("X-Okapi-Url");
-    HttpClientInterface client = HttpClientFactory.getHttpClient(okapiURL, tenantId);
-    String url = "/users/" + userId;
-    try {
-      logger.debug("Looking up user " + url);
-      CompletableFuture<org.folio.rest.tools.client.Response> response
-        = client.request(url, okapiHeaders);
-      response.whenComplete((resp, ex) ->
-        pn3HandleLookupUserResponse(resp, note, asyncResultHandler, userId, lang)
-      );
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-      asyncResultHandler.handle(
-        succeededFuture(PostNotesResponse.respond500WithTextPlain(
-            messages.getMessage(lang, MessageConsts.InternalServerError))));
-    }
-  }
 
-  // Post notes, part 3: Handle the user lookup response
-  private void pn3HandleLookupUserResponse(org.folio.rest.tools.client.Response resp,
-    Note note, Handler<AsyncResult<Response>> asyncResultHandler,
-    String userId, String lang) {
-
-    switch (resp.getCode()) {
-      case 200:
-        logger.debug("Received user " + resp.getBody());
-        JsonObject usr = resp.getBody();
-        if (usr.containsKey("username")
-          && usr.containsKey("personal")) {
-          if (note.getMetadata().getCreatedByUsername() == null) {
-            note.getMetadata().setCreatedByUsername(usr.getString("username"));
-          }
-          if (note.getCreator()== null) {
-            JsonObject p = usr.getJsonObject("personal");
-            if (p != null) {
-              UserDisplayInfo creator = new UserDisplayInfo();
-              creator.setFirstName(p.getString("firstName"));
-              creator.setMiddleName(p.getString("middleName"));
-              creator.setLastName(p.getString("lastName"));
-              note.setCreator(creator);
-            }
-          }
-          // null indicates all is well, and we can proceed
-          asyncResultHandler.handle(succeededFuture(null));
+    Future.succeededFuture()
+      .compose(o -> setNoteCreator(note, okapiHeaders))
+      .compose(voidObject -> {
+        saveNote(note, okapiHeaders, context, asyncResultHandler);
+        return null;
+      }).otherwise(exception -> {
+        final Throwable exceptionCause = exception.getCause();
+        if (exceptionCause instanceof NotFoundException || exceptionCause instanceof NotAuthorizedException ||
+            exceptionCause instanceof IllegalArgumentException || exceptionCause instanceof IllegalStateException) {
+          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exceptionCause.getMessage())));
+        }else if(exception instanceof IllegalArgumentException){
+          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exception.getMessage())));
         } else {
-          logger.error("User lookup failed for " + userId + ". Missing fields");
-          logger.error(Json.encodePrettily(resp));
-          asyncResultHandler.handle(succeededFuture(PostNotesResponse
-            .respond400WithTextPlain("User lookup failed. "
-              + "Missing fields in " + usr)));
+          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond500WithTextPlain(exception.getMessage())));
         }
-        break;
-      case 404:
-        logger.error("User lookup failed for " + userId);
-        logger.error(Json.encodePrettily(resp));
-        asyncResultHandler.handle(succeededFuture(PostNotesResponse
-          .respond400WithTextPlain("User lookup failed. "
-            + "Can not find user " + userId)));
-        break;
-      case 403:
-        logger.error("User lookup failed for " + userId);
-        logger.error(Json.encodePrettily(resp));
-        asyncResultHandler.handle(succeededFuture(PostNotesResponse
-          .respond400WithTextPlain("User lookup failed with 403. " + userId
-            + " " + Json.encode(resp.getError()))));
-        break;
-      default:
-        logger.error("User lookup failed with " + resp.getCode());
-        logger.error(Json.encodePrettily(resp));
-        asyncResultHandler.handle(
-          succeededFuture(PostNotesResponse.respond500WithTextPlain(
-            messages.getMessage(lang, MessageConsts.InternalServerError))));
-        break;
-    }
+        return null;
+      });
   }
 
-  // Post notes part 5: Actually insert the note in the database
-  private void pn5InsertNote(Context context, String tenantId, Note note,
-    Handler<AsyncResult<Response>> asyncResultHandler) {
+  /**
+   * Saves a note record to the database
+   *
+   * @param note - current Note  {@link Note} object to save
+   * @param okapiHeaders - okapiHeaders headers with tenant id
+   * @param context - the Vertx Context Object
+   * @param asyncResultHandler - an AsyncResult<Response> Handler
+   */
+  private Future<Void> saveNote(Note note, Map<String, String> okapiHeaders, Context context,
+                                Handler<AsyncResult<Response>> asyncResultHandler) {
 
-    String id = note.getId();
+    String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+
+    initId(note);
     PostgresClient.getInstance(context.owner(), tenantId)
-      .save(NOTE_TABLE, id, note, reply -> {
+      .save(NOTE_TABLE, note.getId(), note, reply -> {
         if (reply.succeeded()) {
-          String ret = reply.result();
-          note.setId(ret);
+          String noteId = reply.result();
+          note.setId(noteId);
           asyncResultHandler.handle(succeededFuture(PostNotesResponse
             .respond201WithApplicationJson(note,
-              PostNotesResponse.headersFor201().withLocation(LOCATION_PREFIX + ret))));
+              PostNotesResponse.headersFor201().withLocation(LOCATION_PREFIX + noteId))));
         } else {
           ValidationHelper.handleError(reply.cause(), asyncResultHandler);
         }
       });
+   return null;
   }
 
-
+  /**
+   * Sets a note record random UUID
+   *
+   * @param note - current Note {@link Note} object
+   */
+  private void initId(Note note) {
+    String noteId = note.getId();
+    if (noteId == null || noteId.isEmpty()) {
+      note.setId(UUID.randomUUID().toString());
+    }
+  }
 
   /**
    * Fetches a note record from the database
@@ -388,40 +310,49 @@ public class NotesResourceImpl implements Notes {
       return;
     }
 
-      getOneNote(id, okapiHeaders, vertxContext)
-        .compose(oldNote -> {
-          setNoteCreator(oldNote, note);
-          return setNoteUpdater(note, okapiHeaders);
-        })
-        .compose(voidObject -> updateNote(id, note, okapiHeaders, asyncResultHandler, vertxContext))
-        .otherwise(exception -> {
+    getOneNote(id, okapiHeaders, vertxContext)
+      .compose(oldNote -> {
+        setNoteCreator(oldNote, note);
+        return setNoteUpdater(note, okapiHeaders);
+      })
+      .compose(voidObject -> updateNote(id, note, okapiHeaders, asyncResultHandler, vertxContext))
+      .otherwise(exception -> {
 
-          if (exception instanceof HttpStatusException) {
+        if (exception instanceof HttpStatusException) {
 
-            final int cause =  ((HttpStatusException) exception).getStatusCode();
+          final int cause =  ((HttpStatusException) exception).getStatusCode();
 
-            if (Response.Status.NOT_FOUND.getStatusCode() == cause) {
-              asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond404WithTextPlain(
-                  ((HttpStatusException) exception).getPayload())));
-            } else if (Response.Status.BAD_REQUEST.getStatusCode() == cause) {
-              asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond400WithTextPlain(
-                  ((HttpStatusException) exception).getPayload())));
-            } else {
-              asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond500WithTextPlain(
-                exception.getMessage())));
-            }
+          if (Response.Status.NOT_FOUND.getStatusCode() == cause) {
+            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond404WithTextPlain(
+                ((HttpStatusException) exception).getPayload())));
+          } else if (Response.Status.BAD_REQUEST.getStatusCode() == cause) {
+            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond400WithTextPlain(
+                ((HttpStatusException) exception).getPayload())));
           } else {
-            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond500WithTextPlain(exception.getMessage())));
+            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond500WithTextPlain(
+              exception.getMessage())));
           }
-          return null;
-      });
+        } else {
+          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond500WithTextPlain(exception.getMessage())));
+        }
+        return null;
+    });
   }
 
-  private Future<Void> setNoteCreator(Note oldNote, Note note) {
+  private void setNoteCreator(Note oldNote, Note note) {
     final UserDisplayInfo creator = getUserDisplayInfo(oldNote.getCreator().getFirstName(), oldNote.getCreator()
         .getMiddleName(), oldNote.getCreator().getLastName());
     note.setCreator(creator);
-    return null;
+    note.getMetadata().setCreatedByUsername(oldNote.getMetadata().getCreatedByUsername());
+  }
+
+  private Future<Void> setNoteCreator(Note note, Map<String, String> okapiHeaders) {
+    return UserLookUp.getUserInfo(okapiHeaders)
+      .map(userLookUp -> {
+        note.setCreator(getUserDisplayInfo(userLookUp.getFirstName(), userLookUp.getMiddleName(), userLookUp.getLastName()));
+        note.getMetadata().setCreatedByUsername(userLookUp.getUserName());
+        return null;
+    });
   }
 
   private Future<Void> setNoteUpdater(Note note, Map<String, String> okapiHeaders) {
@@ -429,6 +360,7 @@ public class NotesResourceImpl implements Notes {
       .map(userLookUp -> {
         final UserDisplayInfo userDisplayInfo = getUserDisplayInfo(userLookUp.getFirstName(), userLookUp.getMiddleName(), userLookUp.getLastName());
         note.setUpdater(userDisplayInfo);
+        note.getMetadata().setUpdatedByUsername(userLookUp.getUserName());
         return null;
       });
   }

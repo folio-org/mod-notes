@@ -37,9 +37,11 @@ public class NoteLinksImpl implements NoteLinks {
     "WHERE NOT EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ? ) AND " +
     "id in (%s)";
 
-  // in this query, jsonb_set function replaces old jsonb->links array with new one,
-  // "-" is an operator that removes an element by index
-  // and (selection position-1 ...) is a subquery that calculates index of first element that matches searched link
+  /**
+   * in this query, jsonb_set function replaces old jsonb->links array with new one,
+   * "-" is an operator that removes an element by index
+   * and (select MIN(position)-1 ...) is a subquery that calculates index of first element that matches searched link
+   */
   private static final String REMOVE_LINKS =
     "UPDATE %s " +
       "SET jsonb = jsonb_set(jsonb, '{links}',  " +

@@ -1,7 +1,6 @@
 package org.folio.rest.impl;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.folio.util.NoteTestData.*;
 import static org.folio.util.TestUtil.readFile;
@@ -93,29 +92,6 @@ public class NotesTest extends TestBase {
           .withStatus(403))
     );
 
-    stubFor(
-      post(new UrlPathPattern(new EqualToPattern("/notify/_username/foo"), false))
-        .willReturn(new ResponseDefinitionBuilder()
-          .withStatus(201))
-    );
-
-    stubFor(
-      post(new UrlPathPattern(new EqualToPattern("/notify/_username/üñí"), false))
-        .willReturn(new ResponseDefinitionBuilder()
-          .withStatus(201))
-    );
-
-    stubFor(
-      post(new UrlPathPattern(new EqualToPattern("/notify/_username/bar"), false))
-        .willReturn(new ResponseDefinitionBuilder()
-          .withStatus(404))
-    );
-
-    stubFor(
-      post(new UrlPathPattern(new EqualToPattern("/notify/_username/broken"), false))
-        .willReturn(new ResponseDefinitionBuilder()
-          .withStatus(500))
-    );
   }
 
   @After
@@ -411,7 +387,7 @@ public class NotesTest extends TestBase {
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .body(containsString("Can not look up user"))
+      .body(containsString("cannot look up user"))
       .statusCode(400);
   }
 
@@ -419,13 +395,13 @@ public class NotesTest extends TestBase {
   public void shouldReturn400WhenUserLookupFails() {
     givenWithUrl()
       .header(TEN).header(JSON)
-      .header("X-Okapi-User-Id", "11999999-9999-4999-9999-999999999911")
+      .header(XOkapiHeaders.USER_ID, "11999999-9999-4999-9999-999999999911")
       .body(NOTE_2)
       .post("/notes")
       .then()
       .log().ifValidationFails()
       .statusCode(400)
-      .body(containsString("Can not find user 119999"));
+      .body(containsString("User not found"));
   }
 
   @Test
@@ -433,20 +409,19 @@ public class NotesTest extends TestBase {
     // Simulate permission problem in user lookup
     givenWithUrl()
       .header(TEN).header(JSON)
-      .header("X-Okapi-User-Id", "22999999-9999-4999-9999-999999999922")
+      .header(XOkapiHeaders.USER_ID, "22999999-9999-4999-9999-999999999922")
       .body(NOTE_2)
       .post("/notes")
       .then()
       .log().ifValidationFails()
-      .statusCode(400)
-      .body(containsString("User lookup failed with 403. 229999"));
+      .statusCode(400);
   }
 
   @Test
   public void shouldReturn400WhenUserIsRetrievedWithoutNecessaryFields() {
     givenWithUrl()
       .header(TEN).header(JSON)
-      .header("X-Okapi-User-Id", "33999999-9999-4999-9999-999999999933")
+      .header(XOkapiHeaders.USER_ID, "33999999-9999-4999-9999-999999999933")
       .body(NOTE_2)
       .post("/notes")
       .then()
@@ -462,6 +437,12 @@ public class NotesTest extends TestBase {
     sendNotePostRequest(NOTE_2, USER8)
       .statusCode(422)
       .body(containsString("violates unique constraint"));
+  }
+
+  @Test
+  public void shouldReturn422WhenPostHasNoLinks() {
+    sendNotePostRequest(UPDATE_NOTE_REQUEST, USER8)
+      .statusCode(422);
   }
 
   @Test
@@ -482,7 +463,7 @@ public class NotesTest extends TestBase {
     givenWithUrl()
       .header(TEN).header(USER8).header(JSON)
       .body(UPDATE_NOTE_REQUEST)
-      .put("/notes/11111111-222-1111-2-111111111111") // invalid UUID
+      .put("/notes/21111111-1111-1111-a111-111111111111") // invalid UUID
       .then()
       .log().ifValidationFails()
       .statusCode(422);  // fails the same-id check before validating the UUID
@@ -587,13 +568,13 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn500WhenDeleteRequestHasInvalidUUID() {
+  public void shouldReturn400WhenDeleteRequestHasInvalidUUID() {
     givenWithUrl() // Bad UUID
       .header(TEN)
       .delete("/notes/11111111-3-1111-333-111111111111")
       .then()
       .log().ifValidationFails()
-      .statusCode(500);
+      .statusCode(400);
   }
 
   @Test
