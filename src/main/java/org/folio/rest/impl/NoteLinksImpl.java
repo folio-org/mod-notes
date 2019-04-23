@@ -35,7 +35,7 @@ public class NoteLinksImpl implements NoteLinks {
     "UPDATE %s " +
     "SET jsonb = jsonb_insert(jsonb, '{links, -1}', ?, true) " +
     "WHERE NOT EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ? ) AND " +
-    "id in (%s)";
+    "id IN (%s)";
 
   /**
    * in this query, jsonb_set function replaces old jsonb->links array with new one,
@@ -47,9 +47,14 @@ public class NoteLinksImpl implements NoteLinks {
       "SET jsonb = jsonb_set(jsonb, '{links}',  " +
       "(jsonb->'links') " +
       " - " +
-      "(select MIN(position)-1 from jsonb_array_elements(jsonb->'links') with ordinality links(link, position) WHERE link = ?)::int) " +
-    "WHERE id in (%s) " +
+      "(SELECT MIN(position)-1 FROM jsonb_array_elements(jsonb->'links') WITH ORDINALITY links(link, position) WHERE link = ?)::int) " +
+    "WHERE id IN (%s) " +
       "AND EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?)";
+
+  private static final String DELETE_NOTES_WITHOUT_LINKS =
+    "DELETE FROM %s " +
+    "WHERE id IN (%s) AND " +
+    "jsonb->'links' = '[]'::jsonb";
 
   @Override
   public void putNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id,
@@ -137,7 +142,26 @@ public class NoteLinksImpl implements NoteLinks {
 
     Future<UpdateResult> future = Future.future();
     postgresClient.execute(connection, query, parameters, future.completer());
-    return future.map(result -> null);
+    return future
+      .compose(o -> deleteNotesWithoutLinks(notesIds, postgresClient, connection, tenantId))
+      .map(result -> null);
+  }
+
+  private Future<Void> deleteNotesWithoutLinks(List<String> notesIds, PostgresClient postgresClient,
+                                               AsyncResult<SQLConnection> connection, String tenantId) {
+    if(notesIds.isEmpty()){
+      return Future.succeededFuture(null);
+    }
+
+    String placeholders = createIdPlaceholders(notesIds.size());
+    String query = String.format(DELETE_NOTES_WITHOUT_LINKS, getTableName(tenantId), placeholders);
+    JsonArray parameters = new JsonArray();
+    notesIds.forEach(parameters::add);
+
+    Future<UpdateResult> future = Future.future();
+    postgresClient.execute(connection, query, parameters, future.completer());
+    return future
+      .map(result -> null);
   }
 
   private JsonArray createAssignParameters(List<String> notesIds, Link link) {
