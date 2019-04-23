@@ -1,13 +1,9 @@
 package org.folio.rest.impl;
 
-import static io.vertx.core.Future.succeededFuture;
-
 import static org.folio.rest.tools.utils.TenantTool.tenantId;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
 
@@ -17,8 +13,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.NoteType;
@@ -26,10 +21,6 @@ import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.jaxrs.resource.NoteTypes;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
-import org.folio.rest.persist.cql.CQLWrapper;
-import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.spring.SpringContextUtil;
 import org.folio.type.NoteTypeService;
@@ -42,6 +33,8 @@ public class NoteTypesImpl implements NoteTypes {
   private NoteTypeService typeService;
   @Autowired
   private Messages messages;
+  @Autowired @Qualifier("default")
+  private Function<Throwable, Response> exceptionHandler;
 
 
   public NoteTypesImpl(Vertx vertx, String tenantId) {
@@ -51,39 +44,13 @@ public class NoteTypesImpl implements NoteTypes {
   @Override
   public void getNoteTypes(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Future<List<NoteType>> found = typeService.findByQuery(query, offset, limit, lang, tenantId(okapiHeaders));
+    Future<NoteTypeCollection> found = typeService.findByQuery(query, offset, limit, lang, tenantId(okapiHeaders));
 
-    vertxContext.runOnContext(v -> {
-      try {
-        CQLWrapper cql = getCQL(query, limit, offset);
-        PgUtil.postgresClient(vertxContext, okapiHeaders).get(NOTE_TYPE_TABLE, NoteType.class,
-          new String[]{"*"}, cql, true, false,
-          reply -> {
-            try {
-              if (reply.succeeded()) {
-                NoteTypeCollection noteType = new NoteTypeCollection();
-                List<NoteType> noteTypesList = reply.result().getResults();
-                noteTypesList.forEach(noteT -> noteT.setUsage(new NoteTypeUsage().withNoteTotal(0)));
-                noteType.setNoteTypes(noteTypesList);
-                noteType.setTotalRecords(reply.result().getResultInfo().getTotalRecords());
-                asyncResultHandler.handle(succeededFuture(GetNoteTypesResponse
-                  .respond200WithApplicationJson(noteType)));
-              } else {
-                asyncResultHandler.handle(succeededFuture(GetNoteTypesResponse
-                  .respond400WithTextPlain((messages.getMessage(
-                    lang, MessageConsts.InvalidURLPath)))));
-              }
-            } catch (Exception e) {
-              asyncResultHandler.handle(succeededFuture(GetNoteTypesResponse
-                .respond500WithTextPlain((messages.getMessage(
-                  lang, MessageConsts.InternalServerError)))));
-            }
-          });
-      } catch (Exception fe) {
-        asyncResultHandler.handle(succeededFuture(GetNoteTypesResponse.respond400WithTextPlain(
-          "CQL Parsing Error for '" + query + "': " + fe.getLocalizedMessage())));
-      }
-    });
+    found.map(col -> updateNoteTypeUsage(col, 0)) // temporarily, until the usage is not calculated
+      .map(GetNoteTypesResponse::respond200WithApplicationJson)
+      .map(Response.class::cast)
+      .otherwise(exceptionHandler)
+      .setHandler(asyncResultHandler);
   }
 
   @Validate
@@ -98,30 +65,28 @@ public class NoteTypesImpl implements NoteTypes {
   @Override
   public void getNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
                                    Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Future<Optional<NoteType>> found = typeService.findById(typeId, tenantId(okapiHeaders));
-    Handler<AsyncResult<Response>> handlerWrapper = event -> {
-      if (event.succeeded() && Response.Status.OK.getStatusCode() == event.result().getStatus()) {
+    Future<NoteType> found = typeService.findById(typeId, tenantId(okapiHeaders));
 
-        final NoteType noteType = (NoteType) event.result().getEntity();
-        if (Objects.isNull(noteType.getUsage())) {
-          noteType.setUsage(new NoteTypeUsage().withNoteTotal(0));
-        }
-      }
-      asyncResultHandler.handle(event);
-    };
-
-    PgUtil.getById(NOTE_TYPE_TABLE, NoteType.class, typeId, okapiHeaders, vertxContext, GetNoteTypesByTypeIdResponse.class,
-      handlerWrapper);
-
+    found.map(noteType -> { // temporarily, until the usage is not calculated
+        noteType.setUsage(new NoteTypeUsage().withNoteTotal(0));
+        return noteType;
+      }) 
+      .map(GetNoteTypesByTypeIdResponse::respond200WithApplicationJson)
+      .map(Response.class::cast)
+      .otherwise(exceptionHandler)
+      .setHandler(asyncResultHandler);
   }
 
   @Validate
   @Override
   public void deleteNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Future<Boolean> deleted = typeService.delete(typeId, tenantId(okapiHeaders));
-    PgUtil.deleteById(NOTE_TYPE_TABLE, typeId, okapiHeaders, vertxContext, DeleteNoteTypesByTypeIdResponse.class,
-        asyncResultHandler);
+    Future<String> deleted = typeService.delete(typeId, tenantId(okapiHeaders));
+
+    deleted.map(DeleteNoteTypesByTypeIdResponse.respond204())
+      .map(Response.class::cast)
+      .otherwise(exceptionHandler)
+      .setHandler(asyncResultHandler);
   }
 
   @Override
@@ -132,9 +97,9 @@ public class NoteTypesImpl implements NoteTypes {
         asyncResultHandler);
   }
 
-  private CQLWrapper getCQL(String query, int limit, int offset) throws CQL2PgJSONException {
-    CQL2PgJSON cql2pgJson = new CQL2PgJSON(NOTE_TYPE_TABLE + ".jsonb");
-    return new CQLWrapper(cql2pgJson, query).setLimit(new Limit(limit)).setOffset(new Offset(offset));
+  private NoteTypeCollection updateNoteTypeUsage(NoteTypeCollection noteTypeCollection, int usage) {
+    noteTypeCollection.getNoteTypes().forEach(noteType -> noteType.setUsage(new NoteTypeUsage().withNoteTotal(usage)));
+    return noteTypeCollection;
   }
 
 }

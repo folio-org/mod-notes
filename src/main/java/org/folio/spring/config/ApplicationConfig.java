@@ -1,5 +1,14 @@
 package org.folio.spring.config;
 
+import static org.folio.util.exc.ExceptionHandlers.badRequestHandler;
+import static org.folio.util.exc.ExceptionHandlers.generalHandler;
+import static org.folio.util.exc.ExceptionHandlers.logged;
+import static org.folio.util.exc.ExceptionHandlers.notFoundHandler;
+
+import java.util.function.Function;
+
+import javax.ws.rs.core.Response;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -22,5 +31,12 @@ public class ApplicationConfig {
   @Bean
   public Messages messages() {
     return Messages.getInstance();
+  }
+
+  @Bean("default")
+  public Function<Throwable, Response> defaultExcHandler() {
+    return logged(badRequestHandler()
+                .orElse(notFoundHandler())
+                .orElse(generalHandler()));
   }
 }

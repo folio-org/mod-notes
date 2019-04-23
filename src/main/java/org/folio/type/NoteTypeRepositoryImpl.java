@@ -92,8 +92,8 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
     return new NoteType()
       .withId(newId)
       .withName(entity.getName())
-      .withUsage(entity.getUsage()) // don't clone deeply this field
-      .withMetadata(entity.getMetadata()); // don't clone deeply this field
+      .withUsage(entity.getUsage()) // this field is not cloned deeply
+      .withMetadata(entity.getMetadata()); // this field is not cloned deeply
   }
 
   private static class CqlQuery<T> {
