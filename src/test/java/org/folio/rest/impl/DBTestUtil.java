@@ -13,7 +13,7 @@ import io.vertx.core.Vertx;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.persist.PostgresClient;
 
-class DBTestUtil {
+public class DBTestUtil {
 
   private static final String JSONB_COLUMN = "jsonb";
   public static final String NOTE_TYPE_TABLE = "note_type";

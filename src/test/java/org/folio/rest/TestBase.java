@@ -1,11 +1,34 @@
 package org.folio.rest;
 
+import static io.restassured.RestAssured.given;
+import static org.folio.util.NoteTestData.NOTE_TYPE;
+import static org.folio.util.NoteTestData.NOTE_TYPE2;
+import static org.folio.util.NoteTestData.NOTE_TYPE2_ID;
+import static org.folio.util.NoteTestData.NOTE_TYPE_ID;
+
 import java.io.IOException;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.client.TenantClient;
+import org.folio.rest.impl.DBTestUtil;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
@@ -19,35 +42,26 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import io.vertx.ext.unit.TestContext;
 
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
-
+/**
+ * Base test class for tests that use wiremock and vertx http servers,
+ * test that inherits this class must use VertxUnitRunner as test runner
+ */
 public class TestBase {
 
   public static final String STUB_TENANT = "testlib";
 
-  protected static final Header JSON_CONTENT_TYPE_HEADER = new Header(HttpHeaders.CONTENT_TYPE,
+  private static final Header JSON_CONTENT_TYPE_HEADER = new Header(HttpHeaders.CONTENT_TYPE,
     ContentType.APPLICATION_JSON.getMimeType());
-  
+
   private static final Logger logger = LoggerFactory.getLogger(TestBase.class);
-  
+
   private static final String STUB_TOKEN = "TEST_OKAPI_TOKEN";
   private static final String host = "http://127.0.0.1";
   private static final String HTTP_PORT = "http.port";
   private static final int port = NetworkUtils.nextFreePort();
-  
+
   protected static Vertx vertx;
 
   @Rule
@@ -60,7 +74,7 @@ public class TestBase {
     }
 
   };
-  
+
   @Rule
   public WireMockRule userMockServer = new WireMockRule(
     WireMockConfiguration.wireMockConfig()
@@ -68,15 +82,25 @@ public class TestBase {
       .notifier(new Slf4jNotifier(true)));
 
   @BeforeClass
-  public static void setup() throws IOException {
+  public static void setup(TestContext context) {
 
     vertx = Vertx.vertx();
 
+    Locale.setDefault(Locale.US);  // enforce English error messages
+
     logger.info("Start embedded database");
+    try {
     PostgresClient.setIsEmbedded(true);
     PostgresClient.getInstance(vertx).startEmbeddedPostgres();
+    } catch (IOException e) {
+      e.printStackTrace();
+      context.fail(e);
+      return;
+    }
 
     DeploymentOptions options = new DeploymentOptions().setConfig(new JsonObject().put(HTTP_PORT, port));
+
+    RestAssured.port = port;
 
     startVerticle(options);
 
@@ -107,10 +131,19 @@ public class TestBase {
       }
     });
     future.join();
+
+    // Simple GET request to see the module is running and we can talk to it.
+    given()
+      .request()
+      .get("/admin/health")
+      .then()
+      .log().all()
+      .statusCode(200);
+    logger.info("notesTest: setup done. Using port " + port);
   }
 
   @AfterClass
-  public static void tearDown(){
+  public static void tearDownAfterClass(){
 
     logger.info("Stop embedded database");
 
@@ -140,20 +173,12 @@ public class TestBase {
     return host + ":" + userMockServer.port();
   }
 
-  protected ValidatableResponse getResponse(String resourcePath) {
-    return RestAssured.given()
-      .spec(getRequestSpecification())
-      .when()
-      .get(resourcePath)
-      .then();
-  }
-
   protected ExtractableResponse<Response> getWithOk(String resourcePath) {
     return getWithStatus(resourcePath, HttpStatus.SC_OK);
   }
 
   protected ExtractableResponse<Response> getWithStatus(String resourcePath, int expectedStatus) {
-    return RestAssured.given()
+    return given()
       .spec(getRequestSpecification())
       .when()
       .get(resourcePath)
@@ -163,7 +188,7 @@ public class TestBase {
 
   protected ExtractableResponse<Response> putWithStatus(String resourcePath, String putBody,
                                                         int expectedStatus) {
-    return RestAssured.given()
+    return given()
       .spec(getRequestSpecification())
       .header(JSON_CONTENT_TYPE_HEADER)
       .body(putBody)
@@ -176,7 +201,7 @@ public class TestBase {
 
   protected ExtractableResponse<Response> postWithStatus(String resourcePath, String postBody,
                                                          int expectedStatus) {
-    return RestAssured.given()
+    return given()
       .spec(getRequestSpecification())
       .header(JSON_CONTENT_TYPE_HEADER)
       .body(postBody)
@@ -188,12 +213,42 @@ public class TestBase {
   }
 
   protected ExtractableResponse<Response> deleteWithStatus(String resourcePath, int expectedStatus) {
-    return RestAssured.given()
+    return given()
       .spec(getRequestSpecification())
       .when()
       .delete(resourcePath)
       .then()
       .statusCode(expectedStatus)
       .extract();
+  }
+
+
+  protected void sendOkNotePostRequest(String noteJson, Header userHeader) {
+    sendNotePostRequest(noteJson, userHeader)
+      .statusCode(201);
+  }
+
+  protected ValidatableResponse sendNotePostRequest(String noteJson, Header userHeader) {
+    return givenWithUrl()
+      .spec(getRequestSpecification())
+      .header(userHeader).header(JSON_CONTENT_TYPE_HEADER)
+      .body(noteJson)
+      .post("/notes")
+      .then()
+      .log().ifValidationFails();
+  }
+
+  protected RequestSpecification givenWithUrl() {
+    return given()
+      .header(new Header(XOkapiHeaders.URL, getWiremockUrl()));
+  }
+
+  protected static void createNoteTypes(TestContext context) {
+    vertx.executeBlocking(future -> {
+        DBTestUtil.insertNoteType(vertx, NOTE_TYPE_ID, STUB_TENANT, NOTE_TYPE);
+        DBTestUtil.insertNoteType(vertx, NOTE_TYPE2_ID, STUB_TENANT, NOTE_TYPE2);
+        future.complete();
+      },
+      context.asyncAssertSuccess());
   }
 }
