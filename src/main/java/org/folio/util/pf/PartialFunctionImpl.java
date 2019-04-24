@@ -6,10 +6,10 @@ import java.util.function.Predicate;
 class PartialFunctionImpl<T, R> implements PartialFunction<T, R> {
 
   private Predicate<? super T> isDefinedAt;
-  private Function<T, R> function;
+  private Function<? super T, ? extends R> function;
 
 
-  PartialFunctionImpl(Predicate<? super T> isDefinedAt, Function<T, R> function) {
+  PartialFunctionImpl(Predicate<? super T> isDefinedAt, Function<? super T, ? extends R> function) {
     this.function = function;
     this.isDefinedAt = isDefinedAt;
   }

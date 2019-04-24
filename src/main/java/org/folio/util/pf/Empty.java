@@ -1,6 +1,6 @@
 package org.folio.util.pf;
 
-class Empty<T, R> implements PartialFunction<T, R> {
+final class Empty<T, R> implements PartialFunction<T, R> {
 
   @Override
   public R apply(T t) {

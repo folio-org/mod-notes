@@ -20,25 +20,19 @@ import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.jaxrs.resource.NoteTypes;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.tools.messages.Messages;
 import org.folio.spring.SpringContextUtil;
 import org.folio.type.NoteTypeService;
 
 public class NoteTypesImpl implements NoteTypes {
 
-  private static final String NOTE_TYPE_TABLE = "note_type";
-
   @Autowired
   private NoteTypeService typeService;
-  @Autowired
-  private Messages messages;
   @Autowired @Qualifier("default")
   private Function<Throwable, Response> exceptionHandler;
 
 
-  public NoteTypesImpl(Vertx vertx, String tenantId) {
-    SpringContextUtil.autowireDependencies(this, vertx.getOrCreateContext());
+  public NoteTypesImpl() {
+    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
   }
 
   @Override
@@ -46,11 +40,15 @@ public class NoteTypesImpl implements NoteTypes {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<NoteTypeCollection> found = typeService.findByQuery(query, offset, limit, lang, tenantId(okapiHeaders));
 
-    found.map(col -> updateNoteTypeUsage(col, 0)) // temporarily, until the usage is not calculated
+    /*found.map(col -> updateNoteTypeUsage(col, 0))
       .map(GetNoteTypesResponse::respond200WithApplicationJson)
       .map(Response.class::cast)
       .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);
+      .setHandler(asyncResultHandler);*/
+
+    respond(found.map(col -> updateNoteTypeUsage(col, 0)), // temporarily, until the usage is not calculated
+      GetNoteTypesResponse::respond200WithApplicationJson,
+      asyncResultHandler);
   }
 
   @Validate
@@ -58,7 +56,15 @@ public class NoteTypesImpl implements NoteTypes {
   public void postNoteTypes(String lang, NoteType entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<NoteType> saved = typeService.save(entity, tenantId(okapiHeaders));
-    PgUtil.post(NOTE_TYPE_TABLE, entity, okapiHeaders, vertxContext, PostNoteTypesResponse.class, asyncResultHandler);
+
+    /*saved.map(e -> PostNoteTypesResponse.respond201WithApplicationJson(e, PostNoteTypesResponse.headersFor201()))
+      .map(Response.class::cast)
+      .otherwise(exceptionHandler)
+      .setHandler(asyncResultHandler);*/
+
+    respond(saved,
+      noteType -> PostNoteTypesResponse.respond201WithApplicationJson(noteType, PostNoteTypesResponse.headersFor201()),
+      asyncResultHandler);
   }
 
   @Validate
@@ -67,39 +73,60 @@ public class NoteTypesImpl implements NoteTypes {
                                    Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<NoteType> found = typeService.findById(typeId, tenantId(okapiHeaders));
 
-    found.map(noteType -> { // temporarily, until the usage is not calculated
+    /*found.map(noteType -> { // temporarily, until the usage is not calculated
         noteType.setUsage(new NoteTypeUsage().withNoteTotal(0));
         return noteType;
       }) 
       .map(GetNoteTypesByTypeIdResponse::respond200WithApplicationJson)
       .map(Response.class::cast)
       .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);
+      .setHandler(asyncResultHandler);*/
+
+    respond(found.map(noteType -> { // temporarily, until the usage is not calculated
+                noteType.setUsage(new NoteTypeUsage().withNoteTotal(0));
+                return noteType;
+              }),
+      GetNoteTypesByTypeIdResponse::respond200WithApplicationJson,
+      asyncResultHandler);
   }
 
   @Validate
   @Override
   public void deleteNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Future<String> deleted = typeService.delete(typeId, tenantId(okapiHeaders));
+    Future<Void> deleted = typeService.delete(typeId, tenantId(okapiHeaders));
 
-    deleted.map(DeleteNoteTypesByTypeIdResponse.respond204())
+    /*deleted.map(DeleteNoteTypesByTypeIdResponse.respond204())
       .map(Response.class::cast)
       .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);
+      .setHandler(asyncResultHandler);*/
+
+    respond(deleted, v -> DeleteNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
   }
 
   @Override
   public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Future<NoteType> saved = typeService.save(entity, tenantId(okapiHeaders));
-    PgUtil.put(NOTE_TYPE_TABLE, entity, typeId, okapiHeaders, vertxContext, PutNoteTypesByTypeIdResponse.class,
-        asyncResultHandler);
+    Future<Void> updated = typeService.update(typeId, entity, tenantId(okapiHeaders));
+
+    /*updated.map(PutNoteTypesByTypeIdResponse.respond204())
+      .map(Response.class::cast)
+      .otherwise(exceptionHandler)
+      .setHandler(asyncResultHandler);*/
+
+    respond(updated, v -> PutNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
   }
 
   private NoteTypeCollection updateNoteTypeUsage(NoteTypeCollection noteTypeCollection, int usage) {
     noteTypeCollection.getNoteTypes().forEach(noteType -> noteType.setUsage(new NoteTypeUsage().withNoteTotal(usage)));
     return noteTypeCollection;
+  }
+
+  private <T> Future<Response> respond(Future<T> result, Function<T, Response> mapper,
+                                       Handler<AsyncResult<Response>> asyncResultHandler) {
+    return result.map(mapper)
+            .otherwise(exceptionHandler)
+            .setHandler(asyncResultHandler);
   }
 
 }

@@ -1,6 +1,6 @@
 package org.folio.util.pf;
 
-class OrElse<T, R> implements PartialFunction<T, R> {
+final class OrElse<T, R> implements PartialFunction<T, R> {
 
   private PartialFunction<T, R> f1;
   private PartialFunction<T, R> f2;

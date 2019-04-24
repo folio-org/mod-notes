@@ -1,5 +1,8 @@
 package org.folio.type;
 
+import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
+
 import java.util.List;
 
 import io.vertx.core.Future;
@@ -34,19 +37,26 @@ public class NoteTypeServiceImpl implements NoteTypeService {
 
   @Override
   public Future<NoteType> save(NoteType entity, String tenantId) {
-    return null;
+    // TODO (Dima Tkachenko): call mod config to test for max number of types
+    return repository.save(entity, tenantId);
   }
 
   @Override
-  public Future<String> delete(String id, String tenantId) {
+  public Future<Void> update(String id, NoteType entity, String tenantId) {
+    entity.setId(id);
+
+    return repository.update(entity, tenantId)
+            .compose(updated -> updated
+              ? succeededFuture()
+              : failedFuture(Exceptions.notFound(NoteType.class, id)));
+  }
+
+  @Override
+  public Future<Void> delete(String id, String tenantId) {
     return repository.delete(id, tenantId)
-              .map(deleted -> {
-                if (deleted) {
-                  return id;
-                } else {
-                  throw Exceptions.notFound(NoteType.class, id);
-                }
-              });
+            .compose(deleted -> deleted
+              ? succeededFuture()
+              : failedFuture(Exceptions.notFound(NoteType.class, id)));
   }
 
 }

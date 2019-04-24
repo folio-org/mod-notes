@@ -5,8 +5,6 @@ import static org.folio.util.exc.ExceptionHandlers.generalHandler;
 import static org.folio.util.exc.ExceptionHandlers.logged;
 import static org.folio.util.exc.ExceptionHandlers.notFoundHandler;
 
-import java.util.function.Function;
-
 import javax.ws.rs.core.Response;
 
 import org.springframework.context.annotation.Bean;
@@ -16,6 +14,7 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 
 import org.folio.rest.tools.messages.Messages;
+import org.folio.util.pf.PartialFunction;
 
 @Configuration
 @ComponentScan(basePackages = {"org.folio.type"})
@@ -34,7 +33,7 @@ public class ApplicationConfig {
   }
 
   @Bean("default")
-  public Function<Throwable, Response> defaultExcHandler() {
+  public PartialFunction<Throwable, Response> defaultExcHandler() {
     return logged(badRequestHandler()
                 .orElse(notFoundHandler())
                 .orElse(generalHandler()));

@@ -64,9 +64,18 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   public Future<NoteType> save(NoteType entity, String tenantId) {
     Future<String> future = Future.future(); // future with id as result
 
-    pgClient(tenantId).save(NOTE_TYPE_TABLE, entity.getId(), entity, true, true, true, future);
+    pgClient(tenantId).save(NOTE_TYPE_TABLE, entity.getId(), entity, future);
 
     return future.map(id -> updateId(entity, id)); // update id only, copy the rest from the original entity
+  }
+
+  @Override
+  public Future<Boolean> update(NoteType entity, String tenantId) {
+    Future<UpdateResult> future = Future.future();
+
+    pgClient(tenantId).update(NOTE_TYPE_TABLE, entity, entity.getId(), future);
+
+    return future.map(updateResult -> updateResult.getUpdated() == 1);
   }
 
   @Override

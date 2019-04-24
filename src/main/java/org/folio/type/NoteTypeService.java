@@ -17,6 +17,8 @@ public interface NoteTypeService {
 
   Future<NoteType> save(NoteType entity, String tenantId);
 
-  Future<String> delete(String id, String tenantId);
+  Future<Void> update(String id, NoteType entity, String tenantId);
+
+  Future<Void> delete(String id, String tenantId);
 
 }
