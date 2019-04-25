@@ -1,6 +1,7 @@
 package org.folio.rest;
 
 import static io.restassured.RestAssured.given;
+
 import static org.folio.util.NoteTestData.NOTE_TYPE;
 import static org.folio.util.NoteTestData.NOTE_TYPE2;
 import static org.folio.util.NoteTestData.NOTE_TYPE2_ID;
@@ -10,32 +11,15 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.impl.DBTestUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.http.Header;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -43,6 +27,21 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.TestContext;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.client.TenantClient;
+import org.folio.rest.impl.DBTestUtil;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.NetworkUtils;
 
 /**
  * Base test class for tests that use wiremock and vertx http servers,
@@ -52,8 +51,9 @@ public class TestBase {
 
   public static final String STUB_TENANT = "testlib";
 
-  private static final Header JSON_CONTENT_TYPE_HEADER = new Header(HttpHeaders.CONTENT_TYPE,
+  protected static final Header JSON_CONTENT_TYPE_HEADER = new Header(HttpHeaders.CONTENT_TYPE,
     ContentType.APPLICATION_JSON.getMimeType());
+  protected static final Header TENANT_HEADER = new Header(XOkapiHeaders.TENANT, STUB_TENANT);
 
   private static final Logger logger = LoggerFactory.getLogger(TestBase.class);
 
@@ -166,15 +166,40 @@ public class TestBase {
       .build();
   }
 
+  protected RequestSpecification givenWithUrl() {
+    return new RequestSpecBuilder()
+      .addHeader(XOkapiHeaders.URL, getWiremockUrl())
+      .setBaseUri(host + ":" + port)
+      .setPort(port)
+      .log(LogDetail.ALL)
+      .build();
+  }
+
   /**
    * Returns url of Wiremock server used in this test
    */
-  private String getWiremockUrl() {
+  protected String getWiremockUrl() {
     return host + ":" + userMockServer.port();
   }
 
   protected ExtractableResponse<Response> getWithOk(String resourcePath) {
     return getWithStatus(resourcePath, HttpStatus.SC_OK);
+  }
+
+  protected ExtractableResponse<Response> postNoteWithOk(String postBody, Header creator) {
+    return postWithStatus("/notes", postBody, HttpStatus.SC_CREATED, creator);
+  }
+
+  protected ExtractableResponse<Response> postNoteTypeWithOk(String postBody, Header creator) {
+    return postWithStatus("/note-types", postBody, HttpStatus.SC_CREATED, creator);
+  }
+
+  protected ExtractableResponse<Response> deleteWithOk(String resourcePath) {
+    return deleteWithStatus(resourcePath, HttpStatus.SC_NO_CONTENT);
+  }
+
+  protected ExtractableResponse<Response> putWithOk(String resourcePath, String putBody, Header updater) {
+    return putWithStatus(resourcePath, putBody, HttpStatus.SC_NO_CONTENT, updater);
   }
 
   protected ExtractableResponse<Response> getWithStatus(String resourcePath, int expectedStatus) {
@@ -183,31 +208,36 @@ public class TestBase {
       .when()
       .get(resourcePath)
       .then()
+      .log().ifValidationFails()
       .statusCode(expectedStatus).extract();
   }
 
   protected ExtractableResponse<Response> putWithStatus(String resourcePath, String putBody,
-                                                        int expectedStatus) {
+                                                        int expectedStatus, Header userHeader) {
     return given()
       .spec(getRequestSpecification())
       .header(JSON_CONTENT_TYPE_HEADER)
+      .header(userHeader)
       .body(putBody)
       .when()
       .put(resourcePath)
       .then()
+      .log().ifValidationFails()
       .statusCode(expectedStatus)
       .extract();
   }
 
   protected ExtractableResponse<Response> postWithStatus(String resourcePath, String postBody,
-                                                         int expectedStatus) {
+                                                         int expectedStatus, Header userHeader) {
     return given()
       .spec(getRequestSpecification())
       .header(JSON_CONTENT_TYPE_HEADER)
+      .header(userHeader)
       .body(postBody)
       .when()
       .post(resourcePath)
       .then()
+      .log().ifValidationFails()
       .statusCode(expectedStatus)
       .extract();
   }
@@ -218,29 +248,9 @@ public class TestBase {
       .when()
       .delete(resourcePath)
       .then()
+      .log().ifValidationFails()
       .statusCode(expectedStatus)
       .extract();
-  }
-
-
-  protected void sendOkNotePostRequest(String noteJson, Header userHeader) {
-    sendNotePostRequest(noteJson, userHeader)
-      .statusCode(201);
-  }
-
-  protected ValidatableResponse sendNotePostRequest(String noteJson, Header userHeader) {
-    return givenWithUrl()
-      .spec(getRequestSpecification())
-      .header(userHeader).header(JSON_CONTENT_TYPE_HEADER)
-      .body(noteJson)
-      .post("/notes")
-      .then()
-      .log().ifValidationFails();
-  }
-
-  protected RequestSpecification givenWithUrl() {
-    return given()
-      .header(new Header(XOkapiHeaders.URL, getWiremockUrl()));
   }
 
   protected static void createNoteTypes(TestContext context) {
