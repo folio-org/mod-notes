@@ -466,7 +466,7 @@ public class NoteTypesImplTest extends TestBase {
       String error = postWithStatus("note-types/", toJson(creating), HttpStatus.SC_BAD_REQUEST)
         .asString();
 
-      assertThat(error, containsString("duplicate key value"));
+      assertThat(error, containsString("already exists"));
     } finally {
       DBTestUtil.deleteAllNoteTypes(vertx);
     }
