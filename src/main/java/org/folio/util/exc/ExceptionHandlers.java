@@ -2,6 +2,8 @@ package org.folio.util.exc;
 
 import static org.folio.util.pf.PartialFunctions.as;
 
+import java.util.function.Predicate;
+
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
@@ -12,7 +14,9 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
 
+import org.folio.rest.persist.cql.CQLQueryValidationException;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.util.pf.PartialFunction;
 import org.folio.util.pf.PartialFunctions;
@@ -24,8 +28,16 @@ public class ExceptionHandlers {
   private ExceptionHandlers() {
   }
 
+  @SuppressWarnings("squid:CommentedOutCodeLine")
   public static PartialFunction<Throwable, Response> badRequestHandler() {
-    return as(BadRequestException.class::isInstance, ExceptionHandlers::toBadRequest);
+    // predicate can be written also as:
+    //    t -> t instanceof BadRequestException || t instanceof CQL2PgJSONException
+    //
+    // the below is to show how predicates that potentially have complex logic can be combined
+    return as(instanceOf(BadRequestException.class)
+                .or(instanceOf(CQLQueryValidationException.class))
+                .or(instanceOf(CQL2PgJSONException.class)),
+              ExceptionHandlers::toBadRequest);
   }
 
   public static PartialFunction<Throwable, Response> notFoundHandler() {
@@ -66,4 +78,24 @@ public class ExceptionHandlers {
     }
   }
 
+  private static Predicate<Throwable> instanceOf(Class<? extends Throwable> cl) {
+    return new InstanceOfPredicate<>(cl);
+  }
+
+  private static class InstanceOfPredicate<T, E> implements Predicate<E> {
+
+    private Class<T> excClass;
+
+    InstanceOfPredicate(Class<T> excClass) {
+      this.excClass = excClass;
+    }
+
+    @Override
+    public boolean test(E e) {
+      return excClass.isInstance(e);
+    }
+  }
+
 }
+
+

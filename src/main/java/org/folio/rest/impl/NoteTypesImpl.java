@@ -22,13 +22,14 @@ import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.jaxrs.resource.NoteTypes;
 import org.folio.spring.SpringContextUtil;
 import org.folio.type.NoteTypeService;
+import org.folio.util.pf.PartialFunction;
 
 public class NoteTypesImpl implements NoteTypes {
 
   @Autowired
   private NoteTypeService typeService;
   @Autowired @Qualifier("default")
-  private Function<Throwable, Response> exceptionHandler;
+  private PartialFunction<Throwable, Response> exceptionHandler;
 
 
   public NoteTypesImpl() {

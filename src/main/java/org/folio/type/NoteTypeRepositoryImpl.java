@@ -88,7 +88,9 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   }
 
   private PostgresClient pgClient(String tenantId) {
-    return PostgresClient.getInstance(vertx, tenantId);
+    PostgresClient pg = PostgresClient.getInstance(vertx, tenantId);
+    pg.setIdField("id");
+    return pg;
   }
 
   private NoteTypeCollection toNoteTypeCollection(Results<NoteType> results) {

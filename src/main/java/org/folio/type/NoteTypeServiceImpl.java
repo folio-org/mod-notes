@@ -43,20 +43,20 @@ public class NoteTypeServiceImpl implements NoteTypeService {
 
   @Override
   public Future<Void> update(String id, NoteType entity, String tenantId) {
-    entity.setId(id);
+    entity.setId(id); // undesirable modification of input entity, but probably safe in this case
 
     return repository.update(entity, tenantId)
-            .compose(updated -> updated
-              ? succeededFuture()
-              : failedFuture(Exceptions.notFound(NoteType.class, id)));
+            .compose(updated -> failIfNotFound(updated, id));
   }
 
   @Override
   public Future<Void> delete(String id, String tenantId) {
     return repository.delete(id, tenantId)
-            .compose(deleted -> deleted
-              ? succeededFuture()
-              : failedFuture(Exceptions.notFound(NoteType.class, id)));
+            .compose(deleted -> failIfNotFound(deleted, id));
+  }
+
+  private Future<Void> failIfNotFound(boolean found, String entityId) {
+    return found ? succeededFuture() : failedFuture(Exceptions.notFound(NoteType.class, entityId));
   }
 
 }
