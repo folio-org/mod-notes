@@ -5,12 +5,11 @@ CREATE OR REPLACE VIEW note_view AS
   jsonb_build_object(
     'id', note_data.jsonb->>'id',
     'title', note_data.jsonb->>'title',
+    'domain', note_data.jsonb->>'domain',
     'content', note_data.jsonb->>'content',
     'creator', note_data.jsonb->'creator',
     'updater', note_data.jsonb->'updater',
     'links', note_data.jsonb->'links',
-    'linkDomains',
-    (SELECT array_agg(DISTINCT domain) FROM jsonb_to_recordset(note_data.jsonb->'links') AS x(domain text)),
     'linkTypes',
     (SELECT array_agg(DISTINCT type) FROM jsonb_to_recordset(note_data.jsonb->'links') AS x(type text)),
     'linkIds',

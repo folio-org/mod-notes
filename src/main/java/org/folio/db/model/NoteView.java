@@ -25,6 +25,9 @@ public class NoteView {
   private String typeId;
 
   private String type;
+  
+  @NotNull
+  private String domain;
 
   @NotNull
   private String title;
@@ -51,7 +54,11 @@ public class NoteView {
   public String getType() {
     return type;
   }
-
+  
+  public String getDomain() {
+    return domain;
+  }
+  
   public String getTitle() {
     return title;
   }
@@ -86,6 +93,10 @@ public class NoteView {
 
   public void setType(String type) {
     this.type = type;
+  }
+  
+  public void setDomain(String domain) {
+    this.domain = domain;
   }
 
   public void setTitle(String title) {

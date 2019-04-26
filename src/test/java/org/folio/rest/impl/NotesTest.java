@@ -230,6 +230,7 @@ public class NotesTest extends TestBase {
     assertThat(note.getMetadata().getCreatedByUserId(), containsString("-9999-"));
     assertEquals(NOTE_TYPE_NAME, note.getType());
     assertEquals(NOTE_TYPE_ID, note.getTypeId());
+    assertEquals(DOMAIN, note.getDomain());
     assertEquals("test note title", note.getTitle());
     assertThat(note.getContent(), containsString("First note"));
     assertEquals("Mockerson", note.getCreator().getLastName());
@@ -239,8 +240,7 @@ public class NotesTest extends TestBase {
 
     assertThat(note.getLinks(), hasItem(allOf(
       hasProperty("id", is(PACKAGE_ID)),
-      hasProperty("type", is(PACKAGE_TYPE)),
-      hasProperty("domain", is(DOMAIN))
+      hasProperty("type", is(PACKAGE_TYPE))
     )));
   }
 
@@ -283,7 +283,7 @@ public class NotesTest extends TestBase {
 
     final Note note = getWithOk("/notes/22222222-2222-2222-a222-222222222222").as(Note.class);
     assertThat(note.getContent(), containsString("things"));
-
+    assertThat(note.getDomain(), equalTo("eholdings"));
     final Metadata noteMetadata = note.getMetadata();
     assertThat(noteMetadata.getCreatedByUserId(), containsString("-8888-"));
     assertThat(noteMetadata.getCreatedByUsername(), equalTo("m8"));
@@ -322,7 +322,7 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldFindNoteByLinkDomain() {
     postNoteWithOk(NOTE_1, USER9);
-    getNoteAndCheckContent("?query=linkDomains=" + DOMAIN, "First note");
+    getNoteAndCheckContent("?query=domain=" + DOMAIN, "First note");
   }
 
   @Test
@@ -460,7 +460,7 @@ public class NotesTest extends TestBase {
     String newNote2 = rawNote2
       .replaceAll("8888", "9999") // createdBy
       .replaceFirst("23456", "34567") // link to the thing
-      .replaceAll("things", "rooms") // new domain (also in link)
+      .replaceAll("things", "rooms") // new domain
       .replaceFirst("\"m8\"", "\"NewCrUsername\""); // readonly field, should not matter
 
     logger.info("About to PUT note: " + newNote2);
@@ -547,7 +547,7 @@ public class NotesTest extends TestBase {
   public void shouldReturn400WhenLimitIsInvalid() {
     getWithStatus("/notes?query=title=testing&limit=-1", SC_BAD_REQUEST);
   }
-
+  
   @Test
   public void shouldDeleteNoteByPathReturnedFromPost() {
     final String location = postNoteWithOk(NOTE_3, USER9).headers().get("Location").getValue();

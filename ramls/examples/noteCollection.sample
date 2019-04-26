@@ -4,6 +4,7 @@
        "id": "62d00c36-a94f-434d-9cd2-c7ea159303da",
        "type": "High Priority",
        "title" : "BU Campus Access Issues",
+       "domain": "eholdings",
        "creator": {
          "lastName" : "Smith",
          "firstName": "Robin",
@@ -26,13 +27,11 @@
        "links": [
          {
            "id" : "583-2356521",
-           "type": "package",
-           "domain": "eholdings"
+           "type": "package"
          },
          {
            "id" : "583-2356521-758038",
-           "type": "resource",
-           "domain": "eholdings"
+           "type": "resource"
          }
        ]
      }

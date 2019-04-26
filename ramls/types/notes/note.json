@@ -20,6 +20,11 @@
       "example": "Access issues",
       "readonly": true
     },
+    "domain": {
+      "type": "string",
+      "description": "Domain associated with this note",
+      "example": "eholdings"
+    },
     "title": {
       "type": "string",
       "description": "Note title",
@@ -65,6 +70,8 @@
   },
   "required": [
     "typeId",
-    "title"
+    "title",
+    "domain",
+    "links"
   ]
 }
