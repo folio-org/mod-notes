@@ -1,6 +1,7 @@
 package org.folio.util.pf;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -40,5 +41,9 @@ public interface PartialFunction<T, R> extends Function<T, R> {
   default <V> PartialFunction<T, V> andThen(Function<? super R, ? extends V> after) {
     Objects.requireNonNull(after);
     return PartialFunctions.andThen(this, after);
+  }
+
+  default Function<T, Optional<R>> lift() {
+    return PartialFunctions.lift(this);
   }
 }

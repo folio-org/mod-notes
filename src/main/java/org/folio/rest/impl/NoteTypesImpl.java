@@ -41,12 +41,6 @@ public class NoteTypesImpl implements NoteTypes {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<NoteTypeCollection> found = typeService.findByQuery(query, offset, limit, lang, tenantId(okapiHeaders));
 
-    /*found.map(col -> updateNoteTypeUsage(col, 0))
-      .map(GetNoteTypesResponse::respond200WithApplicationJson)
-      .map(Response.class::cast)
-      .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);*/
-
     respond(found.map(col -> updateNoteTypeUsage(col, 0)), // temporarily, until the usage is not calculated
       GetNoteTypesResponse::respond200WithApplicationJson,
       asyncResultHandler);
@@ -58,11 +52,6 @@ public class NoteTypesImpl implements NoteTypes {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<NoteType> saved = typeService.save(entity, tenantId(okapiHeaders));
 
-    /*saved.map(e -> PostNoteTypesResponse.respond201WithApplicationJson(e, PostNoteTypesResponse.headersFor201()))
-      .map(Response.class::cast)
-      .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);*/
-
     respond(saved,
       noteType -> PostNoteTypesResponse.respond201WithApplicationJson(noteType, PostNoteTypesResponse.headersFor201()),
       asyncResultHandler);
@@ -73,15 +62,6 @@ public class NoteTypesImpl implements NoteTypes {
   public void getNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
                                    Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<NoteType> found = typeService.findById(typeId, tenantId(okapiHeaders));
-
-    /*found.map(noteType -> { // temporarily, until the usage is not calculated
-        noteType.setUsage(new NoteTypeUsage().withNoteTotal(0));
-        return noteType;
-      }) 
-      .map(GetNoteTypesByTypeIdResponse::respond200WithApplicationJson)
-      .map(Response.class::cast)
-      .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);*/
 
     respond(found.map(noteType -> { // temporarily, until the usage is not calculated
                 noteType.setUsage(new NoteTypeUsage().withNoteTotal(0));
@@ -97,11 +77,6 @@ public class NoteTypesImpl implements NoteTypes {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<Void> deleted = typeService.delete(typeId, tenantId(okapiHeaders));
 
-    /*deleted.map(DeleteNoteTypesByTypeIdResponse.respond204())
-      .map(Response.class::cast)
-      .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);*/
-
     respond(deleted, v -> DeleteNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
   }
 
@@ -109,11 +84,6 @@ public class NoteTypesImpl implements NoteTypes {
   public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<Void> updated = typeService.update(typeId, entity, tenantId(okapiHeaders));
-
-    /*updated.map(PutNoteTypesByTypeIdResponse.respond204())
-      .map(Response.class::cast)
-      .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);*/
 
     respond(updated, v -> PutNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
   }

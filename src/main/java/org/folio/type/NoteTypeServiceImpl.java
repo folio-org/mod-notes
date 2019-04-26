@@ -8,7 +8,9 @@ import java.util.List;
 
 import javax.ws.rs.BadRequestException;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +46,29 @@ public class NoteTypeServiceImpl implements NoteTypeService {
     // TODO (Dima Tkachenko): call mod config to test for max number of types
     Future<NoteType> result = future();
 
-    repository.save(entity, tenantId).setHandler(ar -> {
+    repository.save(entity, tenantId).setHandler(handleDuplicateType(entity.getName(), result));
+
+    return result;
+  }
+
+  @Override
+  public Future<Void> update(String id, NoteType entity, String tenantId) {
+    entity.setId(id); // undesirable modification of input entity, but probably safe in this case
+
+    Future<Boolean> duplFuture = future();
+    repository.update(entity, tenantId).setHandler(handleDuplicateType(entity.getName(), duplFuture));
+
+    return duplFuture.compose(updated -> failIfNotFound(updated, id));
+  }
+
+  @Override
+  public Future<Void> delete(String id, String tenantId) {
+    return repository.delete(id, tenantId)
+            .compose(deleted -> failIfNotFound(deleted, id));
+  }
+
+  private <T> Handler<AsyncResult<T>> handleDuplicateType(String type, Future<T> result) {
+    return ar -> {
       // TO BE REFACTORED:
       // There have to be separate exceptions per different DB errors: unique constraint/foreign key/invalid UUID
       // These exceptions should be thrown by repository
@@ -58,7 +82,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
         if (msg != null) {
           BadRequestException bre;
           if (msg.contains("duplicate key value violates unique constraint")) {
-            bre = new BadRequestException("Note type '" + entity.getName() + "' already exists");
+            bre = new BadRequestException("Note type '" + type + "' already exists");
           } else {
             bre = new BadRequestException(t);
           }
@@ -68,23 +92,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
           result.fail(t);
         }
       }
-    });
-
-    return result;
-  }
-
-  @Override
-  public Future<Void> update(String id, NoteType entity, String tenantId) {
-    entity.setId(id); // undesirable modification of input entity, but probably safe in this case
-
-    return repository.update(entity, tenantId)
-            .compose(updated -> failIfNotFound(updated, id));
-  }
-
-  @Override
-  public Future<Void> delete(String id, String tenantId) {
-    return repository.delete(id, tenantId)
-            .compose(deleted -> failIfNotFound(deleted, id));
+    };
   }
 
   private Future<Void> failIfNotFound(boolean found, String entityId) {

@@ -1,13 +1,17 @@
 package org.folio.util.pf;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class PartialFunctions {
+public final class PartialFunctions {
 
   private static final PartialFunction EMPTY = new Empty<>();
 
-  public static <T, R> PartialFunction<T, R> as(Predicate<? super T> isDefinedAt,
+  private PartialFunctions() {
+  }
+
+  public static <T, R> PartialFunction<T, R> pf(Predicate<? super T> isDefinedAt,
                                                 Function<? super T, ? extends R> function) {
     return new PartialFunctionImpl<>(isDefinedAt, function);
   }
@@ -27,5 +31,9 @@ public class PartialFunctions {
 
   public static <T, R> PartialFunction<T, R> logged(PartialFunction<T, R> pf, LogHandler<? super T> logger) {
     return new LoggedApplication<>(pf, logger);
+  }
+
+  public static <T, R> Function<T, Optional<R>> lift(PartialFunction<T, R> pf) {
+    return new Lifted<>(pf);
   }
 }

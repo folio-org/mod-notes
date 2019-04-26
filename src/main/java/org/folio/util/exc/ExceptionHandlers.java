@@ -1,6 +1,6 @@
 package org.folio.util.exc;
 
-import static org.folio.util.pf.PartialFunctions.as;
+import static org.folio.util.pf.PartialFunctions.pf;
 
 import java.util.function.Predicate;
 
@@ -34,18 +34,18 @@ public class ExceptionHandlers {
     //    t -> t instanceof BadRequestException || t instanceof CQL2PgJSONException
     //
     // the below is to show how predicates that potentially have complex logic can be combined
-    return as(instanceOf(BadRequestException.class)
+    return pf(instanceOf(BadRequestException.class)
                 .or(instanceOf(CQLQueryValidationException.class))
                 .or(instanceOf(CQL2PgJSONException.class)),
               ExceptionHandlers::toBadRequest);
   }
 
   public static PartialFunction<Throwable, Response> notFoundHandler() {
-    return as(NotFoundException.class::isInstance, ExceptionHandlers::toNotFound);
+    return pf(NotFoundException.class::isInstance, ExceptionHandlers::toNotFound);
   }
 
   public static PartialFunction<Throwable, Response> generalHandler() {
-    return as(t -> true, ExceptionHandlers::toGeneral);
+    return pf(t -> true, ExceptionHandlers::toGeneral);
   }
 
   public static PartialFunction<Throwable, Response> logged(PartialFunction<Throwable, Response> pf) {
