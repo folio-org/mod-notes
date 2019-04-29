@@ -16,6 +16,8 @@ public interface NoteTypeRepository {
 
   Future<List<NoteType>> findByIds(List<String> ids, String tenantId);
 
+  Future<Long> count(String tenantId);
+
   Future<NoteType> save(NoteType entity, String tenantId);
 
   Future<Boolean> update(NoteType entity, String tenantId);

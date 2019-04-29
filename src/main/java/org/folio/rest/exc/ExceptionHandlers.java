@@ -1,4 +1,4 @@
-package org.folio.util.exc;
+package org.folio.rest.exc;
 
 import static org.folio.util.pf.PartialFunctions.pf;
 

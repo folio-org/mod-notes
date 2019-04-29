@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
+import static org.folio.util.TestUtil.mockGet;
 import static org.folio.util.TestUtil.readFile;
 import static org.folio.util.TestUtil.toJson;
 
@@ -17,6 +18,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.matching.RegexPattern;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -45,6 +47,10 @@ public class NoteTypesImplTest extends TestBase {
   private static final String COLLECTION_NOTE_TYPE_JSON = "post_collection_note_type.json";
   private static final int MAX_LIMIT_AND_OFFSET = 2147483647;
   private static final int NULL_LIMIT_AND_OFFSET = 0;
+
+  private static final RegexPattern CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN = 
+    //new RegexPattern("/configurations/entries.+NOTES.+note\\.types\\.number\\.limit.*"), true);
+    new RegexPattern("/configurations/entries.*");
 
   private ObjectMapper mapper;
   private EasyRandom noteTypeRandom;
@@ -433,6 +439,8 @@ public class NoteTypesImplTest extends TestBase {
 
   @Test
   public void shouldCreateNewNoteTypeOnPost() {
+    mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, HttpStatus.SC_NOT_FOUND); // default limit will be applied
+
     try {
       NoteType input = nextRandomNoteType();
 
@@ -458,6 +466,8 @@ public class NoteTypesImplTest extends TestBase {
 
   @Test
   public void shouldFailOnPostWith400IfTypeAlreadyExists() {
+    mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, HttpStatus.SC_NOT_FOUND); // default limit will be applied
+
     try {
       NoteType existing = nextRandomNoteType();
       DBTestUtil.insertNoteType(vertx, existing.getId(), STUB_TENANT, toJson(existing));
@@ -467,6 +477,27 @@ public class NoteTypesImplTest extends TestBase {
         .asString();
 
       assertThat(error, containsString("already exists"));
+    } finally {
+      DBTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldFailOnPostWith400IfNoteTypeLimitReached() throws Exception {
+    // mock response with the limit = 5
+    mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, "responses/configuration/get-note-type-limit-5-response.json");
+
+    try {
+      for (int i = 0; i < 5; i++) {
+        NoteType nt = nextRandomNoteType();
+        DBTestUtil.insertNoteType(vertx, nt.getId(), STUB_TENANT, toJson(nt));
+      }
+
+      NoteType creating = nextRandomNoteType();
+      String error = postWithStatus("note-types/", toJson(creating), HttpStatus.SC_BAD_REQUEST)
+        .asString();
+
+      assertThat(error, containsString("Maximum number of note types allowed"));
     } finally {
       DBTestUtil.deleteAllNoteTypes(vertx);
     }

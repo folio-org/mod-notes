@@ -6,6 +6,7 @@ import io.vertx.core.Future;
 
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
+import org.folio.util.OkapiParams;
 
 public interface NoteTypeService {
 
@@ -15,7 +16,7 @@ public interface NoteTypeService {
 
   Future<List<NoteType>> findByIds(List<String> ids, String tenantId);
 
-  Future<NoteType> save(NoteType entity, String tenantId);
+  Future<NoteType> save(NoteType entity, OkapiParams params);
 
   Future<Void> update(String id, NoteType entity, String tenantId);
 

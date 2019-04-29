@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.ext.sql.ResultSet;
 import io.vertx.ext.sql.UpdateResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ import org.folio.rest.persist.interfaces.Results;
 public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
   private static final String NOTE_TYPE_TABLE = "note_type";
+  private static final String SELECT_TOTAL_COUNT = "SELECT count(*) FROM " + NOTE_TYPE_TABLE;
 
   private Vertx vertx;
 
@@ -58,6 +60,15 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
     pgClient(tenantId).getById(NOTE_TYPE_TABLE, createParams(ids), NoteType.class, future);
 
     return future.map(resultMap -> new ArrayList<>(resultMap.values()));
+  }
+
+  @Override
+  public Future<Long> count(String tenantId) {
+    Future<ResultSet> resultSetFuture = Future.future();
+
+    pgClient(tenantId).select(SELECT_TOTAL_COUNT, resultSetFuture);
+
+    return resultSetFuture.map(rs -> rs.getResults().get(0).getLong(0));
   }
 
   @Override

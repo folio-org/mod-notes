@@ -22,6 +22,7 @@ import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.jaxrs.resource.NoteTypes;
 import org.folio.spring.SpringContextUtil;
 import org.folio.type.NoteTypeService;
+import org.folio.util.OkapiParams;
 import org.folio.util.pf.PartialFunction;
 
 public class NoteTypesImpl implements NoteTypes {
@@ -50,7 +51,7 @@ public class NoteTypesImpl implements NoteTypes {
   @Override
   public void postNoteTypes(String lang, NoteType entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Future<NoteType> saved = typeService.save(entity, tenantId(okapiHeaders));
+    Future<NoteType> saved = typeService.save(entity, new OkapiParams(okapiHeaders));
 
     respond(saved,
       noteType -> PostNoteTypesResponse.respond201WithApplicationJson(noteType, PostNoteTypesResponse.headersFor201()),
