@@ -5,11 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import static org.folio.util.NoteTestData.DOMAIN;
-import static org.folio.util.NoteTestData.NOTE_2;
-import static org.folio.util.NoteTestData.PACKAGE_ID;
-import static org.folio.util.NoteTestData.PACKAGE_TYPE;
-import static org.folio.util.NoteTestData.USER8;
+import static org.folio.util.NoteTestData.*;
 import static org.folio.util.TestUtil.readFile;
 
 import java.util.Arrays;
@@ -31,11 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.folio.rest.TestBase;
-import org.folio.rest.jaxrs.model.Link;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.jaxrs.model.NoteLinkPut;
-import org.folio.rest.jaxrs.model.NoteLinksPut;
+import org.folio.rest.jaxrs.model.*;
 import org.folio.rest.persist.PostgresClient;
 
 @RunWith(VertxUnitRunner.class)
