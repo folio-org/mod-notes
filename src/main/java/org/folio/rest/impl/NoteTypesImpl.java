@@ -6,31 +6,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
-
-import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.NoteType;
-import org.folio.rest.jaxrs.model.NoteTypeCollection;
-import org.folio.rest.jaxrs.model.NoteTypeUsage;
-import org.folio.rest.jaxrs.resource.NoteTypes;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.cql.CQLWrapper;
-import org.folio.rest.tools.messages.MessageConsts;
-import org.folio.rest.tools.messages.Messages;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
+
+import org.folio.rest.RestVerticle;
+import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.NoteType;
+import org.folio.rest.jaxrs.model.NoteTypeCollection;
+import org.folio.rest.jaxrs.model.NoteTypeUsage;
+import org.folio.rest.jaxrs.resource.NoteTypes;
+import org.folio.rest.persist.PgExceptionUtil;
+import org.folio.rest.persist.PgUtil;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.Criteria.Limit;
+import org.folio.rest.persist.Criteria.Offset;
+import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.tools.messages.MessageConsts;
+import org.folio.rest.tools.messages.Messages;
+import org.folio.rest.tools.utils.TenantTool;
+import org.folio.userlookup.UserLookUp;
 
 public class NoteTypesImpl implements NoteTypes {
   private static final String NOTE_TYPE_TABLE = "note_type";
+  private final Logger logger = LoggerFactory.getLogger("mod-notes");
 
   private final Messages messages = Messages.getInstance();
 
@@ -77,18 +87,33 @@ public class NoteTypesImpl implements NoteTypes {
   @Validate
   @Override
   public void postNoteTypes(String lang, NoteType entity, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+                            Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+
     Future<Boolean> idExistsFuture = Future.succeededFuture(false);
     if(entity.getId() != null) {
       idExistsFuture = checkIdExists(okapiHeaders, vertxContext, entity.getId());
     }
-    idExistsFuture.map(idExists -> {
-      if(idExists){
-        asyncResultHandler.handle(succeededFuture(PostNoteTypesResponse
-          .respond400WithTextPlain("Note type with specified UUID already exists")));
-      }
-      else{
+    idExistsFuture
+      .map(idExists -> {
+        if(idExists){
+          asyncResultHandler.handle(succeededFuture(PostNoteTypesResponse.respond400WithTextPlain("Note type with specified UUID already exists")));
+        }
+        return null;
+        })
+      .compose(o -> setNoteTypeCreator(entity , okapiHeaders))
+      .compose(aVoid -> {
         PgUtil.post(NOTE_TYPE_TABLE, entity, okapiHeaders, vertxContext, PostNoteTypesResponse.class, asyncResultHandler);
+        return null;
+      })
+    .otherwise(exception -> {
+      final Throwable exceptionCause = exception.getCause();
+      if (exceptionCause instanceof NotFoundException || exceptionCause instanceof NotAuthorizedException ||
+        exceptionCause instanceof IllegalArgumentException || exceptionCause instanceof IllegalStateException) {
+        asyncResultHandler.handle(succeededFuture(PostNoteTypesResponse.respond400WithTextPlain(exceptionCause.getMessage())));
+      } else if (exception instanceof IllegalArgumentException) {
+        asyncResultHandler.handle(succeededFuture(PostNoteTypesResponse.respond400WithTextPlain(exception.getMessage())));
+      } else {
+        asyncResultHandler.handle(succeededFuture(PostNoteTypesResponse.respond500WithTextPlain(exception.getMessage())));
       }
       return null;
     });
@@ -125,9 +150,36 @@ public class NoteTypesImpl implements NoteTypes {
 
   @Override
   public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    PgUtil.put(NOTE_TYPE_TABLE, entity, typeId, okapiHeaders, vertxContext, PutNoteTypesByTypeIdResponse.class,
-        asyncResultHandler);
+                                   Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+
+    getOneNoteType(typeId, okapiHeaders, vertxContext)
+      .compose(oldNoteType -> {
+        setNoteTypeCreator(oldNoteType, entity);
+        return setNoteTypeUpdater(entity, okapiHeaders);})
+      .compose(voidObject -> {
+        PgUtil.put(NOTE_TYPE_TABLE, entity, typeId, okapiHeaders, vertxContext, PutNoteTypesByTypeIdResponse.class, asyncResultHandler);
+        return null;
+      })
+      .otherwise(exception -> {
+        if (exception instanceof HttpStatusException) {
+
+          final int cause =  ((HttpStatusException) exception).getStatusCode();
+
+          if (Response.Status.NOT_FOUND.getStatusCode() == cause) {
+            asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond404WithTextPlain(
+              ((HttpStatusException) exception).getPayload())));
+          } else if (Response.Status.BAD_REQUEST.getStatusCode() == cause) {
+            asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond400WithTextPlain(
+              ((HttpStatusException) exception).getPayload())));
+          } else {
+            asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond500WithTextPlain(
+              exception.getMessage())));
+          }
+        } else {
+          asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond500WithTextPlain(exception.getMessage())));
+        }
+        return null;
+    });
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws CQL2PgJSONException {
@@ -144,6 +196,53 @@ public class NoteTypesImpl implements NoteTypes {
         future.complete(false);
       }
     });
+    return future;
+  }
+
+  private void setNoteTypeCreator(NoteType oldNoteType, NoteType noteType) {
+    noteType.getMetadata().setCreatedByUsername(oldNoteType.getMetadata().getCreatedByUsername());
+  }
+
+  private Future<Void> setNoteTypeCreator(NoteType note, Map<String, String> okapiHeaders) {
+    return UserLookUp.getUserInfo(okapiHeaders)
+      .map(userLookUp -> {
+        note.getMetadata().setCreatedByUsername(userLookUp.getUserName());
+        return null;
+      });
+  }
+
+  private Future<Void> setNoteTypeUpdater(NoteType note, Map<String, String> okapiHeaders) {
+    return UserLookUp.getUserInfo(okapiHeaders)
+      .map(userLookUp -> {
+        note.getMetadata().setUpdatedByUsername(userLookUp.getUserName());
+        return null;
+      });
+  }
+
+  private Future<NoteType> getOneNoteType(String id, Map<String, String> okapiHeaders, Context context) {
+
+    Future<NoteType> future = Future.future();
+    String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+    PostgresClient.getInstance(context.owner(), tenantId)
+      .getById(NOTE_TYPE_TABLE, id, NoteType.class,
+        reply -> {
+          if (reply.succeeded()) {
+            NoteType note = reply.result();
+            if (Objects.isNull(note)) {
+              future.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Note type" + id + " not found"));
+            } else {
+              future.complete(note);
+            }
+          } else {
+            String error = PgExceptionUtil.badRequestMessage(reply.cause());
+            logger.error(error, reply.cause());
+            if (error == null) {
+              future.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), reply.cause().getMessage()));
+            } else {
+              future.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), error));
+            }
+          }
+        });
     return future;
   }
 }

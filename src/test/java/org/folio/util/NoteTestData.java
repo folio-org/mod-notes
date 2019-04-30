@@ -3,11 +3,11 @@ package org.folio.util;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import org.folio.okapi.common.XOkapiHeaders;
-
 import io.restassured.http.Header;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+
+import org.folio.okapi.common.XOkapiHeaders;
 
 public class NoteTestData {
   private static final Logger logger = LoggerFactory.getLogger(NoteTestData.class);
@@ -34,6 +34,7 @@ public class NoteTestData {
   public static final String UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID;
   public static final String NOTE_TYPE;
   public static final String NOTE_TYPE2;
+  public static final String UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS;
 
   static {
     try {
@@ -47,6 +48,7 @@ public class NoteTestData {
       UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID = TestUtil.readFile("note/updateNote5RequestWithNonExistingTypeId.json");
       NOTE_TYPE = TestUtil.readFile("notetype/noteType.json");
       NOTE_TYPE2 = TestUtil.readFile("notetype/noteType2.json");
+      UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS = TestUtil.readFile("note/updateNoteRequestWithNoId.json");
     } catch (IOException | URISyntaxException e) {
       logger.error("Can't read test files", e);
       throw new IllegalStateException(e);
