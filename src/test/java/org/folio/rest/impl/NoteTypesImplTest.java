@@ -4,9 +4,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.jeasy.random.FieldPredicates.named;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -49,7 +51,7 @@ import org.folio.rest.persist.PostgresClient;
 public class NoteTypesImplTest extends TestBase {
 
   private static final int NOTE_TOTAL = 10;
-  private static final String STUB_NOTE_TYPE_ID = "2cf21797-d25b-46dc-8427-1759d1db2057";
+  private static final String STUB_NOTE_TYPE_ID = "13f21797-d25b-46dc-8427-1759d1db2057";
   private static final Header USER9 = new Header(XOkapiHeaders.USER_ID, "99999999-9999-4999-9999-999999999999");
   private static final Header USER8 = new Header(XOkapiHeaders.USER_ID, "88888888-8888-4888-8888-888888888888");
   private static final String NOT_EXISTING_STUB_ID = "9798274e-ce9d-46ab-aa28-00ca9cf4698a";
@@ -107,6 +109,42 @@ public class NoteTypesImplTest extends TestBase {
 
       getWithOk(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID).asString();
     } finally {
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+    }
+  }
+
+  @Test
+  public void shouldReturn200WithNoteTypeUsageById() throws IOException, URISyntaxException {
+    try {
+      final String stubNoteType = readFile("post_note_type.json");
+
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
+      createNote();
+      createNote();
+
+      getWithValidateBody(NOTE_TYPES_ENDPOINT +"/" + STUB_NOTE_TYPE_ID,SC_OK)
+        .body("usage.noteTotal",is(2));
+    } finally {
+      DBTestUtil.deleteFromTable(vertx,
+        (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TABLE));
+      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+    }
+  }
+
+  @Test
+  public void shouldReturn200WithNoteTypeUsage() throws IOException, URISyntaxException {
+    try {
+      final String stubNoteType = readFile("post_note_type.json");
+
+      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
+      createNote();
+      createNote();
+
+      getWithValidateBody(NOTE_TYPES_ENDPOINT,SC_OK)
+        .body("noteTypes[0].usage.noteTotal",is(2));
+    } finally {
+      DBTestUtil.deleteFromTable(vertx,
+        (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TABLE));
       DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
   }
@@ -270,7 +308,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -315,7 +353,7 @@ public class NoteTypesImplTest extends TestBase {
 
       DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
 
-      getWithStatus(NOTE_TYPES_ENDPOINT + "?query=", SC_BAD_REQUEST);
+      getWithStatus(NOTE_TYPES_ENDPOINT + "?query=", SC_UNPROCESSABLE_ENTITY);
     } finally {
       DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
@@ -337,7 +375,7 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldReturn404WhenInvalidNotExistingId() {
     final String response = getWithStatus(NOTE_TYPES_ENDPOINT + "/" + NOT_EXISTING_STUB_ID, SC_NOT_FOUND).asString();
-    assertThat(response, equalTo("Not found"));
+    assertThat(response, equalTo("Note type " + NOT_EXISTING_STUB_ID + " not found"));
   }
 
   @Test
@@ -349,8 +387,8 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldUpdateNoteNameTypeOnPut() throws IOException, URISyntaxException {
     try {
-      postNoteTypeWithOk(readFile("post_note.json"), USER9);
-      NoteType updatedNoteType = mapper.readValue(readFile("put_note.json"), NoteType.class);
+      postNoteTypeWithOk(readFile("post_note_type.json"), USER9);
+      NoteType updatedNoteType = mapper.readValue(readFile("put_note_type.json"), NoteType.class);
 
       putWithOk(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, mapper.writeValueAsString(updatedNoteType), USER8);
 
@@ -372,7 +410,7 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldNotSetNoteUsageOnPut() throws IOException, URISyntaxException {
     try {
-      NoteType updatedNoteType = mapper.readValue(readFile("put_note.json"), NoteType.class);
+      NoteType updatedNoteType = mapper.readValue(readFile("put_note_type.json"), NoteType.class);
       updatedNoteType.withUsage(new NoteTypeUsage().withNoteTotal(NOTE_TOTAL));
 
       postNoteTypeWithOk(toJson(updatedNoteType), USER8);
@@ -388,7 +426,7 @@ public class NoteTypesImplTest extends TestBase {
 
   @Test
   public void shouldReturn404OnPutWhenNoteNotFound() throws IOException, URISyntaxException {
-    putWithStatus(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, readFile("put_note.json"),
+    putWithStatus(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, readFile("put_note_type.json"),
       SC_NOT_FOUND, USER9);
   }
 

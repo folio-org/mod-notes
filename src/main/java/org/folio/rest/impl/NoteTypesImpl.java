@@ -9,7 +9,11 @@ import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
@@ -35,7 +39,7 @@ import org.folio.userlookup.UserLookUp;
 public class NoteTypesImpl implements NoteTypes {
 
   private static final String NOTE_TYPE_TABLE = "note_type";
-  private static final String NOTE_VIEW = "note_type";
+  private static final String NOTE_TYPE_VIEW = "note_type_view";
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
 
   public NoteTypesImpl(Vertx vertx, String tenantId) {
@@ -47,8 +51,6 @@ public class NoteTypesImpl implements NoteTypes {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-
-    logger.debug("Getting notes. new query:" + query);
     CQLWrapper cql;
     try {
       cql = getCQL(query, limit, offset);
@@ -67,8 +69,8 @@ public class NoteTypesImpl implements NoteTypes {
 
   private Future<NoteTypeCollection> getNoteTypes(Context vertxContext, String tenantId, CQLWrapper cql) {
     Future<Results<NoteType>> future = Future.future();
-    PostgresClient.getInstance(vertxContext.owner(), tenantId).get(NOTE_VIEW, NoteType.class, new String[] {"*"}, cql,
-        true /* get count too */, false /* set id */, future.completer());
+    PostgresClient.getInstance(vertxContext.owner(), tenantId).get(NOTE_TYPE_VIEW, NoteType.class, new String[] {"*"}, cql,
+        true, false, future.completer());
 
     return future.map(this::mapNoteTypeResults);
   }
@@ -224,11 +226,11 @@ public class NoteTypesImpl implements NoteTypes {
 
     Future<NoteType> future = Future.future();
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    PostgresClient.getInstance(context.owner(), tenantId).getById(NOTE_TYPE_TABLE, id, NoteType.class, reply -> {
+    PostgresClient.getInstance(context.owner(), tenantId).getById(NOTE_TYPE_VIEW, id, NoteType.class, reply -> {
       if (reply.succeeded()) {
         NoteType note = reply.result();
         if (Objects.isNull(note)) {
-          future.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Note type" + id + " not found"));
+          future.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Note type " + id + " not found"));
         } else {
           future.complete(note);
         }

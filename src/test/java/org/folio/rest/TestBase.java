@@ -2,13 +2,16 @@ package org.folio.rest;
 
 import static io.restassured.RestAssured.given;
 
+import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.NOTE_TYPE;
 import static org.folio.util.NoteTestData.NOTE_TYPE2;
 import static org.folio.util.NoteTestData.NOTE_TYPE2_ID;
 import static org.folio.util.NoteTestData.NOTE_TYPE_ID;
+import static org.folio.util.NoteTestData.USER8;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
@@ -20,9 +23,11 @@ import io.restassured.filter.log.LogDetail;
 import io.restassured.http.Header;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -40,6 +45,7 @@ import org.junit.runner.Description;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.impl.DBTestUtil;
+import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 
@@ -212,6 +218,16 @@ public class TestBase {
       .statusCode(expectedStatus).extract();
   }
 
+  protected ValidatableResponse getWithValidateBody(String resourcePath, int expectedStatus) {
+    return given()
+      .spec(getRequestSpecification())
+      .when()
+      .get(resourcePath)
+      .then()
+      .log().ifValidationFails()
+      .statusCode(expectedStatus);
+  }
+
   protected ExtractableResponse<Response> putWithStatus(String resourcePath, String putBody,
                                                         int expectedStatus, Header userHeader) {
     return given()
@@ -260,5 +276,16 @@ public class TestBase {
         future.complete();
       },
       context.asyncAssertSuccess());
+  }
+
+  protected Note createNote() {
+    Note note = getNote();
+    postNoteWithOk(Json.encode(note), USER8);
+    return note;
+  }
+
+  protected Note getNote() {
+    return Json.decodeValue(NOTE_2, Note.class)
+      .withId(UUID.randomUUID().toString());
   }
 }
