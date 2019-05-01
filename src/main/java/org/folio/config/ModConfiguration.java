@@ -6,6 +6,7 @@ import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.folio.util.FutureUtils.wrapExceptions;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -84,21 +85,17 @@ public class ModConfiguration implements Configuration {
     return getBoolean(code, params).otherwise(def);
   }
 
-  private <T> Future<T> getValue(String code, Function<JsonObject, T> valueExtractor, OkapiParams params) {
+  private <T> Future<T> getValue(String code, Function<JsonObject, Optional<T>> valueExtractor, OkapiParams params) {
     // make sure non config exception is wrapped into ConfigurationException
     return wrapExceptions(
               getConfigObject(code, params)
                 .map(valueExtractor)
-                .map(value -> failIfNull(code, value)),
+                .map(value -> failIfEmpty(code, value)),
               ConfigurationException.class);
   }
 
-  private <T> T failIfNull(String propertyCode, T value) {
-    if (value != null) {
-      return value;
-    } else {
-      throw new ValueNotDefinedException(propertyCode);
-    }
+  private <T> T failIfEmpty(String propertyCode, Optional<T> value) {
+    return value.orElseThrow(() -> new ValueNotDefinedException(propertyCode));
   }
 
   private Future<JsonObject> getConfigObject(String code, OkapiParams params) {
@@ -151,15 +148,15 @@ public class ModConfiguration implements Configuration {
     }
   }
 
-  private static Function<JsonObject, String> value() {
+  private static Function<JsonObject, Optional<String>> value() {
     return json -> {
       String value = json.getString(PROP_VALUE);
-      return StringUtils.isNotBlank(value) ? value : null;
+      return StringUtils.isNotBlank(value) ? Optional.of(value) : Optional.empty();
     };
   }
 
-  private static <T> Function<String, T> convert(Function<String, T> conversion) {
-    return s -> s != null ? conversion.apply(s) : null;
+  private static <T> Function<Optional<String>, Optional<T>> convert(Function<String, T> conversion) {
+    return s -> s.map(conversion);
   }
   
 }
