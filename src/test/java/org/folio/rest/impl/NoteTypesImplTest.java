@@ -16,6 +16,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import static org.folio.util.NoteTestData.NOTE_2;
+import static org.folio.util.NoteTestData.NOTE_4;
 import static org.folio.util.TestUtil.readFile;
 import static org.folio.util.TestUtil.toJson;
 
@@ -119,8 +121,8 @@ public class NoteTypesImplTest extends TestBase {
       final String stubNoteType = readFile("post_note_type.json");
 
       DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
-      createNote();
-      createNote();
+      postNoteWithOk(NOTE_2,USER8);
+      postNoteWithOk(NOTE_4,USER8);
 
       getWithValidateBody(NOTE_TYPES_ENDPOINT +"/" + STUB_NOTE_TYPE_ID,SC_OK)
         .body("usage.noteTotal",is(2));
@@ -137,8 +139,8 @@ public class NoteTypesImplTest extends TestBase {
       final String stubNoteType = readFile("post_note_type.json");
 
       DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
-      createNote();
-      createNote();
+      postNoteWithOk(NOTE_2,USER8);
+      postNoteWithOk(NOTE_4,USER8);
 
       getWithValidateBody(NOTE_TYPES_ENDPOINT,SC_OK)
         .body("noteTypes[0].usage.noteTotal",is(2));

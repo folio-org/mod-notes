@@ -46,6 +46,7 @@ public class NoteTypesImpl implements NoteTypes {
     PostgresClient.getInstance(vertx, tenantId).setIdField("id");
   }
 
+  @Validate
   @Override
   public void getNoteTypes(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
@@ -133,13 +134,10 @@ public class NoteTypesImpl implements NoteTypes {
         if (Response.Status.NOT_FOUND.getStatusCode() == cause) {
           asyncResultHandler.handle(succeededFuture(NoteTypes.GetNoteTypesByTypeIdResponse.respond404WithTextPlain(
               ((HttpStatusException) exception).getPayload())));
-        } else {
-          asyncResultHandler.handle(succeededFuture(NoteTypes.GetNoteTypesByTypeIdResponse.respond500WithTextPlain(exception
-              .getMessage())));
         }
       } else {
         asyncResultHandler.handle(succeededFuture(NoteTypes.GetNoteTypesByTypeIdResponse.respond500WithTextPlain(exception
-            .getMessage())));
+          .getMessage())));
       }
       return null;
     });
@@ -175,9 +173,6 @@ public class NoteTypesImpl implements NoteTypes {
         } else if (Response.Status.BAD_REQUEST.getStatusCode() == cause) {
           asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond400WithTextPlain(
               ((HttpStatusException) exception).getPayload())));
-        } else {
-          asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond500WithTextPlain(exception
-              .getMessage())));
         }
       } else {
         asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond500WithTextPlain(exception
@@ -188,7 +183,7 @@ public class NoteTypesImpl implements NoteTypes {
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws CQL2PgJSONException {
-    CQL2PgJSON cql2pgJson = new CQL2PgJSON(NOTE_TYPE_TABLE + ".jsonb");
+    CQL2PgJSON cql2pgJson = new CQL2PgJSON(NOTE_TYPE_VIEW + ".jsonb");
     return new CQLWrapper(cql2pgJson, query).setLimit(new Limit(limit)).setOffset(new Offset(offset));
   }
 
@@ -236,7 +231,6 @@ public class NoteTypesImpl implements NoteTypes {
         }
       } else {
         String error = PgExceptionUtil.badRequestMessage(reply.cause());
-        logger.error(error, reply.cause());
         if (error == null) {
           future.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), reply.cause()
               .getMessage()));

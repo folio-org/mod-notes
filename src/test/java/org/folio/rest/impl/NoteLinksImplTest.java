@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import static org.folio.util.NoteTestData.DOMAIN;
+import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.PACKAGE_ID;
 import static org.folio.util.NoteTestData.PACKAGE_TYPE;
 import static org.folio.util.NoteTestData.USER8;
@@ -14,6 +15,7 @@ import static org.folio.util.TestUtil.readFile;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
@@ -205,6 +207,17 @@ public class NoteLinksImplTest extends TestBase {
     return new NoteLinkPut()
       .withId(id)
       .withStatus(status);
+  }
+
+  private Note createNote() {
+    Note note = getNote();
+    postNoteWithOk(Json.encode(note), USER8);
+    return note;
+  }
+
+  private Note getNote() {
+    return Json.decodeValue(NOTE_2, Note.class)
+      .withId(UUID.randomUUID().toString());
   }
 
   private List<Note> getNotes() {
