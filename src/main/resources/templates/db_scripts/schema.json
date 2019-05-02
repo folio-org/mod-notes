@@ -54,6 +54,11 @@
     {
       "run": "after",
       "snippet": "CREATE OR REPLACE FUNCTION set_note_type_md_json()    RETURNS trigger AS $$  DECLARE    createdDate timestamp WITH TIME ZONE;    createdBy text ;    updatedDate timestamp WITH TIME ZONE;    updatedBy text ;    injectedId text;    injectedJsonb text;  BEGIN    createdBy = NEW.created_by;    createdDate = NEW.creation_date;   updatedDate = NEW.jsonb->'metadata'->>'updatedDate';   updatedBy = NEW.jsonb->'metadata'->>'updatedByUserId';   injectedJsonb = NEW.jsonb->'metadata';  if createdBy ISNULL then     createdBy = 'undefined';   end if;   if updatedBy ISNULL then     updatedBy = 'undefined';   end if;  if createdDate IS NOT NULL     then injectedId = '{\"createdDate\":\"'||to_char(createdDate,'YYYY-MM-DD\"T\"HH24:MI:SS.MS')||'\" , \"createdByUserId\":\"'||createdBy||'\", \"updatedDate\":\"'||to_char(updatedDate,'YYYY-MM-DD\"T\"HH24:MI:SS.MSOF')||'\" , \"updatedByUserId\":\"'||updatedBy||'\"}';     NEW.jsonb = jsonb_set(NEW.jsonb, '{metadata}' ,  injectedJsonb::jsonb || injectedId::jsonb , false);   else     NEW.jsonb = NEW.jsonb;   end if; RETURN NEW;  END; $$ language 'plpgsql'; DROP TRIGGER IF EXISTS set_note_type_md_json_trigger ON note_type CASCADE; CREATE TRIGGER set_note_type_md_json_trigger BEFORE UPDATE ON note_type   FOR EACH ROW EXECUTE PROCEDURE set_note_type_md_json();"
+    },
+    {
+      "run": "after",
+      "snippet": "CREATE OR REPLACE VIEW note_type_view AS SELECT note_type.id, jsonb_build_object('id', note_type.jsonb ->> 'id'::text, 'name', note_type.jsonb ->> 'name'::text, 'usage',json_build_object('noteTotal', count(note_data.jsonb ->> 'id'::text)), 'metadata', note_type.jsonb -> 'metadata'::text) AS jsonb FROM note_type LEFT JOIN note_data ON (note_data.jsonb ->> 'typeId')::uuid = (note_type.id) GROUP BY note_type.id;",
+      "fromModuleVersion": "1.0"
     }
   ]
 }
