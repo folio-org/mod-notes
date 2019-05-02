@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static org.folio.rest.tools.utils.TenantTool.tenantId;
 
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
@@ -97,7 +98,13 @@ public class NoteTypesImpl implements NoteTypes {
   private <T> Future<Response> respond(Future<T> result, Function<T, Response> mapper,
                                        Handler<AsyncResult<Response>> asyncResultHandler) {
     return result.map(mapper)
-            .otherwise(exceptionHandler)
+            .otherwise(throwable -> {
+              // TD (Dima Tkachenko): review code
+              Throwable cause = (throwable instanceof CompletionException) && throwable.getCause() != null
+                ? throwable.getCause()
+                : throwable;
+              return exceptionHandler.apply(cause);
+            })
             .setHandler(asyncResultHandler);
   }
 

@@ -9,6 +9,7 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.github.mauricio.async.db.postgresql.exceptions.GenericDatabaseException;
 import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -35,6 +36,7 @@ public class ExceptionHandlers {
     //
     // the below is to show how predicates that potentially have complex logic can be combined
     return pf(instanceOf(BadRequestException.class)
+                .or(instanceOf(GenericDatabaseException.class).and(invalidUUID()))
                 .or(instanceOf(CQLQueryValidationException.class))
                 .or(instanceOf(CQL2PgJSONException.class)),
               ExceptionHandlers::toBadRequest);
@@ -80,6 +82,10 @@ public class ExceptionHandlers {
 
   private static Predicate<Throwable> instanceOf(Class<? extends Throwable> cl) {
     return new InstanceOfPredicate<>(cl);
+  }
+
+  private static Predicate<Throwable> invalidUUID() {
+    return t -> ValidationHelper.isInvalidUUID(t.getMessage());
   }
 
   private static class InstanceOfPredicate<T, E> implements Predicate<E> {

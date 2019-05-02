@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
@@ -165,11 +166,9 @@ public class NotesResourceImpl implements Notes {
         saveNote(note, okapiHeaders, context, asyncResultHandler);
         return null;
       }).otherwise(exception -> {
-        final Throwable exceptionCause = exception.getCause();
-        if (exceptionCause instanceof NotFoundException || exceptionCause instanceof NotAuthorizedException ||
-            exceptionCause instanceof IllegalArgumentException || exceptionCause instanceof IllegalStateException) {
-          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exceptionCause.getMessage())));
-        }else if(exception instanceof IllegalArgumentException){
+        if (exception instanceof NotFoundException || exception instanceof NotAuthorizedException ||
+            exception instanceof IllegalArgumentException || exception instanceof IllegalStateException ||
+            exception instanceof BadRequestException) {
           asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exception.getMessage())));
         } else {
           asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond500WithTextPlain(exception.getMessage())));
