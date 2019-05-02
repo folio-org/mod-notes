@@ -29,7 +29,7 @@ public class NoteTypesImpl implements NoteTypes {
 
   @Autowired
   private NoteTypeService typeService;
-  @Autowired @Qualifier("default")
+  @Autowired @Qualifier("defaultExcHandler")
   private PartialFunction<Throwable, Response> exceptionHandler;
 
 
@@ -84,7 +84,7 @@ public class NoteTypesImpl implements NoteTypes {
   @Override
   public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    Future<Void> updated = typeService.update(typeId, entity, tenantId(okapiHeaders));
+    Future<Void> updated = typeService.update(typeId, entity, new OkapiParams(okapiHeaders));
 
     respond(updated, v -> PutNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
   }

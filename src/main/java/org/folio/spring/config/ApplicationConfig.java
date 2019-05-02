@@ -7,6 +7,7 @@ import static org.folio.rest.exc.ExceptionHandlers.notFoundHandler;
 
 import javax.ws.rs.core.Response;
 
+import com.rits.cloning.Cloner;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -34,7 +35,7 @@ public class ApplicationConfig {
     return Messages.getInstance();
   }
 
-  @Bean("default")
+  @Bean
   public PartialFunction<Throwable, Response> defaultExcHandler() {
     return logged(badRequestHandler()
                 .orElse(notFoundHandler())
@@ -44,5 +45,10 @@ public class ApplicationConfig {
   @Bean
   public org.folio.config.Configuration configuration(@Value("${note.configuration.module}") String module) {
     return new ModConfiguration(module);
+  }
+
+  @Bean
+  public Cloner restModelCloner() {
+    return new Cloner();
   }
 }

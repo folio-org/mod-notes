@@ -8,11 +8,13 @@ import java.util.List;
 
 import javax.ws.rs.BadRequestException;
 
+import com.rits.cloning.Cloner;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,7 @@ import org.folio.config.Configuration;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.persist.PgExceptionUtil;
+import org.folio.userlookup.UserLookUp;
 import org.folio.util.OkapiParams;
 import org.folio.util.exc.Exceptions;
 
@@ -32,6 +35,8 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   private NoteTypeRepository repository;
   @Autowired
   private Configuration configuration;
+  @Autowired @Qualifier("restModelCloner")
+  private Cloner cloner;
   @Value("${note.types.number.limit.default}")
   private int defaultNoteTypeLimit;
 
@@ -57,7 +62,8 @@ public class NoteTypeServiceImpl implements NoteTypeService {
 
     Future<NoteType> result = future();
 
-    validation.compose(v -> repository.save(entity, params.getTenant()))
+    validation.compose(v -> populateCreator(entity, params))
+      .compose(type -> repository.save(type, params.getTenant()))
       .setHandler(handleDuplicateType(entity.getName(), result));
 
     return result;
@@ -79,13 +85,56 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   }
 
   @Override
-  public Future<Void> update(String id, NoteType entity, String tenantId) {
-    entity.setId(id); // undesirable modification of input entity, but probably safe in this case
+  public Future<Void> update(String id, NoteType entity, OkapiParams params) {
+    NoteType updating = cloner.deepClone(entity);
+    updating.setId(id);
 
     Future<Boolean> duplFuture = future();
-    repository.update(entity, tenantId).setHandler(handleDuplicateType(entity.getName(), duplFuture));
+
+    findById(id, params.getTenant())
+      .map(oldType -> copyCreator(oldType, updating))
+      .compose(type -> populateUpdater(type, params))
+      .compose(type -> repository.update(type, params.getTenant()))
+      .setHandler(handleDuplicateType(updating.getName(), duplFuture));
 
     return duplFuture.compose(updated -> failIfNotFound(updated, id));
+  }
+
+  private Future<NoteType> populateCreator(NoteType entity, OkapiParams params) {
+    return UserLookUp.getUserInfo(params.getHeadersAsMap()).map(user -> {
+      if (entity.getMetadata() == null) {
+        return entity;
+      }
+
+      NoteType result = cloner.deepClone(entity);
+      result.getMetadata().setCreatedByUsername(user.getUserName());
+
+      return result;
+    });
+  }
+
+  private NoteType copyCreator(NoteType old, NoteType updating) {
+    if (old.getMetadata() == null || updating.getMetadata() == null) {
+      return updating;
+    }
+
+    NoteType result = cloner.deepClone(updating);
+    result.getMetadata().setCreatedByUsername(old.getMetadata().getCreatedByUsername());
+
+    return result;
+  }
+
+  private Future<NoteType> populateUpdater(NoteType entity, OkapiParams params) {
+    return UserLookUp.getUserInfo(params.getHeadersAsMap()).map(user -> {
+      if (entity.getMetadata() == null) {
+        return entity;
+      }
+
+      NoteType result = cloner.deepClone(entity);
+      result.getMetadata().setUpdatedByUsername(user.getUserName());
+
+      return result;
+    });
   }
 
   @Override

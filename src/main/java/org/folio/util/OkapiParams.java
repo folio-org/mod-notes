@@ -2,6 +2,7 @@ package org.folio.util;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 import io.vertx.core.http.CaseInsensitiveHeaders;
@@ -36,10 +37,20 @@ public class OkapiParams {
     this.port = url.getPort() != -1 ? url.getPort() : url.getDefaultPort();
   }
 
-  public CaseInsensitiveHeaders getAllHeaders() {
+  public CaseInsensitiveHeaders getHeaders() {
     // make a copy to avoid any modifications to contained headers
     CaseInsensitiveHeaders result = new CaseInsensitiveHeaders();
     result.addAll(headers);
+    return result;
+  }
+
+  public Map<String, String> getHeadersAsMap() {
+    Map<String, String> result = new HashMap<>(headers.size());
+
+    for (Map.Entry<String, String> header : headers) {
+      result.put(header.getKey(), header.getValue());
+    }
+    
     return result;
   }
 

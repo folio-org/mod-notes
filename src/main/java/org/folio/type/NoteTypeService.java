@@ -18,7 +18,7 @@ public interface NoteTypeService {
 
   Future<NoteType> save(NoteType entity, OkapiParams params);
 
-  Future<Void> update(String id, NoteType entity, String tenantId);
+  Future<Void> update(String id, NoteType entity, OkapiParams params);
 
   Future<Void> delete(String id, String tenantId);
 
