@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
@@ -349,7 +350,7 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn400InvalidRequest() throws IOException, URISyntaxException {
+  public void shouldReturn422InvalidRequest() throws IOException, URISyntaxException {
     try {
       final String stubNoteType = readFile("post_note_type.json");
 
@@ -433,7 +434,7 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn400OnPutWhenRequestIsInvalid() {
+  public void shouldReturn422OnPutWhenRequestIsInvalid() {
     putWithStatus(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, "{\"name\":null}",
       SC_UNPROCESSABLE_ENTITY, USER9);
   }
@@ -509,6 +510,25 @@ public class NoteTypesImplTest extends TestBase {
       .log().ifValidationFails()
       .statusCode(SC_BAD_REQUEST)
       .body(containsString("cannot look up user"));
+  }
+
+  @Test
+  public void shouldReturn500WhenIncorrectTenant() {
+    NoteType inputPost = nextRandomNoteType();
+    postNoteTypeWithOk(toJson(inputPost), USER8);
+
+    NoteType input = nextRandomNoteType();
+    RestAssured.given()
+      .spec(givenWithUrl())
+      .header(INCORRECT_HEADER).header(JSON_CONTENT_TYPE_HEADER)
+      .when()
+      .body(toJson(input))
+      .put(NOTE_TYPES_ENDPOINT + "/" + inputPost.getId())
+      .then()
+      .log().ifValidationFails()
+      .statusCode(SC_INTERNAL_SERVER_ERROR);
+
+    DBTestUtil.deleteAllNoteTypes(vertx);
   }
 
   @Test

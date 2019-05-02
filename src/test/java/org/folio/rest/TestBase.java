@@ -55,6 +55,7 @@ public class TestBase {
   protected static final Header JSON_CONTENT_TYPE_HEADER = new Header(HttpHeaders.CONTENT_TYPE,
     ContentType.APPLICATION_JSON.getMimeType());
   protected static final Header TENANT_HEADER = new Header(XOkapiHeaders.TENANT, STUB_TENANT);
+  protected static final Header INCORRECT_HEADER = new Header(XOkapiHeaders.TENANT, "wrong");
 
   private static final Logger logger = LoggerFactory.getLogger(TestBase.class);
 

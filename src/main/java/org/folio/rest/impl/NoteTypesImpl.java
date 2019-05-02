@@ -14,8 +14,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
@@ -40,7 +38,6 @@ public class NoteTypesImpl implements NoteTypes {
 
   private static final String NOTE_TYPE_TABLE = "note_type";
   private static final String NOTE_TYPE_VIEW = "note_type_view";
-  private final Logger logger = LoggerFactory.getLogger("mod-notes");
 
   public NoteTypesImpl(Vertx vertx, String tenantId) {
     PostgresClient.getInstance(vertx, tenantId).setIdField("id");
@@ -173,6 +170,9 @@ public class NoteTypesImpl implements NoteTypes {
         } else if (Response.Status.BAD_REQUEST.getStatusCode() == cause) {
           asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond400WithTextPlain(
               ((HttpStatusException) exception).getPayload())));
+        } else {
+          asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond500WithTextPlain(exception
+            .getMessage())));
         }
       } else {
         asyncResultHandler.handle(succeededFuture(PutNoteTypesByTypeIdResponse.respond500WithTextPlain(exception
