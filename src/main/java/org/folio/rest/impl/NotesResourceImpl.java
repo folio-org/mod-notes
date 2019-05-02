@@ -137,6 +137,7 @@ public class NotesResourceImpl implements Notes {
       .withId(noteView.getId())
       .withTypeId(noteView.getTypeId())
       .withType(noteView.getType())
+      .withDomain(noteView.getDomain())
       .withTitle(noteView.getTitle())
       .withContent(noteView.getContent())
       .withCreator(noteView.getCreator())

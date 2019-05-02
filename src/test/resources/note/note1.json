@@ -2,16 +2,15 @@
   "id": "11111111-1111-1111-a111-111111111111",
   "typeId": "2af21797-d25b-46dc-8427-1759d1db2057",
   "title": "test note title",
+  "domain": "eholdings",
   "links": [
     {
       "id": "18-2356521",
-      "type": "package",
-      "domain": "eholdings"
+      "type": "package"
     },
     {
       "id": "19-2356521-758038",
-      "type": "resource",
-      "domain": "eholdings"
+      "type": "resource"
     }
   ],
   "content": "First note email@folio.org"

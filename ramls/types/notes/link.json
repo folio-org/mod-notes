@@ -13,16 +13,10 @@
       "type": "string",
       "description": "Type of object linked to note",
       "example": "package"
-    },
-    "domain": {
-      "type": "string",
-      "description": "Domain associated with object linked to note",
-      "example": "eholdings"
     }
   },
   "required": [
     "id",
-    "type",
-    "domain"
+    "type"
   ]
 }

@@ -57,9 +57,9 @@ public class NoteLinksImpl implements NoteLinks {
     "jsonb->'links' = '[]'::jsonb";
 
   @Override
-  public void putNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id,
-                                                           NoteLinksPut entity, Map<String, String> okapiHeaders,
-                                                           Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void putNoteLinksTypeIdByTypeAndId(String type, String id,
+                                               NoteLinksPut entity, Map<String, String> okapiHeaders,
+                                               Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
 
     PostgresClient postgresClient = PostgresClient.getInstance(vertxContext.owner(), tenantId);
@@ -67,7 +67,6 @@ public class NoteLinksImpl implements NoteLinks {
     List<String> assignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.ASSIGNED);
     List<String> unAssignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.UNASSIGNED);
     Link link = new Link()
-      .withDomain(domain)
       .withId(id)
       .withType(type);
 
@@ -80,12 +79,12 @@ public class NoteLinksImpl implements NoteLinks {
       .compose(o -> unAssignFromNotes(unAssignNotes, link, postgresClient, connection.getValue(), tenantId))
       .compose(result -> endTransaction(postgresClient, connection.getValue()))
       .compose(result -> {
-        asyncResultHandler.handle(succeededFuture(PutNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse.respond204()));
+        asyncResultHandler.handle(succeededFuture(PutNoteLinksTypeIdByTypeAndIdResponse.respond204()));
         return null;
       })
       .otherwise(e -> rollbackTransaction(postgresClient, connection, e))
       .otherwise(e -> {
-        asyncResultHandler.handle(succeededFuture(PutNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse.respond500WithTextPlain(e.getMessage())));
+        asyncResultHandler.handle(succeededFuture(PutNoteLinksTypeIdByTypeAndIdResponse.respond500WithTextPlain(e.getMessage())));
         return null;
       });
   }

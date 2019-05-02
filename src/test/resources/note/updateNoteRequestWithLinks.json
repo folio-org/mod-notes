@@ -1,17 +1,16 @@
 {
   "typeId": "13f21797-d25b-46dc-8427-1759d1db2057",
   "title": "more things",
+  "domain": "eholdings",
   "content": "First note with a comment",
   "links": [
     {
       "id": "123-456789",
-      "type": "package",
-      "domain": "eholdings"
+      "type": "package"
     },
     {
       "id": "123-456789",
-      "type": "resource",
-      "domain": "eholdings"
+      "type": "resource"
     }
   ]
 }

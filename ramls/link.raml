@@ -16,7 +16,7 @@ traits:
   language: !include raml-util/traits/language.raml
 
 /note-links:
-  /domain/{domain}/type/{type}/id/{id}/:
+  /type/{type}/id/{id}/:
     put:
         is: [validate]
         description: Add links to specified list of notes

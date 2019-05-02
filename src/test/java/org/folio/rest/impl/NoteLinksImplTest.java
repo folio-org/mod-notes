@@ -78,13 +78,11 @@ public class NoteLinksImplTest extends TestBase {
     Note secondResultNote = getNoteById(notes, secondNote.getId());
     Note thirdResultNote = getNoteById(notes, thirdNote.getId());
 
-    assertEquals(DOMAIN, firstResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getDomain());
     assertEquals(PACKAGE_TYPE, firstResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getType());
     assertEquals(PACKAGE_ID, firstResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getId());
 
     assertEquals(DEFAULT_LINK_AMOUNT, secondResultNote.getLinks().size());
 
-    assertEquals(DOMAIN, thirdResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getDomain());
     assertEquals(PACKAGE_TYPE, thirdResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getType());
     assertEquals(PACKAGE_ID, thirdResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getId());
   }
@@ -132,7 +130,6 @@ public class NoteLinksImplTest extends TestBase {
     assertEquals(DEFAULT_LINK_AMOUNT, firstResultNote.getLinks().size());
     assertEquals(DEFAULT_LINK_AMOUNT, secondResultNote.getLinks().size());
 
-    assertEquals(DOMAIN, thirdResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getDomain());
     assertEquals(PACKAGE_TYPE, thirdResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getType());
     assertEquals(PACKAGE_ID, thirdResultNote.getLinks().get(DEFAULT_LINK_INDEX + 1).getId());
   }
@@ -162,7 +159,6 @@ public class NoteLinksImplTest extends TestBase {
   public void shouldRemoveNoteWhenLastLinkIsRemoved() {
     Note note = getNote()
       .withLinks(Collections.singletonList(new Link()
-        .withDomain(DOMAIN)
         .withId(PACKAGE_ID)
         .withType(PACKAGE_TYPE)
     ));
@@ -174,7 +170,7 @@ public class NoteLinksImplTest extends TestBase {
 
   private void putLinks(NoteLinksPut requestBody) {
     putWithOk(
-      "note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID,
+      "note-links/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID,
       Json.encode(requestBody), USER8);
   }
 

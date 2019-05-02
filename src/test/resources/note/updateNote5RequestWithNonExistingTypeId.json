@@ -2,12 +2,12 @@
   "id": "33333333-1111-1111-a333-333333333333",
   "typeId": "09c5042e-182a-4aad-aab8-a4501d621541",
   "title": "more things",
+  "domain": "eholdings",
   "content": "Test on things",
   "links": [
     {
       "id": "123-456789",
-      "type": "package",
-      "domain": "eholdings"
+      "type": "package"
     }
   ]
 }

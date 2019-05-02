@@ -2,11 +2,11 @@
   "typeId": "2af21797-d25b-46dc-8427-1759d1db2057",
   "title": "testing",
   "content": "Note with no id",
+  "domain": "eholdings",
   "links": [
     {
       "id": "123-456789",
-      "type": "package",
-      "domain": "eholdings"
+      "type": "package"
     }
   ]
 }
