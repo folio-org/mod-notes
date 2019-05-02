@@ -6,6 +6,7 @@ import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 
 import io.vertx.core.Future;
+import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,8 +83,11 @@ public class UserLookUp {
    * @return User information based on userid from header.
    */
   public static Future<UserLookUp> getUserInfo(final Map<String, String> okapiHeaders) {
-    final String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    final String userId = okapiHeaders.get(RestVerticle.OKAPI_USERID_HEADER);
+    CaseInsensitiveHeaders headers = new CaseInsensitiveHeaders();
+    headers.addAll(okapiHeaders);
+    
+    final String tenantId = TenantTool.calculateTenantId(headers.get(RestVerticle.OKAPI_HEADER_TENANT));
+    final String userId = headers.get(RestVerticle.OKAPI_USERID_HEADER);
     Future<UserLookUp> future = Future.future();
     if (userId == null) {
       logger.error("No userid header");
@@ -91,7 +95,7 @@ public class UserLookUp {
       return future;
     }
     
-    String okapiURL = okapiHeaders.get(XOkapiHeaders.URL);
+    String okapiURL = headers.get(XOkapiHeaders.URL);
     String url = "/users/" + userId;
     try {
       final HttpClientInterface httpClient = HttpClientFactory.getHttpClient(okapiURL, tenantId);
