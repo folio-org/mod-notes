@@ -199,6 +199,12 @@ public class NoteLinksImplTest extends TestBase {
       .findFirst().get();
   }
 
+  private NoteLinkPut createNoteLink(String id, NoteLinkPut.Status status) {
+    return new NoteLinkPut()
+      .withId(id)
+      .withStatus(status);
+  }
+
   private Note createNote() {
     Note note = getNote();
     postNoteWithOk(Json.encode(note), USER8);
@@ -208,12 +214,6 @@ public class NoteLinksImplTest extends TestBase {
   private Note getNote() {
     return Json.decodeValue(NOTE_2, Note.class)
       .withId(UUID.randomUUID().toString());
-  }
-
-  private NoteLinkPut createNoteLink(String id, NoteLinkPut.Status status) {
-    return new NoteLinkPut()
-      .withId(id)
-      .withStatus(status);
   }
 
   private List<Note> getNotes() {
