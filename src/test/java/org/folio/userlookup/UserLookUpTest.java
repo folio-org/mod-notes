@@ -3,12 +3,10 @@ package org.folio.userlookup;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 
-import io.vertx.core.Future;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
@@ -19,15 +17,15 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.matching.RegexPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-import io.vertx.core.Vertx;
+import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.folio.okapi.common.XOkapiHeaders;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.TestBase;
 import org.folio.util.TestUtil;
 
@@ -35,7 +33,6 @@ import org.folio.util.TestUtil;
 public class UserLookUpTest {
   private static final String STUB_TENANT = "testlib";
   private static final String host = "http://127.0.0.1";
-  protected static Vertx vertx;
   private static Map<String, String> okapiHeaders = new HashMap<>();
   private final String GET_USER_ENDPOINT = "/users/";
   private static final String USER_INFO_STUB_FILE = "responses/userlookup/mock_user_response_200.json";

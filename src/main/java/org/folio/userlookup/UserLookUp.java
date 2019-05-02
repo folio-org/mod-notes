@@ -2,6 +2,7 @@ package org.folio.userlookup;
 
 import java.util.Map;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 
@@ -91,7 +92,7 @@ public class UserLookUp {
     Future<UserLookUp> future = Future.future();
     if (userId == null) {
       logger.error("No userid header");
-      future.fail(new IllegalArgumentException("Missing user id header, cannot look up user"));
+      future.fail(new BadRequestException("Missing user id header, cannot look up user"));
       return future;
     }
     
@@ -144,7 +145,7 @@ public class UserLookUp {
         userInfo.lastName = personalInfo.getString("lastName");
       }
     } else {
-      throw new IllegalArgumentException("Missing fields");
+      throw new BadRequestException("Missing fields");
     }
     return userInfo;
   }

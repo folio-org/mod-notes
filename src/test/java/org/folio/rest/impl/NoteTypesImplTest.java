@@ -6,7 +6,6 @@ import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.jeasy.random.FieldPredicates.named;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -106,6 +105,8 @@ public class NoteTypesImplTest extends TestBase {
           .withStatus(200)
           .withBody(readFile("users/mock_user_no_name.json"))
         ));
+
+    mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, HttpStatus.SC_NOT_FOUND); // default limit will be applied
   }
 
   @Test
@@ -348,7 +349,7 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldReturn404WhenInvalidNotExistingId() {
     final String response = getWithStatus(NOTE_TYPES_ENDPOINT + "/" + NOT_EXISTING_STUB_ID, SC_NOT_FOUND).asString();
-    assertThat(response, equalTo("Not found"));
+    assertThat(response, containsString("not found"));
   }
 
   @Test
@@ -443,8 +444,6 @@ public class NoteTypesImplTest extends TestBase {
 
   @Test
   public void shouldFailOnPostWith400IfTypeAlreadyExists() {
-    mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, HttpStatus.SC_NOT_FOUND); // default limit will be applied
-
     try {
       NoteType existing = nextRandomNoteType();
       DBTestUtil.insertNoteType(vertx, existing.getId(), STUB_TENANT, toJson(existing));
