@@ -91,9 +91,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
 
     Future<Boolean> duplFuture = future();
 
-    findById(id, params.getTenant())
-      .map(oldType -> copyCreator(oldType, updating))
-      .compose(type -> populateUpdater(type, params))
+    populateUpdater(updating, params)
       .compose(type -> repository.update(type, params.getTenant()))
       .setHandler(handleDuplicateType(updating.getName(), duplFuture));
 
@@ -111,17 +109,6 @@ public class NoteTypeServiceImpl implements NoteTypeService {
 
       return result;
     });
-  }
-
-  private NoteType copyCreator(NoteType old, NoteType updating) {
-    if (old.getMetadata() == null || updating.getMetadata() == null) {
-      return updating;
-    }
-
-    NoteType result = cloner.deepClone(updating);
-    result.getMetadata().setCreatedByUsername(old.getMetadata().getCreatedByUsername());
-
-    return result;
   }
 
   private Future<NoteType> populateUpdater(NoteType entity, OkapiParams params) {
