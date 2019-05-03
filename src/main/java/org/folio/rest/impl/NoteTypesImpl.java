@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
-import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.jaxrs.resource.NoteTypes;
 import org.folio.spring.SpringContextUtil;
 import org.folio.type.NoteTypeService;
@@ -43,9 +42,7 @@ public class NoteTypesImpl implements NoteTypes {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<NoteTypeCollection> found = typeService.findByQuery(query, offset, limit, lang, tenantId(okapiHeaders));
 
-    respond(found.map(col -> updateNoteTypeUsage(col, 0)), // temporarily, until the usage is not calculated
-      GetNoteTypesResponse::respond200WithApplicationJson,
-      asyncResultHandler);
+    respond(found, GetNoteTypesResponse::respond200WithApplicationJson, asyncResultHandler);
   }
 
   @Validate
@@ -65,12 +62,7 @@ public class NoteTypesImpl implements NoteTypes {
                                    Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     Future<NoteType> found = typeService.findById(typeId, tenantId(okapiHeaders));
 
-    respond(found.map(noteType -> { // temporarily, until the usage is not calculated
-                noteType.setUsage(new NoteTypeUsage().withNoteTotal(0));
-                return noteType;
-              }),
-      GetNoteTypesByTypeIdResponse::respond200WithApplicationJson,
-      asyncResultHandler);
+    respond(found, GetNoteTypesByTypeIdResponse::respond200WithApplicationJson, asyncResultHandler);
   }
 
   @Validate
@@ -88,11 +80,6 @@ public class NoteTypesImpl implements NoteTypes {
     Future<Void> updated = typeService.update(typeId, entity, new OkapiParams(okapiHeaders));
 
     respond(updated, v -> PutNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
-  }
-
-  private NoteTypeCollection updateNoteTypeUsage(NoteTypeCollection noteTypeCollection, int usage) {
-    noteTypeCollection.getNoteTypes().forEach(noteType -> noteType.setUsage(new NoteTypeUsage().withNoteTotal(usage)));
-    return noteTypeCollection;
   }
 
   private <T> Future<Response> respond(Future<T> result, Function<T, Response> mapper,
