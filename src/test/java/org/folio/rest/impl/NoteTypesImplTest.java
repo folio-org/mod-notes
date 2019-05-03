@@ -59,7 +59,7 @@ import org.folio.spring.SpringContextUtil;
 public class NoteTypesImplTest extends TestBase {
 
   private static final int NOTE_TOTAL = 10;
-  private static final String STUB_NOTE_TYPE_ID = "2cf21797-d25b-46dc-8427-1759d1db2057";
+  private static final String STUB_NOTE_TYPE_ID = "13f21797-d25b-46dc-8427-1759d1db2057";
   private static final String NOT_EXISTING_STUB_ID = "9798274e-ce9d-46ab-aa28-00ca9cf4698a";
   
   private static final String NOTE_TYPES_ENDPOINT = "/note-types";
