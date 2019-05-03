@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_NO_CONTENT;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
@@ -377,6 +378,23 @@ public class NotesTest extends TestBase {
       .log().ifValidationFails()
       .statusCode(SC_BAD_REQUEST)
       .body(containsString("cannot look up user"));
+  }
+
+  @Test
+  public void shouldReturn500WhenIncorrectTenant() {
+    postNoteWithOk(NOTE_2, USER8);
+
+    RestAssured.given()
+      .spec(givenWithUrl())
+      .header(INCORRECT_HEADER).header(JSON_CONTENT_TYPE_HEADER)
+      .when()
+      .body(NOTE_2)
+      .put(NOTES_PATH + "/22222222-2222-2222-a222-222222222222")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(SC_INTERNAL_SERVER_ERROR);
+
+    DBTestUtil.deleteFromTable(vertx, DBTestUtil.NOTE_TABLE);
   }
 
   @Test

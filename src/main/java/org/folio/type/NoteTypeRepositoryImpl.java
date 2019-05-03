@@ -27,6 +27,7 @@ import org.folio.rest.persist.interfaces.Results;
 public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
   private static final String NOTE_TYPE_TABLE = "note_type";
+  private static final String NOTE_TYPE_VIEW = "note_type_view";
   private static final String SELECT_TOTAL_COUNT = "SELECT count(*) FROM " + NOTE_TYPE_TABLE;
 
   private Vertx vertx;
@@ -39,7 +40,7 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
   @Override
   public Future<NoteTypeCollection> findByQuery(String query, int offset, int limit, String tenantId) {
-    CqlQuery<NoteType> q = new CqlQuery<>(pgClient(tenantId), NOTE_TYPE_TABLE, NoteType.class);
+    CqlQuery<NoteType> q = new CqlQuery<>(pgClient(tenantId), NOTE_TYPE_VIEW, NoteType.class);
 
     return q.get(query, offset, limit).map(this::toNoteTypeCollection);
   }
@@ -48,7 +49,7 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   public Future<Optional<NoteType>> findById(String id, String tenantId) {
     Future<NoteType> future = Future.future();
 
-    pgClient(tenantId).getById(NOTE_TYPE_TABLE, id, NoteType.class, future);
+    pgClient(tenantId).getById(NOTE_TYPE_VIEW, id, NoteType.class, future);
 
     return future.map(Optional::ofNullable);
   }
@@ -57,7 +58,7 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   public Future<List<NoteType>> findByIds(List<String> ids, String tenantId) {
     Future<Map<String, NoteType>> future = Future.future();
 
-    pgClient(tenantId).getById(NOTE_TYPE_TABLE, createParams(ids), NoteType.class, future);
+    pgClient(tenantId).getById(NOTE_TYPE_VIEW, createParams(ids), NoteType.class, future);
 
     return future.map(resultMap -> new ArrayList<>(resultMap.values()));
   }

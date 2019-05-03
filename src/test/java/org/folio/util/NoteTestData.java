@@ -23,6 +23,7 @@ public class NoteTestData {
 
   public static final Header USER19 = new Header(XOkapiHeaders.USER_ID, "11999999-9999-4999-9999-999999999911");
   public static final Header USER8 = new Header(XOkapiHeaders.USER_ID, "88888888-8888-4888-8888-888888888888");
+  public static final Header USER9 = new Header(XOkapiHeaders.USER_ID, "99999999-9999-4999-9999-999999999999");
 
   public static final String NOTE_1;
   public static final String NOTE_2;
