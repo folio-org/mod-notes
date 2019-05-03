@@ -1,0 +1,30 @@
+{
+  "configs": [
+    {
+      "id": "b3e0e211-8316-466a-88cf-1403f6272b36",
+      "module": "NOTES",
+      "configName": "note-type-limit",
+      "code": "note.types.number.limit",
+      "description": "maximum number of note types allowed",
+      "default": true,
+      "enabled": true,
+      "value": "5"
+    },
+    {
+      "id": "8c697f0b-cc7e-4294-a403-b9d1343a2df4",
+      "module": "NOTES",
+      "configName": "note-type-limit",
+      "code": "note.types.number.limit",
+      "description": "maximum number of note types allowed (DUPLICATE)",
+      "default": true,
+      "enabled": true,
+      "value": "10"
+    }
+  ],
+  "totalRecords": 2,
+  "resultInfo": {
+    "totalRecords": 2,
+    "facets": [],
+    "diagnostics": []
+  }
+}

@@ -5,7 +5,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import static org.folio.util.NoteTestData.DOMAIN;
 import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.PACKAGE_ID;
 import static org.folio.util.NoteTestData.PACKAGE_TYPE;

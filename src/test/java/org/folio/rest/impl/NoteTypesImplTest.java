@@ -3,12 +3,11 @@ package org.folio.rest.impl;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
-import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.jeasy.random.FieldPredicates.named;
 import static org.junit.Assert.assertEquals;
@@ -19,6 +18,9 @@ import static org.junit.Assert.assertTrue;
 
 import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.NOTE_4;
+import static org.folio.util.NoteTestData.USER8;
+import static org.folio.util.NoteTestData.USER9;
+import static org.folio.util.TestUtil.mockGet;
 import static org.folio.util.TestUtil.readFile;
 import static org.folio.util.TestUtil.toJson;
 
@@ -31,11 +33,13 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.RegexPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.apache.http.HttpStatus;
 import org.hamcrest.MatcherAssert;
 import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
@@ -49,15 +53,15 @@ import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.spring.SpringContextUtil;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteTypesImplTest extends TestBase {
 
   private static final int NOTE_TOTAL = 10;
   private static final String STUB_NOTE_TYPE_ID = "13f21797-d25b-46dc-8427-1759d1db2057";
-  private static final Header USER9 = new Header(XOkapiHeaders.USER_ID, "99999999-9999-4999-9999-999999999999");
-  private static final Header USER8 = new Header(XOkapiHeaders.USER_ID, "88888888-8888-4888-8888-888888888888");
   private static final String NOT_EXISTING_STUB_ID = "9798274e-ce9d-46ab-aa28-00ca9cf4698a";
+  
   private static final String NOTE_TYPES_ENDPOINT = "/note-types";
   private static final String TOTAL_RECORDS = "totalRecords";
   private static final String NOTE_TYPES = "noteTypes";
@@ -65,11 +69,18 @@ public class NoteTypesImplTest extends TestBase {
   private static final int MAX_LIMIT_AND_OFFSET = 2147483647;
   private static final int NULL_LIMIT_AND_OFFSET = 0;
 
-  private ObjectMapper mapper = new ObjectMapper();
+  private static final RegexPattern CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN = 
+    //new RegexPattern("/configurations/entries.+NOTES.+note\\.types\\.number\\.limit.*"), true);
+    new RegexPattern("/configurations/entries.*");
+
+  private ObjectMapper mapper;
   private EasyRandom noteTypeRandom;
 
 
-  public NoteTypesImplTest() {
+  @Before
+  public void setUp() throws IOException, URISyntaxException {
+    SpringContextUtil.autowireDependenciesFromFirstContext(this, vertx);
+
     // configure random object generator for NoteType
     EasyRandomParameters params = new EasyRandomParameters()
       .randomize(named("id"), () -> UUID.randomUUID().toString())
@@ -77,10 +88,9 @@ public class NoteTypesImplTest extends TestBase {
       .excludeField(named("metadata"));
 
     noteTypeRandom = new EasyRandom(params);
-  }
 
-  @Before
-  public void set() throws IOException, URISyntaxException {
+    mapper = new ObjectMapper();
+
     stubFor(
       get(new UrlPathPattern(new EqualToPattern("/users/99999999-9999-4999-9999-999999999999"), false))
         .willReturn(new ResponseDefinitionBuilder()
@@ -101,6 +111,8 @@ public class NoteTypesImplTest extends TestBase {
           .withStatus(200)
           .withBody(readFile("users/mock_user_no_name.json"))
         ));
+
+    mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, HttpStatus.SC_NOT_FOUND); // default limit will be applied
   }
 
   @Test
@@ -180,6 +192,7 @@ public class NoteTypesImplTest extends TestBase {
       for (NoteType noteType : noteTypes) {
         DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
       }
+
       Response response = getWithOk(NOTE_TYPES_ENDPOINT + "?limit=" + MAX_LIMIT_AND_OFFSET + "&offset=2").response();
 
       int totalRecords = response.path(TOTAL_RECORDS);
@@ -350,13 +363,13 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn422InvalidRequest() throws IOException, URISyntaxException {
+  public void shouldReturn400InvalidRequest() throws IOException, URISyntaxException {
     try {
       final String stubNoteType = readFile("post_note_type.json");
 
       DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
 
-      getWithStatus(NOTE_TYPES_ENDPOINT + "?query=", SC_UNPROCESSABLE_ENTITY);
+      getWithStatus(NOTE_TYPES_ENDPOINT + "?query=", SC_BAD_REQUEST);
     } finally {
       DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
     }
@@ -378,7 +391,7 @@ public class NoteTypesImplTest extends TestBase {
   @Test
   public void shouldReturn404WhenInvalidNotExistingId() {
     final String response = getWithStatus(NOTE_TYPES_ENDPOINT + "/" + NOT_EXISTING_STUB_ID, SC_NOT_FOUND).asString();
-    assertThat(response, equalTo("Note type " + NOT_EXISTING_STUB_ID + " not found"));
+    assertThat(response, containsString("not found"));
   }
 
   @Test
@@ -386,6 +399,7 @@ public class NoteTypesImplTest extends TestBase {
     final String invalidStubId = "11111111-222-1111-2-111111111111";
     getWithStatus(NOTE_TYPES_ENDPOINT + "/" + invalidStubId, SC_BAD_REQUEST).asString();
   }
+
 
   @Test
   public void shouldUpdateNoteNameTypeOnPut() throws IOException, URISyntaxException {
@@ -434,7 +448,7 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn422OnPutWhenRequestIsInvalid() {
+  public void shouldReturn400OnPutWhenRequestIsInvalid() {
     putWithStatus(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, "{\"name\":null}",
       SC_UNPROCESSABLE_ENTITY, USER9);
   }
@@ -466,18 +480,6 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn400ErrorWhenAddingNoteWithExistingUUID() {
-    try {
-      NoteType input = nextRandomNoteType();
-      postNoteTypeWithOk(toJson(input), USER9);
-      String response = postWithStatus(NOTE_TYPES_ENDPOINT, toJson(input), SC_BAD_REQUEST, USER9).asString();
-      assertThat(response, containsString("Note type with specified UUID already exists"));
-    } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
-    }
-  }
-
-  @Test
   public void shouldReturn422OnPostWhenRequestIsInvalid() {
     postWithStatus(NOTE_TYPES_ENDPOINT, "{\"name\":null}", SC_UNPROCESSABLE_ENTITY, USER9);
   }
@@ -491,7 +493,28 @@ public class NoteTypesImplTest extends TestBase {
       NoteType creating = new NoteType().withName(existing.getName());
       String error = postWithStatus(NOTE_TYPES_ENDPOINT, toJson(creating), SC_BAD_REQUEST, USER9).asString();
 
-      assertThat(error, containsString("duplicate key value"));
+      assertThat(error, containsString("already exists"));
+    } finally {
+      DBTestUtil.deleteAllNoteTypes(vertx);
+    }
+  }
+
+  @Test
+  public void shouldFailOnPostWith400IfNoteTypeLimitReached() throws Exception {
+    // mock response with the limit = 5
+    mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, "responses/configuration/get-note-type-limit-5-response.json");
+
+    try {
+      for (int i = 0; i < 5; i++) {
+        NoteType nt = nextRandomNoteType();
+        DBTestUtil.insertNoteType(vertx, nt.getId(), STUB_TENANT, toJson(nt));
+      }
+
+      NoteType creating = nextRandomNoteType();
+      String error = postWithStatus("note-types/", toJson(creating), HttpStatus.SC_BAD_REQUEST, USER9)
+        .asString();
+
+      assertThat(error, containsString("Maximum number of note types allowed"));
     } finally {
       DBTestUtil.deleteAllNoteTypes(vertx);
     }
@@ -513,22 +536,24 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn500WhenIncorrectTenant() {
-    NoteType inputPost = nextRandomNoteType();
-    postNoteTypeWithOk(toJson(inputPost), USER8);
+  public void shouldReturn401WhenIncorrectTenant() {
+    try {
+      NoteType inputPost = nextRandomNoteType();
+      postNoteTypeWithOk(toJson(inputPost), USER8);
 
-    NoteType input = nextRandomNoteType();
-    RestAssured.given()
-      .spec(givenWithUrl())
-      .header(INCORRECT_HEADER).header(JSON_CONTENT_TYPE_HEADER)
-      .when()
-      .body(toJson(input))
-      .put(NOTE_TYPES_ENDPOINT + "/" + inputPost.getId())
-      .then()
-      .log().ifValidationFails()
-      .statusCode(SC_INTERNAL_SERVER_ERROR);
-
-    DBTestUtil.deleteAllNoteTypes(vertx);
+      NoteType input = nextRandomNoteType();
+      RestAssured.given()
+        .spec(givenWithUrl())
+        .header(INCORRECT_HEADER).header(JSON_CONTENT_TYPE_HEADER)
+        .when()
+        .body(toJson(input))
+        .put(NOTE_TYPES_ENDPOINT + "/" + inputPost.getId())
+        .then()
+        .log().ifValidationFails()
+        .statusCode(SC_UNAUTHORIZED);
+    } finally {
+      DBTestUtil.deleteAllNoteTypes(vertx);
+    }
   }
 
   @Test
