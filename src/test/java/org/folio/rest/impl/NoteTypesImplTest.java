@@ -448,7 +448,7 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn400OnPutWhenRequestIsInvalid() {
+  public void shouldReturn422OnPutWhenRequestIsInvalid() {
     putWithStatus(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, "{\"name\":null}",
       SC_UNPROCESSABLE_ENTITY, USER9);
   }
@@ -511,8 +511,7 @@ public class NoteTypesImplTest extends TestBase {
       }
 
       NoteType creating = nextRandomNoteType();
-      String error = postWithStatus("note-types/", toJson(creating), HttpStatus.SC_BAD_REQUEST, USER9)
-        .asString();
+      String error = postWithStatus("note-types/", toJson(creating), SC_BAD_REQUEST, USER9).asString();
 
       assertThat(error, containsString("Maximum number of note types allowed"));
     } finally {
@@ -544,7 +543,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType input = nextRandomNoteType();
       RestAssured.given()
         .spec(givenWithUrl())
-        .header(INCORRECT_HEADER).header(JSON_CONTENT_TYPE_HEADER)
+        .header(INCORRECT_HEADER).header(JSON_CONTENT_TYPE_HEADER).header(USER8)
         .when()
         .body(toJson(input))
         .put(NOTE_TYPES_ENDPOINT + "/" + inputPost.getId())

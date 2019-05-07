@@ -253,10 +253,8 @@ public class NotesResourceImpl implements Notes {
 
   @Override
   @Validate
-  public void getNotesById(String id,
-                           String lang, Map<String, String> okapiHeaders,
-                           Handler<AsyncResult<Response>> asyncResultHandler,
-                           Context context) {
+  public void getNotesById(String id, String lang, Map<String, String> okapiHeaders,
+                           Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
     getOneNote(id, okapiHeaders, context)
       .map(note -> {
         asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
@@ -310,40 +308,18 @@ public class NotesResourceImpl implements Notes {
       return;
     }
 
-    getOneNote(id, okapiHeaders, vertxContext)
-      .compose(oldNote -> {
-        setNoteCreator(oldNote, note);
-        return setNoteUpdater(note, okapiHeaders);
-      })
+    setNoteUpdater(note, okapiHeaders)
       .compose(voidObject -> updateNote(id, note, okapiHeaders, asyncResultHandler, vertxContext))
       .otherwise(exception -> {
-
-        if (exception instanceof HttpStatusException) {
-
-          final int cause =  ((HttpStatusException) exception).getStatusCode();
-
-          if (Response.Status.NOT_FOUND.getStatusCode() == cause) {
-            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond404WithTextPlain(
-                ((HttpStatusException) exception).getPayload())));
-          } else if (Response.Status.BAD_REQUEST.getStatusCode() == cause) {
-            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond400WithTextPlain(
-                ((HttpStatusException) exception).getPayload())));
-          } else {
-            asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond500WithTextPlain(
-              exception.getMessage())));
-          }
+        if (exception instanceof NotFoundException || exception instanceof NotAuthorizedException ||
+            exception instanceof IllegalArgumentException || exception instanceof IllegalStateException ||
+            exception instanceof BadRequestException) {
+          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond400WithTextPlain(exception.getMessage())));
         } else {
           asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond500WithTextPlain(exception.getMessage())));
         }
         return null;
     });
-  }
-
-  private void setNoteCreator(Note oldNote, Note note) {
-    final UserDisplayInfo creator = getUserDisplayInfo(oldNote.getCreator().getFirstName(), oldNote.getCreator()
-        .getMiddleName(), oldNote.getCreator().getLastName());
-    note.setCreator(creator);
-    note.getMetadata().setCreatedByUsername(oldNote.getMetadata().getCreatedByUsername());
   }
 
   private Future<Void> setNoteCreator(Note note, Map<String, String> okapiHeaders) {

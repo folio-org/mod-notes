@@ -3,7 +3,6 @@ package org.folio.rest.impl;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
-import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_NO_CONTENT;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
@@ -381,7 +380,7 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn500WhenIncorrectTenant() {
+  public void shouldReturn400WhenIncorrectTenant() {
     postNoteWithOk(NOTE_2, USER8);
 
     RestAssured.given()
@@ -392,7 +391,7 @@ public class NotesTest extends TestBase {
       .put(NOTES_PATH + "/22222222-2222-2222-a222-222222222222")
       .then()
       .log().ifValidationFails()
-      .statusCode(SC_INTERNAL_SERVER_ERROR);
+      .statusCode(SC_BAD_REQUEST);
 
     DBTestUtil.deleteFromTable(vertx, DBTestUtil.NOTE_TABLE);
   }
