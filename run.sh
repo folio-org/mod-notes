@@ -328,12 +328,7 @@ $CURL $TEN \
   $OKAPIURL/notes?query='link=*56*'
 echo
 
-echo Test 13: permissions for self - Expect a 403
-$CURL $TEN \
-  $OKAPIURL/notes/_self
-echo
-
-echo Test 14: permissions for item get - Expect a 403
+echo Test 13: permissions for item get - Expect a 403
 $CURL $TEN \
   $OKAPIURL/notes/44444444-4444-4444-4444-444444444444
 echo
@@ -341,7 +336,7 @@ echo
 cat >/dev/null << SKIPTHIS
 
 
-echo Test 15: Post without permission - Expect a 401
+echo Test 14: Post without permission - Expect a 401
 # We have domain permissions for 'things' and 'users', not for 'forbidden'
 $CURL $TOK $JSON $USER\
   -X POST -d '{"link":"forbidden/23456", "domain":"forbidden",
@@ -349,7 +344,7 @@ $CURL $TOK $JSON $USER\
   $OKAPIURL/notes
 echo
 
-echo Test 16: Show notifications - Should have exactly one
+echo Test 15: Show notifications - Should have exactly one
 $CURL $TOK \
   $OKAPIURL/notify
 echo

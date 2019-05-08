@@ -14,8 +14,7 @@ can post notes, small comment texts that refer to other objects in the system,
 for example users or items. See `ramls/note.json` for the precise definition.
 
 The interface provides the usual CRUD operations POST/PUT/GET/DELETE on `/notes`
-and `/notes/$id` as well as a GET interface on `/notes/_self` to list all notes
-created by the current user. See the RAML for precise definitions.
+and `/notes/$id`. See the RAML for precise definitions.
 
 The GET interfaces accept a query as usual, for example `notes/?query=domain=users`.
 Querying on the domain is practical to limit to notes on given types of items,
