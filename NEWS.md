@@ -1,3 +1,7 @@
+## 2.4.0 2019-05-08
+ * MODNOTES-97 - Modify Module Descriptor, Dependencies and group id
+ * MODNOTES-98 - Fix failing API Tests - missing validate annotation
+
 ## 2.3.0 2019-05-07
  * MODNOTES-71 - Notes: Limit the number of note types that can be defined in the system
  * MODNOTES-88 - Note metadata fields are not completely stored on PUT
