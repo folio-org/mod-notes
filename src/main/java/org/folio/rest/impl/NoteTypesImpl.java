@@ -37,6 +37,7 @@ public class NoteTypesImpl implements NoteTypes {
     SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
   }
 
+  @Validate
   @Override
   public void getNoteTypes(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
@@ -74,6 +75,7 @@ public class NoteTypesImpl implements NoteTypes {
     respond(deleted, v -> DeleteNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
   }
 
+  @Validate
   @Override
   public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
