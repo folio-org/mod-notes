@@ -2,7 +2,6 @@ package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,7 +56,6 @@ public class NotesResourceImpl implements Notes {
   private static final String IDFIELDNAME = "id";
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
   private final Messages messages = Messages.getInstance();
-  private String noteSchema = null;
 
   // Get this from the restVerticle, like the rest, when it gets defined there.
 
@@ -65,14 +63,8 @@ public class NotesResourceImpl implements Notes {
     PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
   }
 
-  private CQLWrapper getCQLForNoteView(String query, int limit, int offset,
-                                       String schema) throws IOException, FieldException, SchemaException  {
-    CQL2PgJSON cql2pgJson;
-    if (schema != null) {
-      cql2pgJson = new CQL2PgJSON(NOTE_VIEW + ".jsonb", schema);
-    } else {
-      cql2pgJson = new CQL2PgJSON(NOTE_VIEW + ".jsonb");
-    }
+  private CQLWrapper getCQLForNoteView(String query, int limit, int offset) throws FieldException, SchemaException  {
+    CQL2PgJSON cql2pgJson = new CQL2PgJSON(NOTE_VIEW + ".jsonb");
     return new CQLWrapper(cql2pgJson, query)
       .setLimit(new Limit(limit))
       .setOffset(new Offset(offset));
@@ -94,7 +86,7 @@ public class NotesResourceImpl implements Notes {
     logger.debug("Getting notes. new query:" + query);
     CQLWrapper cql;
     try {
-      cql = getCQLForNoteView(query, limit, offset, noteSchema);
+      cql = getCQLForNoteView(query, limit, offset);
     } catch (Exception e) {
       ValidationHelper.handleError(e, asyncResultHandler);
       return;
