@@ -328,7 +328,7 @@ $CURL $TEN \
   $OKAPIURL/notes?query='link=*56*'
 echo
 
-echo Test 13: permissions for item get - Expect a 403
+echo Test 13: Post without permission - Expect a 401
 $CURL $TEN \
   $OKAPIURL/notes/44444444-4444-4444-4444-444444444444
 echo

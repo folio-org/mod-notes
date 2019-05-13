@@ -21,6 +21,8 @@ import static org.folio.util.NoteTestData.NOTE_1;
 import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.NOTE_3;
 import static org.folio.util.NoteTestData.NOTE_4;
+import static org.folio.util.NoteTestData.NOTE_5_LONG_CONTENT;
+import static org.folio.util.NoteTestData.NOTE_5_LONG_TITLE;
 import static org.folio.util.NoteTestData.NOTE_TYPE2_ID;
 import static org.folio.util.NoteTestData.NOTE_TYPE2_NAME;
 import static org.folio.util.NoteTestData.NOTE_TYPE_ID;
@@ -60,7 +62,6 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.persist.PostgresClient;
 
 /**
  * Interface test for mod-notes. Tests the API with restAssured, directly
@@ -125,8 +126,7 @@ public class NotesTest extends TestBase {
 
   @After
   public void tearDown() {
-    DBTestUtil.deleteFromTable(vertx,
-      (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TABLE));
+    DBTestUtil.deleteAllNotes(vertx);
   }
 
   @Test
@@ -393,7 +393,7 @@ public class NotesTest extends TestBase {
       .log().ifValidationFails()
       .statusCode(SC_BAD_REQUEST);
 
-    DBTestUtil.deleteFromTable(vertx, DBTestUtil.NOTE_TABLE);
+    DBTestUtil.deleteAllNotes(vertx);
   }
 
   @Test
@@ -432,13 +432,22 @@ public class NotesTest extends TestBase {
   }
 
   @Test
+  public void shouldReturn422WhenPostNoteTitleIsTooLong(){
+    postWithStatus(NOTES_PATH, NOTE_5_LONG_TITLE, SC_UNPROCESSABLE_ENTITY, USER8);
+  }
+
+  @Test
+  public void shouldReturn422WhenPostNoteContentIsTooLong(){
+    postWithStatus(NOTES_PATH, NOTE_5_LONG_CONTENT, SC_UNPROCESSABLE_ENTITY, USER8);
+  }
+
+  @Test
   public void shouldReturn422WhenUpdatingNoteWithNotMatchingId() {
     final String response = putWithStatus("/notes/22222222-2222-2222-a222-222222222222",
       UPDATE_NOTE_REQUEST, SC_UNPROCESSABLE_ENTITY, USER8).asString();
 
     assertThat(response, containsString("Can not change Id"));
   }
-
 
   @Test
   public void shouldReturn422WhenUpdatingNoteWithInvalidId() {
@@ -510,6 +519,18 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldReturn404WhenDeleteRequestHasNotExistingUUID() {
     deleteWithStatus("/notes/11111111-2222-3333-a444-555555555555", SC_NOT_FOUND);
+  }
+
+  @Test
+  public void shouldReturn422WhenPutNoteTitleIsTooLong(){
+    postNoteWithOk(NOTE_4, USER8);
+    putWithStatus("/notes/33333333-1111-1111-a333-333333333333", NOTE_5_LONG_TITLE, SC_UNPROCESSABLE_ENTITY, USER8);
+  }
+
+  @Test
+  public void shouldReturn422WhenPutNoteContentIsTooLong(){
+    postNoteWithOk(NOTE_4, USER8);
+    putWithStatus("/notes/33333333-1111-1111-a333-333333333333", NOTE_5_LONG_CONTENT, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
   @Test

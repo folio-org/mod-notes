@@ -27,11 +27,13 @@
     },
     "title": {
       "type": "string",
+      "maxLength": 75,
       "description": "Note title",
       "example": "BU Campus only issues"
     },
     "content": {
       "type": "string",
+      "maxLength": 1500,
       "description": "Content of the note",
       "example": "There are access issues at BU campus"
     },
