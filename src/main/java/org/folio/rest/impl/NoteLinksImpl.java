@@ -60,6 +60,9 @@ public class NoteLinksImpl implements NoteLinks {
   public void putNoteLinksTypeIdByTypeAndId(String type, String id,
                                                NoteLinksPut entity, Map<String, String> okapiHeaders,
                                                Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    if(entity.getNotes().isEmpty()){
+      handleSuccess(asyncResultHandler);
+    }
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
 
     PostgresClient postgresClient = PostgresClient.getInstance(vertxContext.owner(), tenantId);
@@ -79,20 +82,38 @@ public class NoteLinksImpl implements NoteLinks {
       .compose(o -> unAssignFromNotes(unAssignNotes, link, postgresClient, connection.getValue(), tenantId))
       .compose(result -> endTransaction(postgresClient, connection.getValue()))
       .compose(result -> {
-        asyncResultHandler.handle(succeededFuture(PutNoteLinksTypeIdByTypeAndIdResponse.respond204()));
+        handleSuccess(asyncResultHandler);
         return null;
       })
-      .otherwise(e -> rollbackTransaction(postgresClient, connection, e))
+      //recover is used to do a rollback and keep processing failed Future after rollback
+      .recover(e -> rollbackTransaction(postgresClient, connection, e))
       .otherwise(e -> {
         asyncResultHandler.handle(succeededFuture(PutNoteLinksTypeIdByTypeAndIdResponse.respond500WithTextPlain(e.getMessage())));
         return null;
       });
   }
 
-  private Object rollbackTransaction(PostgresClient postgresClient, MutableObject<AsyncResult<SQLConnection>> connection, Throwable e) {
+  private void handleSuccess(Handler<AsyncResult<Response>> asyncResultHandler) {
+    asyncResultHandler.handle(succeededFuture(PutNoteLinksTypeIdByTypeAndIdResponse.respond204()));
+  }
+
+  /**
+   * Rollback transaction and return failed future with either specified exception
+   * or rollback exception that contains initial exception as suppressed
+   */
+  private Future<Object> rollbackTransaction(PostgresClient postgresClient, MutableObject<AsyncResult<SQLConnection>> connection, Throwable e) {
     if (connection.getValue() != null) {
-      Future<Void> future = Future.future();
-      postgresClient.rollbackTx(connection.getValue(), rollback -> future.fail(e));
+      Future<Object> future = Future.future();
+      postgresClient.rollbackTx(connection.getValue(), rollback -> {
+        if(rollback.failed()){
+          Throwable rollbackException = rollback.cause();
+          rollbackException.addSuppressed(e);
+          future.fail(rollbackException);
+        }
+        else {
+          future.fail(e);
+        }
+      });
       return future;
     }
     return Future.failedFuture(e);

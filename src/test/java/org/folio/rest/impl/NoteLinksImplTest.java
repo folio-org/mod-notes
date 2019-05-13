@@ -5,12 +5,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import static org.folio.util.NoteTestData.DOMAIN;
 import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.PACKAGE_ID;
 import static org.folio.util.NoteTestData.PACKAGE_TYPE;
 import static org.folio.util.NoteTestData.USER8;
 import static org.folio.util.TestUtil.readFile;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,6 +43,8 @@ public class NoteLinksImplTest extends TestBase {
 
   private static final int DEFAULT_LINK_INDEX = 0;
   private static final int DEFAULT_LINK_AMOUNT = 1;
+  private static final String INVALID_ID = "invalid id";
+  private static final String NOTE_LINKS_PATH = "note-links/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID;
 
   @BeforeClass
   public static void setUpBeforeClass(TestContext context) {
@@ -168,10 +170,21 @@ public class NoteLinksImplTest extends TestBase {
     assertFalse(notes.stream().anyMatch(resultNote-> note.getId().equals(resultNote.getId())));
   }
 
+  @Test
+  public void shouldDoNothingOnEmptyList() {
+    removeLinks();
+    List<Note> notes = getNotes();
+    assertTrue(notes.isEmpty());
+  }
+
+  @Test
+  public void shouldReturn500OnTransactionFailure() {
+    String putBody = Json.encode(createPutLinksRequest(NoteLinkPut.Status.ASSIGNED, INVALID_ID));
+    putWithStatus(NOTE_LINKS_PATH, putBody, 500, USER8);
+  }
+
   private void putLinks(NoteLinksPut requestBody) {
-    putWithOk(
-      "note-links/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID,
-      Json.encode(requestBody), USER8);
+    putWithOk(NOTE_LINKS_PATH, Json.encode(requestBody), USER8);
   }
 
   private void createLinks(String... ids) {
@@ -183,13 +196,7 @@ public class NoteLinksImplTest extends TestBase {
   }
 
   private void changeLinks(String[] ids, NoteLinkPut.Status assigned) {
-    NoteLinksPut putRequest = new NoteLinksPut()
-      .withNotes(
-        Arrays.stream(ids)
-          .map(id -> createNoteLink(id, assigned))
-          .collect(Collectors.toList())
-      );
-
+    NoteLinksPut putRequest = createPutLinksRequest(assigned, ids);
     putLinks(putRequest);
   }
 
@@ -214,6 +221,15 @@ public class NoteLinksImplTest extends TestBase {
     return new NoteLinkPut()
       .withId(id)
       .withStatus(status);
+  }
+
+  private NoteLinksPut createPutLinksRequest(NoteLinkPut.Status assigned, String... ids) {
+    return new NoteLinksPut()
+      .withNotes(
+        Arrays.stream(ids)
+          .map(id -> createNoteLink(id, assigned))
+          .collect(Collectors.toList())
+      );
   }
 
   private List<Note> getNotes() {
