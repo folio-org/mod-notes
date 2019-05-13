@@ -67,7 +67,7 @@ Run the local stand-alone instance:
 
 ```
 java -jar target/mod-notes-fat.jar \
-  -Dhttp.port=8085 embed_postgres=true
+  -Dhttp.port=8081 embed_postgres=true
 ```
 
 ### API documentation
@@ -76,8 +76,8 @@ This module's [API documentation](https://dev.folio.org/reference/api/#mod-notes
 
 The local API docs are available, for example:
 ```
-http://localhost:8085/apidocs/?raml=raml/note.raml
-http://localhost:8085/apidocs/?raml=raml/admin.raml
+http://localhost:8081/apidocs/?raml=raml/note.raml
+http://localhost:8081/apidocs/?raml=raml/admin.raml
 etc.
 ```
 
