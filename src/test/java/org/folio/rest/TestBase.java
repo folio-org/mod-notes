@@ -20,6 +20,7 @@ import io.restassured.filter.log.LogDetail;
 import io.restassured.http.Header;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -54,6 +55,7 @@ public class TestBase {
   protected static final Header JSON_CONTENT_TYPE_HEADER = new Header(HttpHeaders.CONTENT_TYPE,
     ContentType.APPLICATION_JSON.getMimeType());
   protected static final Header TENANT_HEADER = new Header(XOkapiHeaders.TENANT, STUB_TENANT);
+  protected static final Header INCORRECT_HEADER = new Header(XOkapiHeaders.TENANT, "wrong");
 
   private static final Logger logger = LoggerFactory.getLogger(TestBase.class);
 
@@ -210,6 +212,16 @@ public class TestBase {
       .then()
       .log().ifValidationFails()
       .statusCode(expectedStatus).extract();
+  }
+
+  protected ValidatableResponse getWithValidateBody(String resourcePath, int expectedStatus) {
+    return given()
+      .spec(getRequestSpecification())
+      .when()
+      .get(resourcePath)
+      .then()
+      .log().ifValidationFails()
+      .statusCode(expectedStatus);
   }
 
   protected ExtractableResponse<Response> putWithStatus(String resourcePath, String putBody,

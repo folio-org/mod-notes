@@ -5,10 +5,6 @@
     {
       "id": "users",
       "version": "15.0"
-    },
-    {
-      "id": "notify",
-      "version": "2.0"
     }
   ],
   "provides": [
@@ -25,11 +21,6 @@
           "methods": ["POST"],
           "pathPattern": "/notes",
           "permissionsRequired": ["notes.item.post", "notes.domain.all"]
-        },
-        {
-          "methods": ["GET"],
-          "pathPattern": "/notes/_self",
-          "permissionsRequired": ["notes.collection.get", "notes.domain.all"]
         },
         {
           "methods": ["GET"],

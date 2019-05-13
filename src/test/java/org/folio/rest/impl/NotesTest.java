@@ -380,6 +380,23 @@ public class NotesTest extends TestBase {
   }
 
   @Test
+  public void shouldReturn400WhenIncorrectTenant() {
+    postNoteWithOk(NOTE_2, USER8);
+
+    RestAssured.given()
+      .spec(givenWithUrl())
+      .header(INCORRECT_HEADER).header(JSON_CONTENT_TYPE_HEADER)
+      .when()
+      .body(NOTE_2)
+      .put(NOTES_PATH + "/22222222-2222-2222-a222-222222222222")
+      .then()
+      .log().ifValidationFails()
+      .statusCode(SC_BAD_REQUEST);
+
+    DBTestUtil.deleteFromTable(vertx, DBTestUtil.NOTE_TABLE);
+  }
+
+  @Test
   public void shouldReturn400WhenUserLookupFails() {
 
     final String response = postWithStatus(NOTES_PATH,  NOTE_2, SC_BAD_REQUEST, USER19).asString();

@@ -1,3 +1,22 @@
+## 2.4.0 2019-05-08
+ * MODNOTES-97 - Modify Module Descriptor, Dependencies and group id
+ * MODNOTES-98 - Fix failing API Tests - missing validate annotation
+
+## 2.3.0 2019-05-07
+ * MODNOTES-71 - Notes: Limit the number of note types that can be defined in the system
+ * MODNOTES-88 - Note metadata fields are not completely stored on PUT
+ * MODNOTES-69 - Notes: Support bulk method to add/remove notes from/to an entity
+ * MODNOTES-66 - Notes: Support create new note 
+ * MODNOTES-67 - Notes: Support note update 
+ * MODNOTES-65 - Notes: Support to GET note by id
+ * MODNOTES-61 - Notes: Implement POST new type endpoint
+ * MODNOTES-63 - Notes: Implement DELETE type endpoint
+ * MODNOTES-59 - Notes: Implement GET type collection endpoint
+ * MODNOTES-62 - Implement PUT type endpoint
+ * MODNOTES-60 - Implement GET type endpoint
+ * MODNOTES-48 - Notes: update note's DB schema to support new fields
+ * MODNOTES-58 - Create RAML definition for the endpoints and note type object schema
+
 ## 2.2.0 2018-11-30
 
  * MODNOTES-45 Fix Bad pageable
