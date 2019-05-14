@@ -52,7 +52,6 @@ import org.folio.rest.TestBase;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.spring.SpringContextUtil;
 
 @RunWith(VertxUnitRunner.class)
@@ -124,7 +123,7 @@ public class NoteTypesImplTest extends TestBase {
 
       getWithOk(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID).asString();
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -140,9 +139,8 @@ public class NoteTypesImplTest extends TestBase {
       getWithValidateBody(NOTE_TYPES_ENDPOINT +"/" + STUB_NOTE_TYPE_ID,SC_OK)
         .body("usage.noteTotal",is(2));
     } finally {
-      DBTestUtil.deleteFromTable(vertx,
-        (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TABLE));
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNotes(vertx);
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -158,9 +156,8 @@ public class NoteTypesImplTest extends TestBase {
       getWithValidateBody(NOTE_TYPES_ENDPOINT,SC_OK)
         .body("noteTypes[0].usage.noteTotal",is(2));
     } finally {
-      DBTestUtil.deleteFromTable(vertx,
-        (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TABLE));
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNotes(vertx);
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -179,7 +176,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(1, noteTypes.size());
       assertEquals(1, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -201,7 +198,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(1, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -222,7 +219,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -243,7 +240,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(0, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -264,7 +261,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -285,7 +282,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(0, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -294,7 +291,7 @@ public class NoteTypesImplTest extends TestBase {
     try {
       getWithStatus(NOTE_TYPES_ENDPOINT + "&limit=-1", SC_BAD_REQUEST);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -303,7 +300,7 @@ public class NoteTypesImplTest extends TestBase {
     try {
       getWithStatus(NOTE_TYPES_ENDPOINT + "&offset=-1", SC_BAD_REQUEST);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -343,7 +340,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(1, noteTypes.size());
       assertEquals(1, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -358,7 +355,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals(0, noteTypes.size());
       assertEquals(0, totalRecords);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -371,7 +368,7 @@ public class NoteTypesImplTest extends TestBase {
 
       getWithStatus(NOTE_TYPES_ENDPOINT + "?query=", SC_BAD_REQUEST);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -384,7 +381,7 @@ public class NoteTypesImplTest extends TestBase {
 
       getWithStatus(NOTE_TYPES_ENDPOINT + "?limit=", SC_BAD_REQUEST);
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -420,7 +417,7 @@ public class NoteTypesImplTest extends TestBase {
       assertEquals("m8", noteTypeMetadata.getUpdatedByUsername());
 
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 
@@ -437,7 +434,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType loaded = loadSingleNote();
       assertNull(loaded.getUsage());
     } finally {
-      DBTestUtil.deleteFromTable(vertx, (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TYPE_TABLE));
+      DBTestUtil.deleteAllNoteTypes(vertx);
     }
   }
 

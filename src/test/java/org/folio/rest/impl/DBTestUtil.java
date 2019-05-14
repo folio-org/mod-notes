@@ -30,8 +30,20 @@ public class DBTestUtil {
     future.join();
   }
 
+  public static void insertNote(Vertx vertx, String stubId, String tenantId, String json) {
+    CompletableFuture<Void> future = new CompletableFuture<>();
+    PostgresClient.getInstance(vertx).execute(
+      "INSERT INTO " + getNoteTableName(tenantId) + "(" + " id, " + JSONB_COLUMN + ") VALUES ('" + stubId + "' , '" + json + "');" ,
+      event -> future.complete(null));
+    future.join();
+  }
+
   private static String getNoteTypesTableName(String tenantId) {
     return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TYPE_TABLE;
+  }
+
+  private static String getNoteTableName(String tenantId) {
+    return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TABLE;
   }
 
 
@@ -47,7 +59,7 @@ public class DBTestUtil {
     return future.join();
   }
 
-  public static void deleteFromTable(Vertx vertx, String tableName) {
+  private static void deleteFromTable(Vertx vertx, String tableName) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     PostgresClient.getInstance(vertx).execute(
       "DELETE FROM " + tableName,
@@ -66,5 +78,9 @@ public class DBTestUtil {
 
   public static void deleteAllNoteTypes(Vertx vertx) {
     deleteFromTable(vertx, getNoteTypesTableName(STUB_TENANT));
+  }
+
+  public static void deleteAllNotes(Vertx vertx) {
+    deleteFromTable(vertx, getNoteTableName(STUB_TENANT));
   }
 }

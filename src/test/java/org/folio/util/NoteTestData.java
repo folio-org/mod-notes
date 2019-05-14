@@ -33,6 +33,8 @@ public class NoteTestData {
   public static final String NOTE_4;
   public static final String UPDATE_NOTE_4_REQUEST;
   public static final String UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID;
+  public static final String NOTE_5_LONG_TITLE;
+  public static final String NOTE_5_LONG_CONTENT;
   public static final String NOTE_TYPE;
   public static final String NOTE_TYPE2;
   public static final String UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS;
@@ -47,6 +49,8 @@ public class NoteTestData {
       NOTE_4 = TestUtil.readFile("note/note4.json");
       UPDATE_NOTE_4_REQUEST = TestUtil.readFile("note/updateNote4Request.json");
       UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID = TestUtil.readFile("note/updateNote5RequestWithNonExistingTypeId.json");
+      NOTE_5_LONG_TITLE = TestUtil.readFile("note/note5LongTitle.json");
+      NOTE_5_LONG_CONTENT = TestUtil.readFile("note/note6LongContent.json");
       NOTE_TYPE = TestUtil.readFile("notetype/noteType.json");
       NOTE_TYPE2 = TestUtil.readFile("notetype/noteType2.json");
       UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS = TestUtil.readFile("note/updateNoteRequestWithNoId.json");
