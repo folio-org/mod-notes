@@ -70,6 +70,9 @@ java -jar target/mod-notes-fat.jar \
   -Dhttp.port=8081 embed_postgres=true
 ```
 
+See the built `target/ModuleDescriptor.json` for the interfaces that this module
+requires and provides, the permissions, and the additional module metadata.
+
 ### API documentation
 
 This module's [API documentation](https://dev.folio.org/reference/api/#mod-notes).
