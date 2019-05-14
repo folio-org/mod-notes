@@ -14,7 +14,6 @@ import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpStatus;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
 
 import org.folio.rest.persist.cql.CQLQueryValidationException;
@@ -62,11 +61,11 @@ public class ExceptionHandlers {
   }
 
   private static Response toBadRequest(Throwable t) {
-    return status(HttpStatus.SC_BAD_REQUEST, t.getMessage());
+    return status(400, t.getMessage());
   }
 
   private static Response toNotFound(Throwable t) {
-    return status(HttpStatus.SC_NOT_FOUND, t.getMessage());
+    return status(404, t.getMessage());
   }
 
   private static Response toGeneral(Throwable t) {
@@ -76,7 +75,7 @@ public class ExceptionHandlers {
     if (validationFuture.succeeded()) {
       return validationFuture.result();
     } else {
-      return status(HttpStatus.SC_INTERNAL_SERVER_ERROR, Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase());
+      return status(500, Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
   }
 
