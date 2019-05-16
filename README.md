@@ -88,7 +88,7 @@ etc.
 
 ### Code analysis
 
-[SonarQube analysis](https://sonarcloud.io/dashboard?id=org.folio.rest%3Amod-notes).
+[SonarQube analysis](https://sonarcloud.io/dashboard?id=org.folio%3Amod-notes).
 
 ### Download and configuration
 

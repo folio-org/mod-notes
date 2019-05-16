@@ -36,7 +36,6 @@ import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinkPut;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
-import org.folio.rest.persist.PostgresClient;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteLinksImplTest extends TestBase {
@@ -63,8 +62,7 @@ public class NoteLinksImplTest extends TestBase {
 
   @After
   public void tearDown() {
-    DBTestUtil.deleteFromTable(vertx,
-      (PostgresClient.convertToPsqlStandard(STUB_TENANT) + "." + DBTestUtil.NOTE_TABLE));
+    DBTestUtil.deleteAllNotes(vertx);
   }
 
   @Test
