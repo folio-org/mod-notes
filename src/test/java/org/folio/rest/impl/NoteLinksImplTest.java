@@ -2,15 +2,17 @@ package org.folio.rest.impl;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.PACKAGE_ID;
 import static org.folio.util.NoteTestData.PACKAGE_TYPE;
 import static org.folio.util.NoteTestData.USER8;
 import static org.folio.util.TestUtil.readFile;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +46,9 @@ public class NoteLinksImplTest extends TestBase {
   private static final int DEFAULT_LINK_AMOUNT = 1;
   private static final String INVALID_ID = "invalid id";
   private static final String NOTE_LINKS_PATH = "note-links/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID;
+  private static final String NON_EXISTING_ID = "11111111111111";
+  private static final String DOMAIN = "eholdings";
+  private static final String NON_EXISTING_DOMAIN = "nonExisting";
 
   @BeforeClass
   public static void setUpBeforeClass(TestContext context) {
@@ -179,6 +184,160 @@ public class NoteLinksImplTest extends TestBase {
   public void shouldReturn500OnTransactionFailure() {
     String putBody = Json.encode(createPutLinksRequest(NoteLinkPut.Status.ASSIGNED, INVALID_ID));
     putWithStatus(NOTE_LINKS_PATH, putBody, 500, USER8);
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithoutParameters() {
+    Note firstNote = createNote();
+    createNote();
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789").as(
+      NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithNonExistingId() {
+    Note firstNote = createNote();
+    createNote();
+
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + NON_EXISTING_ID).as(
+      NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithInvalidId() {
+    Note firstNote = createNote();
+    createNote();
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + INVALID_ID).as(
+      NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithIncompleteUrl() {
+    Note firstNote = createNote();
+    createNote();
+
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID + "?orde")
+      .as(NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithAssignedStatus() {
+    Note firstNote = createNote();
+    createLinks(firstNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?status=ASSIGNED").as(NoteCollection.class).getNotes();
+
+    assertEquals(1, notes.size());
+    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithUnassignedStatus() {
+    Note firsNoteWithAssignedLink = createNote();
+    Note secondNoteWithUnassignedLink = createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?status=UNASSIGNED").as(NoteCollection.class).getNotes();
+
+    assertEquals(1, notes.size());
+    assertEquals(DEFAULT_LINK_AMOUNT, firsNoteWithAssignedLink.getLinks().size());
+    assertEquals(DEFAULT_LINK_AMOUNT, secondNoteWithUnassignedLink.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithNonExistingDomain() {
+    Note firsNoteWithAssignedLink = createNote();
+    Note secondNoteWithUnassignedLink = createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + NON_EXISTING_DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?status=UNASSIGNED").as(NoteCollection.class).getNotes();
+
+    assertEquals(0, notes.size());
+    assertEquals(DEFAULT_LINK_AMOUNT, firsNoteWithAssignedLink.getLinks().size());
+    assertEquals(DEFAULT_LINK_AMOUNT, secondNoteWithUnassignedLink.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithOrderDescByStatus() {
+    Note firsNoteWithAssignedLink = createNote();
+    Note secondNoteWithUnassignedLink = createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?order=desc").as(NoteCollection.class).getNotes();
+
+    Note firstResultNote = getNoteById(notes, firsNoteWithAssignedLink.getId());
+
+    assertEquals(2, notes.size());
+    assertEquals(secondNoteWithUnassignedLink.getId(), notes.get(0).getId());
+    assertEquals(DEFAULT_LINK_AMOUNT, notes.get(0).getLinks().size());
+    assertEquals(2, notes.get(1).getLinks().size());
+
+    assertEquals(PACKAGE_ID, firstResultNote.getLinks().get(1).getId());
+    assertEquals(PACKAGE_TYPE, firstResultNote.getLinks().get(1).getType());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithOrderAscByStatus() {
+    Note firsNoteWithAssignedLink = createNote();
+    createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?order=asc").as(NoteCollection.class).getNotes();
+
+    Note firstResultNote = getNoteById(notes, firsNoteWithAssignedLink.getId());
+
+    assertEquals(2, notes.size());
+    assertEquals(firsNoteWithAssignedLink.getId(), notes.get(0).getId());
+    assertEquals(DEFAULT_LINK_AMOUNT, notes.get(1).getLinks().size());
+    assertEquals(2, notes.get(0).getLinks().size());
+
+    assertEquals(PACKAGE_ID, firstResultNote.getLinks().get(1).getId());
+    assertEquals(PACKAGE_TYPE, firstResultNote.getLinks().get(1).getType());
+  }
+
+  @Test
+  public void shouldReturn400WithErrorMessageWrongOrder() {
+    Note firsNoteWithAssignedLink = createNote();
+    createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?order=wrong", 400).asString();
+
+    assertThat(response, containsString("Order is incorrect"));
+  }
+
+  @Test
+  public void shouldReturn400WithErrorMessageWrongStatus() {
+    Note firsNoteWithAssignedLink = createNote();
+    createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?status=wrong", 400).asString();
+
+    assertThat(response, containsString("Status is incorrect"));
   }
 
   private void putLinks(NoteLinksPut requestBody) {

@@ -2,31 +2,40 @@ package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.jaxrs.model.Link;
-import org.folio.rest.jaxrs.model.NoteLinkPut;
-import org.folio.rest.jaxrs.model.NoteLinksPut;
-import org.folio.rest.jaxrs.resource.NoteLinks;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.TenantTool;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.sql.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+
+import org.folio.rest.RestVerticle;
+import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.Link;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.jaxrs.model.NoteLinkPut;
+import org.folio.rest.jaxrs.model.NoteLinksPut;
+import org.folio.rest.jaxrs.resource.NoteLinks;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.TenantTool;
 
 public class NoteLinksImpl implements NoteLinks {
 
@@ -55,6 +64,24 @@ public class NoteLinksImpl implements NoteLinks {
     "DELETE FROM %s " +
     "WHERE id IN (%s) AND " +
     "jsonb->'links' = '[]'::jsonb";
+
+  private static final String SELECT_NOTES_BY_STATUS_ASSIGNED = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) AND " +
+    "EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) LIMIT ? OFFSET ?";
+
+  private static final String SELECT_NOTES_BY_STATUS_UNASSIGNED = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) AND " +
+    "NOT EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) LIMIT ? OFFSET ?";
+
+  private static final String SELECT_NOTES_BY_STATUS_ALL = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) " +
+    "ORDER BY (CASE WHEN EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) THEN 'ASSIGNED'" +
+    "ELSE 'UNASSIGNED' END) %s LIMIT ? OFFSET ?";
+
+  private static final Map<String, String> SELECT_QUERIES_MAP = new HashMap<>();
+
+  static {
+    SELECT_QUERIES_MAP.put("ASSIGNED", SELECT_NOTES_BY_STATUS_ASSIGNED);
+    SELECT_QUERIES_MAP.put("UNASSIGNED", SELECT_NOTES_BY_STATUS_UNASSIGNED);
+    SELECT_QUERIES_MAP.put("ALL", SELECT_NOTES_BY_STATUS_ALL);
+  }
 
   @Override
   public void putNoteLinksTypeIdByTypeAndId(String type, String id,
@@ -91,6 +118,79 @@ public class NoteLinksImpl implements NoteLinks {
         asyncResultHandler.handle(succeededFuture(PutNoteLinksTypeIdByTypeAndIdResponse.respond500WithTextPlain(e.getMessage())));
         return null;
       });
+  }
+
+  @Validate
+  @Override
+  public void getNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id, String status, String order,
+                                                           int offset, int limit, Map<String, String> okapiHeaders,
+                                                           Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+
+    PostgresClient postgresClient = PostgresClient.getInstance(vertxContext.owner(), tenantId);
+    Link link = new Link()
+      .withId(id)
+      .withType(type);
+    try {
+      validateParameters(status, order);
+    } catch (IllegalArgumentException e) {
+      asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
+        .respond400WithTextPlain(e.getMessage())));
+    }
+    try {
+      String query = String.format(SELECT_QUERIES_MAP.get(status), getTableName(tenantId), order);
+      JsonArray parameters = createSelectParameters(domain, link, limit, offset);
+      postgresClient.select(query, parameters, event -> {
+        if (event.succeeded()) {
+          NoteCollection noteCollection = new NoteCollection();
+          List<Note> notes = mapToNoteList(event.result().getRows(), asyncResultHandler);
+          noteCollection.setNotes(notes);
+          noteCollection.setTotalRecords(event.result().getNumRows());
+          asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
+            .respond200WithApplicationJson(noteCollection)));
+        } else {
+          asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
+            .respond400WithTextPlain(event.cause().getMessage())));
+        }
+      });
+    } catch (Exception e) {
+      asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
+        .respond500WithTextPlain(e.getMessage())));
+    }
+  }
+
+  private List<Note> mapToNoteList(List<JsonObject> jsonObjects, Handler<AsyncResult<Response>> asyncResultHandler) {
+    List<Note> notes = new ArrayList<>();
+    ObjectMapper objectMapper = new ObjectMapper();
+    jsonObjects.forEach(o -> {
+      try {
+        notes.add(objectMapper.readValue(o.getString("jsonb"), Note.class));
+      } catch (IOException e) {
+        asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
+          .respond400WithTextPlain(e.getMessage())));
+      }
+    });
+    return notes;
+  }
+
+  private JsonArray createSelectParameters(String domain, Link link, int limit, int offset) {
+    String jsonLink = Json.encode(link);
+    JsonArray parameters = new JsonArray();
+    parameters
+      .add(domain)
+      .add(jsonLink)
+      .add(limit)
+      .add(offset);
+    return parameters;
+  }
+
+  private void validateParameters(String status, String order) throws IllegalArgumentException {
+    if (Objects.isNull(SELECT_QUERIES_MAP.get(status))) {
+      throw new IllegalArgumentException("Status is incorrect. Possible values: \"ASSIGNED\",\"UNASSIGNED\",\"ALL\"");
+    }
+    if (!order.equals("asc") && !order.equals("desc")) {
+      throw new IllegalArgumentException("Order is incorrect. Possible values: \"asc\",\"desc\"");
+    }
   }
 
   private void handleSuccess(Handler<AsyncResult<Response>> asyncResultHandler) {
