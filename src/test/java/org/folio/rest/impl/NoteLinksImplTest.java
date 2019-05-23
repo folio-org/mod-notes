@@ -191,11 +191,46 @@ public class NoteLinksImplTest extends TestBase {
     Note firstNote = createNote();
     createNote();
 
-    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789").as(
-      NoteCollection.class).getNotes();
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789")
+      .as(NoteCollection.class)
+      .getNotes();
 
     assertEquals(2, notes.size());
     assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnEmptyNoteCollection() {
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(0, notes.size());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithLimit() {
+    createNote();
+    createNote();
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(1, notes.size());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithOffset() {
+    createNote();
+    createNote();
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?offset=1")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(1, notes.size());
   }
 
   @Test
@@ -204,8 +239,9 @@ public class NoteLinksImplTest extends TestBase {
     createNote();
 
     List<Note> notes = getWithOk(
-      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + NON_EXISTING_ID).as(
-      NoteCollection.class).getNotes();
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + NON_EXISTING_ID)
+      .as(NoteCollection.class)
+      .getNotes();
 
     assertEquals(2, notes.size());
     assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
@@ -216,8 +252,9 @@ public class NoteLinksImplTest extends TestBase {
     Note firstNote = createNote();
     createNote();
 
-    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + INVALID_ID).as(
-      NoteCollection.class).getNotes();
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + INVALID_ID)
+      .as(NoteCollection.class)
+      .getNotes();
 
     assertEquals(2, notes.size());
     assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
@@ -230,7 +267,8 @@ public class NoteLinksImplTest extends TestBase {
 
     List<Note> notes = getWithOk(
       "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID + "?orde")
-      .as(NoteCollection.class).getNotes();
+      .as(NoteCollection.class)
+      .getNotes();
 
     assertEquals(2, notes.size());
     assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
@@ -242,7 +280,9 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(firstNote.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?status=ASSIGNED").as(NoteCollection.class).getNotes();
+      + "?status=ASSIGNED")
+      .as(NoteCollection.class)
+      .getNotes();
 
     assertEquals(1, notes.size());
     assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
@@ -255,7 +295,9 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(firsNoteWithAssignedLink.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?status=UNASSIGNED").as(NoteCollection.class).getNotes();
+      + "?status=UNASSIGNED")
+      .as(NoteCollection.class)
+      .getNotes();
 
     assertEquals(1, notes.size());
     assertEquals(DEFAULT_LINK_AMOUNT, firsNoteWithAssignedLink.getLinks().size());
@@ -269,7 +311,9 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(firsNoteWithAssignedLink.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + NON_EXISTING_DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?status=UNASSIGNED").as(NoteCollection.class).getNotes();
+      + "?status=UNASSIGNED")
+      .as(NoteCollection.class)
+      .getNotes();
 
     assertEquals(0, notes.size());
     assertEquals(DEFAULT_LINK_AMOUNT, firsNoteWithAssignedLink.getLinks().size());
@@ -283,7 +327,9 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(firsNoteWithAssignedLink.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?order=desc").as(NoteCollection.class).getNotes();
+      + "?order=desc")
+      .as(NoteCollection.class)
+      .getNotes();
 
     Note firstResultNote = getNoteById(notes, firsNoteWithAssignedLink.getId());
 
@@ -303,7 +349,9 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(firsNoteWithAssignedLink.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?order=asc").as(NoteCollection.class).getNotes();
+      + "?order=asc")
+      .as(NoteCollection.class)
+      .getNotes();
 
     Note firstResultNote = getNoteById(notes, firsNoteWithAssignedLink.getId());
 
@@ -322,8 +370,9 @@ public class NoteLinksImplTest extends TestBase {
     createNote();
     createLinks(firsNoteWithAssignedLink.getId());
 
-    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?order=wrong", 400).asString();
+    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+      + "/id/" + PACKAGE_ID + "?order=wrong", 400)
+      .asString();
 
     assertThat(response, containsString("Order is incorrect"));
   }
@@ -334,10 +383,24 @@ public class NoteLinksImplTest extends TestBase {
     createNote();
     createLinks(firsNoteWithAssignedLink.getId());
 
-    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?status=wrong", 400).asString();
+    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+      + "/id/" + PACKAGE_ID + "?status=wrong", 400)
+      .asString();
 
     assertThat(response, containsString("Status is incorrect"));
+  }
+
+  @Test
+  public void shouldReturn400WithErrorMessageWrongLimitAndOffset() {
+    Note firsNoteWithAssignedLink = createNote();
+    createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+      + "/id/" + PACKAGE_ID + "?limit=-1&offset=-1", 400)
+      .asString();
+
+    assertThat(response, containsString("parameter is incorrect"));
   }
 
   private void putLinks(NoteLinksPut requestBody) {
