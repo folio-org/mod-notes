@@ -1,18 +1,22 @@
 package org.folio.rest.impl;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import static org.folio.util.NoteTestData.NOTE_2;
-import static org.folio.util.NoteTestData.PACKAGE_ID;
-import static org.folio.util.NoteTestData.PACKAGE_TYPE;
-import static org.folio.util.NoteTestData.USER8;
-import static org.folio.util.TestUtil.readFile;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+import io.vertx.core.json.Json;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.folio.rest.TestBase;
+import org.folio.rest.jaxrs.model.Link;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.jaxrs.model.NoteLinkPut;
+import org.folio.rest.jaxrs.model.NoteLinksPut;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,24 +24,18 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-import io.vertx.core.json.Json;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import org.folio.rest.TestBase;
-import org.folio.rest.jaxrs.model.Link;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.jaxrs.model.NoteLinkPut;
-import org.folio.rest.jaxrs.model.NoteLinksPut;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static org.folio.util.NoteTestData.NOTE_2;
+import static org.folio.util.NoteTestData.PACKAGE_ID;
+import static org.folio.util.NoteTestData.PACKAGE_TYPE;
+import static org.folio.util.NoteTestData.USER8;
+import static org.folio.util.TestUtil.readFile;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteLinksImplTest extends TestBase {
@@ -166,11 +164,11 @@ public class NoteLinksImplTest extends TestBase {
       .withLinks(Collections.singletonList(new Link()
         .withId(PACKAGE_ID)
         .withType(PACKAGE_TYPE)
-    ));
+      ));
     postNoteWithOk(Json.encode(note), USER8);
     removeLinks(note.getId());
     List<Note> notes = getNotes();
-    assertFalse(notes.stream().anyMatch(resultNote-> note.getId().equals(resultNote.getId())));
+    assertFalse(notes.stream().anyMatch(resultNote -> note.getId().equals(resultNote.getId())));
   }
 
   @Test
@@ -188,7 +186,7 @@ public class NoteLinksImplTest extends TestBase {
 
   @Test
   public void shouldReturnListOfNotesWithoutParameters() {
-    Note firstNote = createNote();
+    createNote();
     createNote();
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789")
@@ -196,7 +194,6 @@ public class NoteLinksImplTest extends TestBase {
       .getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
   }
 
   @Test
@@ -235,7 +232,7 @@ public class NoteLinksImplTest extends TestBase {
 
   @Test
   public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithNonExistingId() {
-    Note firstNote = createNote();
+    createNote();
     createNote();
 
     List<Note> notes = getWithOk(
@@ -244,25 +241,11 @@ public class NoteLinksImplTest extends TestBase {
       .getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
-  }
-
-  @Test
-  public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithInvalidId() {
-    Note firstNote = createNote();
-    createNote();
-
-    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + INVALID_ID)
-      .as(NoteCollection.class)
-      .getNotes();
-
-    assertEquals(2, notes.size());
-    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
   }
 
   @Test
   public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithIncompleteUrl() {
-    Note firstNote = createNote();
+    createNote();
     createNote();
 
     List<Note> notes = getWithOk(
@@ -271,12 +254,12 @@ public class NoteLinksImplTest extends TestBase {
       .getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
   }
 
   @Test
   public void shouldReturnListOfNotesWithAssignedStatus() {
     Note firstNote = createNote();
+    createNote();
     createLinks(firstNote.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
@@ -285,13 +268,12 @@ public class NoteLinksImplTest extends TestBase {
       .getNotes();
 
     assertEquals(1, notes.size());
-    assertEquals(DEFAULT_LINK_AMOUNT, firstNote.getLinks().size());
   }
 
   @Test
   public void shouldReturnListOfNotesWithUnassignedStatus() {
     Note firsNoteWithAssignedLink = createNote();
-    Note secondNoteWithUnassignedLink = createNote();
+    createNote();
     createLinks(firsNoteWithAssignedLink.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
@@ -300,8 +282,6 @@ public class NoteLinksImplTest extends TestBase {
       .getNotes();
 
     assertEquals(1, notes.size());
-    assertEquals(DEFAULT_LINK_AMOUNT, firsNoteWithAssignedLink.getLinks().size());
-    assertEquals(DEFAULT_LINK_AMOUNT, secondNoteWithUnassignedLink.getLinks().size());
   }
 
   @Test
@@ -310,14 +290,29 @@ public class NoteLinksImplTest extends TestBase {
     Note secondNoteWithUnassignedLink = createNote();
     createLinks(firsNoteWithAssignedLink.getId());
 
-    List<Note> notes = getWithOk("/note-links/domain/" + NON_EXISTING_DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?status=UNASSIGNED")
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + NON_EXISTING_DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+        + "?status=UNASSIGNED")
       .as(NoteCollection.class)
       .getNotes();
 
     assertEquals(0, notes.size());
     assertEquals(DEFAULT_LINK_AMOUNT, firsNoteWithAssignedLink.getLinks().size());
     assertEquals(DEFAULT_LINK_AMOUNT, secondNoteWithUnassignedLink.getLinks().size());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWithStatusAll() {
+    Note firsNoteWithAssignedLink = createNote();
+    createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID + "?status=all")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
   }
 
   @Test
@@ -335,7 +330,6 @@ public class NoteLinksImplTest extends TestBase {
 
     assertEquals(2, notes.size());
     assertEquals(secondNoteWithUnassignedLink.getId(), notes.get(0).getId());
-    assertEquals(DEFAULT_LINK_AMOUNT, notes.get(0).getLinks().size());
     assertEquals(2, notes.get(1).getLinks().size());
 
     assertEquals(PACKAGE_ID, firstResultNote.getLinks().get(1).getId());
@@ -343,13 +337,13 @@ public class NoteLinksImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturnListOfNotesWithOrderAscByStatus() {
+  public void shouldReturnListOfNotesWithOrderInUpper() {
     Note firsNoteWithAssignedLink = createNote();
     createNote();
     createLinks(firsNoteWithAssignedLink.getId());
 
-    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?order=asc")
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID + "?order=ASC")
       .as(NoteCollection.class)
       .getNotes();
 
@@ -357,7 +351,6 @@ public class NoteLinksImplTest extends TestBase {
 
     assertEquals(2, notes.size());
     assertEquals(firsNoteWithAssignedLink.getId(), notes.get(0).getId());
-    assertEquals(DEFAULT_LINK_AMOUNT, notes.get(1).getLinks().size());
     assertEquals(2, notes.get(0).getLinks().size());
 
     assertEquals(PACKAGE_ID, firstResultNote.getLinks().get(1).getId());
