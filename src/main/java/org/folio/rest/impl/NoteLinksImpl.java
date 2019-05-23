@@ -20,7 +20,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.sql.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +35,7 @@ import org.folio.rest.jaxrs.model.NoteLinksPut;
 import org.folio.rest.jaxrs.resource.NoteLinks;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.tools.utils.ValidationHelper;
 
 public class NoteLinksImpl implements NoteLinks {
 
@@ -137,40 +137,38 @@ public class NoteLinksImpl implements NoteLinks {
       asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
         .respond400WithTextPlain(e.getMessage())));
     }
-    try {
-      String query = String.format(SELECT_QUERIES_MAP.get(status), getTableName(tenantId), order);
-      JsonArray parameters = createSelectParameters(domain, link, limit, offset);
-      postgresClient.select(query, parameters, event -> {
-        if (event.succeeded()) {
-          NoteCollection noteCollection = new NoteCollection();
-          List<Note> notes = mapToNoteList(event.result().getRows(), asyncResultHandler);
-          noteCollection.setNotes(notes);
-          noteCollection.setTotalRecords(event.result().getNumRows());
-          asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
-            .respond200WithApplicationJson(noteCollection)));
-        } else {
-          asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
-            .respond400WithTextPlain(event.cause().getMessage())));
-        }
+    String query = String.format(SELECT_QUERIES_MAP.get(status), getTableName(tenantId), order);
+    JsonArray parameters = createSelectParameters(domain, link, limit, offset);
+    getNoteCollection(postgresClient, parameters, query)
+      .map(notes -> {
+        asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse.respond200WithApplicationJson(notes)));
+        return null;
+      })
+      .otherwise(e -> {
+        ValidationHelper.handleError(e, asyncResultHandler);
+        return null;
       });
-    } catch (Exception e) {
-      asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
-        .respond500WithTextPlain(e.getMessage())));
-    }
   }
 
-  private List<Note> mapToNoteList(List<JsonObject> jsonObjects, Handler<AsyncResult<Response>> asyncResultHandler) {
+  private Future<NoteCollection> getNoteCollection(PostgresClient postgresClient, JsonArray parameters, String query) {
     List<Note> notes = new ArrayList<>();
+    NoteCollection noteCollection = new NoteCollection();
     ObjectMapper objectMapper = new ObjectMapper();
-    jsonObjects.forEach(o -> {
-      try {
-        notes.add(objectMapper.readValue(o.getString("jsonb"), Note.class));
-      } catch (IOException e) {
-        asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
-          .respond400WithTextPlain(e.getMessage())));
-      }
+    Future<UpdateResult> future = Future.future();
+
+    postgresClient.select(query, parameters, event -> {
+      event.result().getRows().forEach(o -> {
+        try {
+          notes.add(objectMapper.readValue(o.getString("jsonb"), Note.class));
+        } catch (IOException e) {
+          future.fail(e);
+        }
+      });
+      noteCollection.setNotes(notes);
+      noteCollection.setTotalRecords(event.result().getNumRows());
+      future.complete();
     });
-    return notes;
+    return future.map(noteCollection);
   }
 
   private JsonArray createSelectParameters(String domain, Link link, int limit, int offset) {
