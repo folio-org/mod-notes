@@ -1,32 +1,41 @@
 package org.folio.rest.impl;
 
-import static io.vertx.core.Future.succeededFuture;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.ws.rs.core.Response;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.jaxrs.model.Link;
-import org.folio.rest.jaxrs.model.NoteLinkPut;
-import org.folio.rest.jaxrs.model.NoteLinksPut;
-import org.folio.rest.jaxrs.resource.NoteLinks;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.TenantTool;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
+import io.vertx.ext.sql.ResultSet;
 import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.sql.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.Link;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.jaxrs.model.NoteLinkPut;
+import org.folio.rest.jaxrs.model.NoteLinksPut;
+import org.folio.rest.jaxrs.resource.NoteLinks;
+import org.folio.rest.model.Order;
+import org.folio.rest.model.Status;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.tools.utils.ValidationHelper;
+
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static io.vertx.core.Future.succeededFuture;
 
 public class NoteLinksImpl implements NoteLinks {
 
@@ -55,6 +64,24 @@ public class NoteLinksImpl implements NoteLinks {
     "DELETE FROM %s " +
     "WHERE id IN (%s) AND " +
     "jsonb->'links' = '[]'::jsonb";
+
+  private static final String SELECT_NOTES_BY_STATUS_ASSIGNED = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) AND " +
+    "EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) LIMIT ? OFFSET ?";
+
+  private static final String SELECT_NOTES_BY_STATUS_UNASSIGNED = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) AND " +
+    "NOT EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) LIMIT ? OFFSET ?";
+
+  private static final String SELECT_NOTES_BY_STATUS_ALL = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) " +
+    "ORDER BY (CASE WHEN EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) THEN 'ASSIGNED'" +
+    "ELSE 'UNASSIGNED' END) %s LIMIT ? OFFSET ?";
+
+  private static final Map<Status, String> SELECT_QUERIES_MAP = new HashMap<>();
+
+  static {
+    SELECT_QUERIES_MAP.put(Status.ASSIGNED, SELECT_NOTES_BY_STATUS_ASSIGNED);
+    SELECT_QUERIES_MAP.put(Status.UNASSIGNED, SELECT_NOTES_BY_STATUS_UNASSIGNED);
+    SELECT_QUERIES_MAP.put(Status.ALL, SELECT_NOTES_BY_STATUS_ALL);
+  }
 
   @Override
   public void putNoteLinksTypeIdByTypeAndId(String type, String id,
@@ -91,6 +118,83 @@ public class NoteLinksImpl implements NoteLinks {
         asyncResultHandler.handle(succeededFuture(PutNoteLinksTypeIdByTypeAndIdResponse.respond500WithTextPlain(e.getMessage())));
         return null;
       });
+  }
+
+  @Validate
+  @Override
+  public void getNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id, String status, String order,
+                                                           int offset, int limit, Map<String, String> okapiHeaders,
+                                                           Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
+
+    PostgresClient postgresClient = PostgresClient.getInstance(vertxContext.owner(), tenantId);
+    String statusInUpper = status.toUpperCase();
+    Link link = new Link()
+      .withId(id)
+      .withType(type);
+    try {
+      validateParameters(statusInUpper, order);
+    } catch (IllegalArgumentException e) {
+      asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
+        .respond400WithTextPlain(e.getMessage())));
+    }
+    getNoteCollection(postgresClient, Status.valueOf(statusInUpper), tenantId, order, domain, link, limit, offset)
+      .map(notes -> {
+        asyncResultHandler.handle(
+          succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse.respond200WithApplicationJson(notes)));
+        return null;
+      })
+      .otherwise(e -> {
+        ValidationHelper.handleError(e, asyncResultHandler);
+        return null;
+      });
+  }
+
+  private Future<NoteCollection> getNoteCollection(PostgresClient postgresClient, Status status, String tenantId,
+                                                   String order, String domain, Link link, int limit, int offset) {
+    Future<ResultSet> future = Future.future();
+    String query = String.format(SELECT_QUERIES_MAP.get(status), getTableName(tenantId), order);
+    JsonArray parameters = createSelectParameters(domain, link, limit, offset);
+
+    postgresClient.select(query, parameters, future.completer());
+
+    return future.map(this::mapResultToNoteCollection);
+  }
+
+  private NoteCollection mapResultToNoteCollection(ResultSet results) {
+    List<Note> notes = new ArrayList<>();
+    ObjectMapper objectMapper = new ObjectMapper();
+    NoteCollection noteCollection = new NoteCollection();
+    results.getRows().forEach(object -> {
+      try {
+        notes.add(objectMapper.readValue(object.getString("jsonb"), Note.class));
+      } catch (IOException e) {
+        throw new IllegalStateException(e);
+      }
+      noteCollection.setNotes(notes);
+      noteCollection.setTotalRecords(results.getNumRows());
+    });
+    return noteCollection;
+  }
+
+  private JsonArray createSelectParameters(String domain, Link link, int limit, int offset) {
+    String jsonLink = Json.encode(link);
+    JsonArray parameters = new JsonArray();
+    parameters
+      .add(domain)
+      .add(jsonLink)
+      .add(limit)
+      .add(offset);
+    return parameters;
+  }
+
+  private void validateParameters(String status, String order) throws IllegalArgumentException {
+    if (!Status.contains(status)) {
+      throw new IllegalArgumentException("Status is incorrect. Possible values: \"ASSIGNED\",\"UNASSIGNED\",\"ALL\"");
+    }
+    if (!Order.contains(order.toUpperCase())) {
+      throw new IllegalArgumentException("Order is incorrect. Possible values: \"asc\",\"desc\"");
+    }
   }
 
   private void handleSuccess(Handler<AsyncResult<Response>> asyncResultHandler) {

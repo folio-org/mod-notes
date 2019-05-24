@@ -10,10 +10,15 @@ documentation:
 types:
   noteLinksPut: !include types/link/noteLinksPut.json
   errors: !include raml-util/schemas/errors.schema
+  noteCollection: !include types/notes/noteCollection.json
+  note: !include types/notes/note.json
 
 traits:
   validate: !include raml-util/traits/validation.raml
   language: !include raml-util/traits/language.raml
+  pageable: !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  orderable: !include raml-util/traits/orderable.raml
 
 /note-links:
   /type/{type}/id/{id}/:
@@ -46,3 +51,50 @@ traits:
             body:
               text/plain:
                 example: "internal server error, contact administrator"
+  /domain/{domain}/type/{type}/id/{id}/:
+    get:
+        is: [
+        validate,
+        pageable
+        ]
+        description: Return a list of notes by status
+        queryParameters:
+          status:
+            displayName: Selection status
+            type: string
+            description: Filtering records by status. Possible values are ASSIGNED, UNASSIGNED, ALL, assigned, unassigned, all.
+            example: ASSIGNED
+            required: false
+            default: ALL
+          order:
+            displayName: Selection status
+            type: string
+            description: Orderable value indicates order of records. Possible values asc, desc, DESC, ASC.
+            example: asc
+            required: false
+            default: asc
+        responses:
+           200:
+             description: "Return a list of notes"
+             body:
+               application/json:
+                 type: noteCollection
+                 example:
+                  strict: false
+                  value: !include examples/noteCollection.sample
+           400:
+             description: "Bad request, e.g. malformed request body. Details of the error (e.g. name of the parameter or line/character number with malformed data) provided in the response."
+             body:
+               text/plain:
+                 example: |
+                   "unable to get list -- malformed JSON at 13:4"
+           401:
+             description: "Not authorized to perform requested action"
+             body:
+               text/plain:
+                  example: "unable to list -- unauthorized"
+           500:
+             description: "Internal server error"
+             body:
+                text/plain:
+                 example: "internal server error, contact administrator"

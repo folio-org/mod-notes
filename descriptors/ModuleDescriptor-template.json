@@ -70,6 +70,11 @@
           "methods": ["PUT"],
           "pathPattern": "/note-links/type/{type}/id/{id}",
           "permissionsRequired": ["note.links.collection.put"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/note-links/domain/{domain}/type/{type}/id/{id}",
+          "permissionsRequired": ["notes.collection.get.by.status"]
         }
       ]
     },
@@ -170,6 +175,11 @@
       "description": "Update note links"
     },
     {
+      "permissionName": "notes.collection.get.by.status",
+      "displayName": "Notes - get notes collection sorted by status",
+      "description": "Get notes collection by status and domain"
+    },
+    {
       "permissionName": "notes.allops",
       "displayName": "Notes module - all CRUD permissions",
       "description": "Entire set of permissions needed to use the notes modules, but no domain permissions",
@@ -179,7 +189,8 @@
         "notes.item.post",
         "notes.item.put",
         "notes.item.delete",
-        "note.links.collection.put"
+        "note.links.collection.put",
+        "notes.collection.get.by.status"
       ],
       "visible": false
     },
