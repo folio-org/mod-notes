@@ -1,8 +1,8 @@
 package org.folio.type;
 
-import static org.folio.util.DbUtils.ALL_FIELDS;
-import static org.folio.util.DbUtils.createParams;
-import static org.folio.util.DbUtils.getCQLWrapper;
+import static org.folio.db.DbUtils.ALL_FIELDS;
+import static org.folio.db.DbUtils.createParams;
+import static org.folio.db.DbUtils.getCQLWrapper;
 
 import java.util.ArrayList;
 import java.util.List;

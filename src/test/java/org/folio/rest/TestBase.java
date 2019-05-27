@@ -35,14 +35,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.impl.DBTestUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.test.junit.TestStartLoggingRule;
 
 /**
  * Base test class for tests that use wiremock and vertx http servers,
@@ -67,15 +66,7 @@ public class TestBase {
   protected static Vertx vertx;
 
   @Rule
-  public TestRule watcher = new TestWatcher() {
-
-    @Override
-    protected void starting(Description description) {
-      logger.info("********** Running test method: {}.{} ********** ", description.getClassName(),
-        description.getMethodName());
-    }
-
-  };
+  public TestRule watcher = TestStartLoggingRule.instance();
 
   @Rule
   public WireMockRule userMockServer = new WireMockRule(

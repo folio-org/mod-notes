@@ -16,6 +16,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static org.folio.test.util.TestUtil.readFile;
 import static org.folio.util.NoteTestData.DOMAIN;
 import static org.folio.util.NoteTestData.NOTE_1;
 import static org.folio.util.NoteTestData.NOTE_2;
@@ -35,7 +36,6 @@ import static org.folio.util.NoteTestData.UPDATE_NOTE_REQUEST;
 import static org.folio.util.NoteTestData.UPDATE_NOTE_REQUEST_WITH_LINKS;
 import static org.folio.util.NoteTestData.USER19;
 import static org.folio.util.NoteTestData.USER8;
-import static org.folio.util.TestUtil.readFile;
 
 import java.util.Objects;
 

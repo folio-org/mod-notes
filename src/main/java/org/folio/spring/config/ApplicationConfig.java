@@ -1,9 +1,9 @@
 package org.folio.spring.config;
 
-import static org.folio.rest.exc.ExceptionHandlers.badRequestHandler;
-import static org.folio.rest.exc.ExceptionHandlers.generalHandler;
-import static org.folio.rest.exc.ExceptionHandlers.logged;
-import static org.folio.rest.exc.ExceptionHandlers.notFoundHandler;
+import static org.folio.rest.exc.RestExceptionHandlers.badRequestHandler;
+import static org.folio.rest.exc.RestExceptionHandlers.generalHandler;
+import static org.folio.rest.exc.RestExceptionHandlers.logged;
+import static org.folio.rest.exc.RestExceptionHandlers.notFoundHandler;
 
 import javax.ws.rs.core.Response;
 
@@ -15,9 +15,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 
+import org.folio.common.pf.PartialFunction;
 import org.folio.config.ModConfiguration;
 import org.folio.rest.tools.messages.Messages;
-import org.folio.util.pf.PartialFunction;
 
 @Configuration
 @ComponentScan(basePackages = {"org.folio.type"})

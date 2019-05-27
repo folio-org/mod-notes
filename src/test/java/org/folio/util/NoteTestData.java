@@ -1,5 +1,7 @@
 package org.folio.util;
 
+import static org.folio.test.util.TestUtil.readFile;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 
@@ -41,19 +43,19 @@ public class NoteTestData {
 
   static {
     try {
-      NOTE_1 = TestUtil.readFile("note/note1.json");
-      NOTE_2 = TestUtil.readFile("note/note2.json");
-      UPDATE_NOTE_REQUEST = TestUtil.readFile("note/updateNoteRequest.json");
-      UPDATE_NOTE_REQUEST_WITH_LINKS = TestUtil.readFile("note/updateNoteRequestWithLinks.json");
-      NOTE_3 = TestUtil.readFile("note/note3.json");
-      NOTE_4 = TestUtil.readFile("note/note4.json");
-      UPDATE_NOTE_4_REQUEST = TestUtil.readFile("note/updateNote4Request.json");
-      UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID = TestUtil.readFile("note/updateNote5RequestWithNonExistingTypeId.json");
-      NOTE_5_LONG_TITLE = TestUtil.readFile("note/note5LongTitle.json");
-      NOTE_5_LONG_CONTENT = TestUtil.readFile("note/note6LongContent.json");
-      NOTE_TYPE = TestUtil.readFile("notetype/noteType.json");
-      NOTE_TYPE2 = TestUtil.readFile("notetype/noteType2.json");
-      UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS = TestUtil.readFile("note/updateNoteRequestWithNoId.json");
+      NOTE_1 = readFile("note/note1.json");
+      NOTE_2 = readFile("note/note2.json");
+      UPDATE_NOTE_REQUEST = readFile("note/updateNoteRequest.json");
+      UPDATE_NOTE_REQUEST_WITH_LINKS = readFile("note/updateNoteRequestWithLinks.json");
+      NOTE_3 = readFile("note/note3.json");
+      NOTE_4 = readFile("note/note4.json");
+      UPDATE_NOTE_4_REQUEST = readFile("note/updateNote4Request.json");
+      UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID = readFile("note/updateNote5RequestWithNonExistingTypeId.json");
+      NOTE_5_LONG_TITLE = readFile("note/note5LongTitle.json");
+      NOTE_5_LONG_CONTENT = readFile("note/note6LongContent.json");
+      NOTE_TYPE = readFile("notetype/noteType.json");
+      NOTE_TYPE2 = readFile("notetype/noteType2.json");
+      UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS = readFile("note/updateNoteRequestWithNoId.json");
     } catch (IOException | URISyntaxException e) {
       logger.error("Can't read test files", e);
       throw new IllegalStateException(e);

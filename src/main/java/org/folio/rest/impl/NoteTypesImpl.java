@@ -16,14 +16,14 @@ import io.vertx.core.Vertx;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+import org.folio.common.OkapiParams;
+import org.folio.common.pf.PartialFunction;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.jaxrs.resource.NoteTypes;
 import org.folio.spring.SpringContextUtil;
 import org.folio.type.NoteTypeService;
-import org.folio.util.OkapiParams;
-import org.folio.util.pf.PartialFunction;
 
 public class NoteTypesImpl implements NoteTypes {
 

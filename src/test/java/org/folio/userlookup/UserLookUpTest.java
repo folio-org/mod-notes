@@ -23,11 +23,13 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.TestBase;
-import org.folio.util.TestUtil;
+import org.folio.test.junit.TestStartLoggingRule;
+import org.folio.test.util.TestUtil;
 
 @RunWith(VertxUnitRunner.class)
 public class UserLookUpTest {
@@ -36,6 +38,9 @@ public class UserLookUpTest {
   private static Map<String, String> okapiHeaders = new HashMap<>();
   private final String GET_USER_ENDPOINT = "/users/";
   private static final String USER_INFO_STUB_FILE = "responses/userlookup/mock_user_response_200.json";
+
+  @Rule
+  public TestRule watcher = TestStartLoggingRule.instance();
 
   @Rule
   public WireMockRule userMockServer = new WireMockRule(

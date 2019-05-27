@@ -18,13 +18,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import org.folio.common.OkapiParams;
 import org.folio.config.Configuration;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.persist.PgExceptionUtil;
+import org.folio.service.exc.ServiceExceptions;
 import org.folio.userlookup.UserLookUp;
-import org.folio.util.OkapiParams;
-import org.folio.util.exc.Exceptions;
 
 @Component
 public class NoteTypeServiceImpl implements NoteTypeService {
@@ -48,7 +48,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   @Override
   public Future<NoteType> findById(String id, String tenantId) {
     return repository.findById(id, tenantId)
-            .map(noteType -> noteType.orElseThrow(() -> Exceptions.notFound(NoteType.class, id)));
+            .map(noteType -> noteType.orElseThrow(() -> ServiceExceptions.notFound(NoteType.class, id)));
   }
 
   @Override
@@ -79,7 +79,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
         long count = compositeFuture.resultAt(1);
 
         return (count >= limit)
-          ? Future.failedFuture(new BadRequestException("Maximum number of note types allowed is " + limit))
+          ? failedFuture(new BadRequestException("Maximum number of note types allowed is " + limit))
           : Future.succeededFuture();
       });
   }
@@ -159,7 +159,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   }
 
   private Future<Void> failIfNotFound(boolean found, String entityId) {
-    return found ? succeededFuture() : failedFuture(Exceptions.notFound(NoteType.class, entityId));
+    return found ? succeededFuture() : failedFuture(ServiceExceptions.notFound(NoteType.class, entityId));
   }
 
 }
