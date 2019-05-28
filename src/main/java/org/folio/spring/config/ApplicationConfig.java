@@ -1,6 +1,7 @@
 package org.folio.spring.config;
 
 import static org.folio.rest.exc.RestExceptionHandlers.badRequestHandler;
+import static org.folio.rest.exc.RestExceptionHandlers.completionCause;
 import static org.folio.rest.exc.RestExceptionHandlers.generalHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.logged;
 import static org.folio.rest.exc.RestExceptionHandlers.notFoundHandler;
@@ -39,7 +40,8 @@ public class ApplicationConfig {
   public PartialFunction<Throwable, Response> defaultExcHandler() {
     return logged(badRequestHandler()
                 .orElse(notFoundHandler())
-                .orElse(generalHandler()));
+                .orElse(generalHandler())
+                .compose(completionCause())); // extract the cause before applying any handler
   }
 
   @Bean
