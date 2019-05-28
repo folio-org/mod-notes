@@ -64,18 +64,10 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <dependency>
-        <groupId>org.folio</groupId>
-        <artifactId>folio-service-tools</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
-
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>domain-models-runtime</artifactId>
@@ -107,7 +99,7 @@
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>folio-service-tools-dev</artifactId>
-      <version>1.0.1-SNAPSHOT</version>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>uk.com.robust-it</groupId>
@@ -177,7 +169,7 @@
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>folio-service-tools-test</artifactId>
-      <version>1.0.1-SNAPSHOT</version>
+      <version>1.0.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
