@@ -21,6 +21,7 @@
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <jsonschema_paths>types/**,raml-util/schemas</jsonschema_paths>
     <vertx-version>3.5.4</vertx-version>
+    <folio-service-tools.version>1.0.0</folio-service-tools.version>
   </properties>
 
   <repositories>
@@ -99,7 +100,7 @@
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>folio-service-tools-dev</artifactId>
-      <version>1.0.0</version>
+      <version>${folio-service-tools.version}</version>
     </dependency>
     <dependency>
       <groupId>uk.com.robust-it</groupId>
@@ -169,7 +170,7 @@
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>folio-service-tools-test</artifactId>
-      <version>1.0.0</version>
+      <version>${folio-service-tools.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
