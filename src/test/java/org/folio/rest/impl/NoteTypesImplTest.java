@@ -16,13 +16,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import static org.folio.test.util.TestUtil.mockGet;
+import static org.folio.test.util.TestUtil.readFile;
+import static org.folio.test.util.TestUtil.toJson;
 import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.NOTE_4;
 import static org.folio.util.NoteTestData.USER8;
 import static org.folio.util.NoteTestData.USER9;
-import static org.folio.util.TestUtil.mockGet;
-import static org.folio.util.TestUtil.readFile;
-import static org.folio.util.TestUtil.toJson;
 
 import java.io.IOException;
 import java.net.URISyntaxException;

@@ -4,9 +4,9 @@ import java.util.List;
 
 import io.vertx.core.Future;
 
+import org.folio.common.OkapiParams;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
-import org.folio.util.OkapiParams;
 
 public interface NoteTypeService {
 
