@@ -213,11 +213,11 @@ public class NoteLinksImplTest extends TestBase {
     createNote();
     createNote();
 
-    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1")
-      .as(NoteCollection.class)
-      .getNotes();
+    NoteCollection notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1")
+      .as(NoteCollection.class);
 
-    assertEquals(1, notes.size());
+    assertEquals(1, notes.getNotes().size());
+    assertEquals(2, (int)notes.getTotalRecords());
   }
 
   @Test
@@ -273,6 +273,62 @@ public class NoteLinksImplTest extends TestBase {
   }
 
   @Test
+  public void shouldReturnListOfNotesSortedByTitleAsc() {
+    Note firstNote = getNote().withTitle("ABC");
+    Note secondNote = getNote().withTitle("ZZZ");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?order=asc&orderBy=title")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(secondNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSortedByTitleDesc() {
+    Note firstNote = getNote().withTitle("ABC");
+    Note secondNote = getNote().withTitle("ZZZ");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?order=desc&orderBy=title")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSearchedByTitle() {
+    Note firstNote = getNote().withTitle("Title ABC");
+    Note secondNote = getNote().withTitle("Title ZZZ ABC");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?title=ZZZ")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(1, notes.size());
+    assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
   public void shouldReturnListOfNotesWithUnassignedStatus() {
     Note firsNoteWithAssignedLink = createNote();
     createNote();
@@ -324,7 +380,7 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(firsNoteWithAssignedLink.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?order=desc")
+      + "?order=desc&orderBy=status")
       .as(NoteCollection.class)
       .getNotes();
 
@@ -345,7 +401,7 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(firsNoteWithAssignedLink.getId());
 
     List<Note> notes = getWithOk(
-      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID + "?order=ASC")
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID + "?order=ASC&orderBy=status")
       .as(NoteCollection.class)
       .getNotes();
 
@@ -366,7 +422,7 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(firsNoteWithAssignedLink.getId());
 
     final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
-      + "/id/" + PACKAGE_ID + "?order=wrong", 400)
+      + "/id/" + PACKAGE_ID + "?order=wrong&orderBy=status", 400)
       .asString();
 
     assertThat(response, containsString("Order is incorrect"));
