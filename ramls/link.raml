@@ -59,17 +59,31 @@ traits:
         ]
         description: Return a list of notes by status
         queryParameters:
+          title:
+            displayName: Note title
+            type: string
+            description: Search string for note title. Note is returned only if it contains
+              specified word or sequence of words anywhere in the title. Search is case-insensitive.
+            example: important
+            required: false
           status:
             displayName: Selection status
             type: string
-            description: Filtering records by status. Possible values are ASSIGNED, UNASSIGNED, ALL, assigned, unassigned, all.
+            description: Filtering records by status. Possible values are ASSIGNED, UNASSIGNED, ALL.
             example: ASSIGNED
             required: false
             default: ALL
-          order:
-            displayName: Selection status
+          orderBy:
+            displayName: Field to order by
             type: string
-            description: Orderable value indicates order of records. Possible values asc, desc, DESC, ASC.
+            description: Field by which notes are ordered. Possible values are status, title
+            example: status
+            required: false
+            default: status
+          order:
+            displayName: Order of notes
+            type: string
+            description: indicates order of notes. Possible values asc, desc.
             example: asc
             required: false
             default: asc

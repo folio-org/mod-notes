@@ -1,15 +1,16 @@
 package org.folio.rest.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.SQLConnection;
-import io.vertx.ext.sql.UpdateResult;
+import static io.vertx.core.Future.succeededFuture;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.ws.rs.core.Response;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.folio.rest.RestVerticle;
@@ -21,21 +22,23 @@ import org.folio.rest.jaxrs.model.NoteLinkPut;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
 import org.folio.rest.jaxrs.resource.NoteLinks;
 import org.folio.rest.model.Order;
+import org.folio.rest.model.OrderBy;
 import org.folio.rest.model.Status;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 
-import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static io.vertx.core.Future.succeededFuture;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.ext.sql.ResultSet;
+import io.vertx.ext.sql.SQLConnection;
+import io.vertx.ext.sql.UpdateResult;
 
 public class NoteLinksImpl implements NoteLinks {
 
@@ -65,23 +68,29 @@ public class NoteLinksImpl implements NoteLinks {
     "WHERE id IN (%s) AND " +
     "jsonb->'links' = '[]'::jsonb";
 
-  private static final String SELECT_NOTES_BY_STATUS_ASSIGNED = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) AND " +
-    "EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) LIMIT ? OFFSET ?";
+  private static final String HAS_LINK_CONDITION = "EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) ";
 
-  private static final String SELECT_NOTES_BY_STATUS_UNASSIGNED = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) AND " +
-    "NOT EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) LIMIT ? OFFSET ?";
+  private static final String ORDER_BY_STATUS_CLAUSE = "ORDER BY " +
+    "(" +
+    "CASE WHEN " + HAS_LINK_CONDITION +
+    "THEN 'ASSIGNED'" +
+    "ELSE 'UNASSIGNED' END" +
+    ") %s ";
 
-  private static final String SELECT_NOTES_BY_STATUS_ALL = "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) " +
-    "ORDER BY (CASE WHEN EXISTS (SELECT FROM jsonb_array_elements(jsonb->'links') link WHERE link = ?) THEN 'ASSIGNED'" +
-    "ELSE 'UNASSIGNED' END) %s LIMIT ? OFFSET ?";
+  private static final String ORDER_BY_TITLE_CLAUSE = "ORDER BY jsonb->>'title' %s ";
 
-  private static final Map<Status, String> SELECT_QUERIES_MAP = new HashMap<>();
+  private static final String LIMIT_OFFSET = "LIMIT ? OFFSET ? ";
 
-  static {
-    SELECT_QUERIES_MAP.put(Status.ASSIGNED, SELECT_NOTES_BY_STATUS_ASSIGNED);
-    SELECT_QUERIES_MAP.put(Status.UNASSIGNED, SELECT_NOTES_BY_STATUS_UNASSIGNED);
-    SELECT_QUERIES_MAP.put(Status.ALL, SELECT_NOTES_BY_STATUS_ALL);
-  }
+  private static final String SELECT_NOTES_BY_DOMAIN_AND_TITLE =
+    "SELECT id, jsonb FROM %s WHERE (jsonb->>'domain' = ?) AND " +
+      "(f_unaccent(jsonb->>'title') ~* f_unaccent(?)) ";
+
+  private static final String COUNT_NOTES_BY_DOMAIN_AND_TITLE =
+    "SELECT COUNT(id) as count FROM %s WHERE (jsonb->>'domain' = ?) AND " +
+      "(f_unaccent(jsonb->>'title') ~* f_unaccent(?)) ";
+
+  private static final String ANY_STRING_PATTERN = ".*";
+  private static final String WORD_PATTERN = "\\m%s\\M";
 
   @Override
   public void putNoteLinksTypeIdByTypeAndId(String type, String id,
@@ -122,24 +131,35 @@ public class NoteLinksImpl implements NoteLinks {
 
   @Validate
   @Override
-  public void getNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id, String status, String order,
+  public void getNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id, String title, String status,
+                                                           String orderBy, String order,
                                                            int offset, int limit, Map<String, String> okapiHeaders,
                                                            Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
 
     PostgresClient postgresClient = PostgresClient.getInstance(vertxContext.owner(), tenantId);
-    String statusInUpper = status.toUpperCase();
     Link link = new Link()
       .withId(id)
       .withType(type);
     try {
-      validateParameters(statusInUpper, order);
+      validateParameters(status, order, orderBy);
     } catch (IllegalArgumentException e) {
       asyncResultHandler.handle(succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse
         .respond400WithTextPlain(e.getMessage())));
     }
-    getNoteCollection(postgresClient, Status.valueOf(statusInUpper), tenantId, order, domain, link, limit, offset)
+
+    Status parsedStatus = Status.valueOf(status.toUpperCase());
+    Order parsedOrder = Order.valueOf(order.toUpperCase());
+    OrderBy parsedOrderBy = OrderBy.valueOf(orderBy.toUpperCase());
+
+    MutableObject<Integer> mutableTotalRecords = new MutableObject<>();
+    getNoteCount(postgresClient, parsedStatus, domain, title, link, tenantId)
+      .compose(count -> {
+        mutableTotalRecords.setValue(count);
+        return getNoteCollection(postgresClient, parsedStatus, tenantId, parsedOrder, parsedOrderBy, domain, title, link, limit, offset);
+      })
       .map(notes -> {
+        notes.setTotalRecords(mutableTotalRecords.getValue());
         asyncResultHandler.handle(
           succeededFuture(GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse.respond200WithApplicationJson(notes)));
         return null;
@@ -151,14 +171,76 @@ public class NoteLinksImpl implements NoteLinks {
   }
 
   private Future<NoteCollection> getNoteCollection(PostgresClient postgresClient, Status status, String tenantId,
-                                                   String order, String domain, Link link, int limit, int offset) {
+                                                   Order order, OrderBy orderBy, String domain, String title, Link link, int limit, int offset) {
+    String jsonLink = Json.encode(link);
+    JsonArray parameters = new JsonArray();
+    StringBuilder queryBuilder = new StringBuilder();
+    addSelectClause(parameters, queryBuilder, tenantId, domain, title);
+    addWhereClause(parameters, queryBuilder, status, jsonLink);
+    if(status == Status.ALL){
+      addOrderByClause(parameters, queryBuilder, order, orderBy, jsonLink);
+    }
+    addLimitOffset(parameters, queryBuilder, limit, offset);
+
     Future<ResultSet> future = Future.future();
-    String query = String.format(SELECT_QUERIES_MAP.get(status), getTableName(tenantId), order);
-    JsonArray parameters = createSelectParameters(domain, link, limit, offset);
-
-    postgresClient.select(query, parameters, future.completer());
-
+    postgresClient.select(queryBuilder.toString(), parameters, future.completer());
     return future.map(this::mapResultToNoteCollection);
+  }
+
+  private Future<Integer> getNoteCount(PostgresClient postgresClient, Status status,String domain, String title, Link link, String tenantId) {
+    String jsonLink = Json.encode(link);
+    JsonArray parameters = new JsonArray();
+    StringBuilder queryBuilder = new StringBuilder();
+    addSelectCountClause(parameters, queryBuilder, tenantId, domain, title);
+    addWhereClause(parameters, queryBuilder, status, jsonLink);
+
+    Future<ResultSet> future = Future.future();
+    postgresClient.select(queryBuilder.toString(), parameters, future.completer());
+    return future.map(this::mapCount);
+  }
+
+  private void addLimitOffset(JsonArray parameters, StringBuilder query, int limit, int offset) {
+    query.append(LIMIT_OFFSET);
+    parameters
+      .add(limit)
+      .add(offset);
+  }
+
+  private void addSelectClause(JsonArray parameters, StringBuilder query, String tenantId, String domain, String title) {
+    query.append(String.format(SELECT_NOTES_BY_DOMAIN_AND_TITLE, getTableName(tenantId)));
+    parameters
+      .add(domain)
+      .add(getTitleRegexp(title));
+  }
+
+  private void addSelectCountClause(JsonArray parameters, StringBuilder query, String tenantId, String domain, String title) {
+    query.append(String.format(COUNT_NOTES_BY_DOMAIN_AND_TITLE, getTableName(tenantId)));
+    parameters
+      .add(domain)
+      .add(getTitleRegexp(title));
+  }
+
+  private void addOrderByClause(JsonArray parameters, StringBuilder query, Order order, OrderBy orderBy, String jsonLink) {
+    if(orderBy == OrderBy.STATUS) {
+      query.append(String.format(ORDER_BY_STATUS_CLAUSE, order.toString()));
+      parameters.add(jsonLink);
+    }
+    else{
+      query.append(String.format(ORDER_BY_TITLE_CLAUSE, order.toString()));
+    }
+  }
+
+  private void addWhereClause(JsonArray parameters, StringBuilder query, Status status, String jsonLink) {
+    switch (status) {
+      case ASSIGNED:
+        query.append("AND " + HAS_LINK_CONDITION);
+        parameters.add(jsonLink);
+        break;
+      case UNASSIGNED:
+        query.append("AND NOT " + HAS_LINK_CONDITION);
+        parameters.add(jsonLink);
+        break;
+    }
   }
 
   private NoteCollection mapResultToNoteCollection(ResultSet results) {
@@ -172,28 +254,32 @@ public class NoteLinksImpl implements NoteLinks {
         throw new IllegalStateException(e);
       }
       noteCollection.setNotes(notes);
-      noteCollection.setTotalRecords(results.getNumRows());
     });
     return noteCollection;
   }
 
-  private JsonArray createSelectParameters(String domain, Link link, int limit, int offset) {
-    String jsonLink = Json.encode(link);
-    JsonArray parameters = new JsonArray();
-    parameters
-      .add(domain)
-      .add(jsonLink)
-      .add(limit)
-      .add(offset);
-    return parameters;
+  private Integer mapCount(ResultSet resultSet) {
+    return resultSet.getRows().get(0).getInteger("count");
   }
 
-  private void validateParameters(String status, String order) throws IllegalArgumentException {
-    if (!Status.contains(status)) {
+  private String getTitleRegexp(String title) {
+    if(StringUtils.isEmpty(title)){
+      return ANY_STRING_PATTERN;
+    }
+    else{
+      return String.format(WORD_PATTERN, title);
+    }
+  }
+
+  private void validateParameters(String status, String order, String orderBy) throws IllegalArgumentException {
+    if (!Status.contains(status.toUpperCase())) {
       throw new IllegalArgumentException("Status is incorrect. Possible values: \"ASSIGNED\",\"UNASSIGNED\",\"ALL\"");
     }
     if (!Order.contains(order.toUpperCase())) {
       throw new IllegalArgumentException("Order is incorrect. Possible values: \"asc\",\"desc\"");
+    }
+    if (!OrderBy.contains(orderBy.toUpperCase())) {
+      throw new IllegalArgumentException("OrderBy is incorrect. Possible values: \"status\",\"title\"");
     }
   }
 
