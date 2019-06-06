@@ -99,33 +99,40 @@ public class NotesResourceImpl implements Notes {
   @Validate
   public void postNotes(String lang, Note note, Map<String, String> okapiHeaders,
                         Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
-    UserLookUp.getUserInfo(okapiHeaders)
-      .compose(userInfo -> {
-        final List<Link> links = note.getLinks();
-        if (Objects.isNull(links) || links.isEmpty()) {
-          throw new InputValidationException("links", "links", "At least one link should be present");
-        }
-        return setNoteCreator(note, Future.succeededFuture(userInfo));
-      })
-      .compose(voidObject -> {
-        saveNote(note, okapiHeaders, context, asyncResultHandler);
-        return null;
-      }).otherwise(exception -> {
-      if (exception instanceof InputValidationException) {
-        InputValidationException validationException = (InputValidationException) exception;
-        asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond422WithApplicationJson(
-          ValidationHelper.createValidationErrorMessage(
-            validationException.getField(), validationException.getValue(), validationException.getMessage())
+    Future<UserLookUp> future = UserLookUp.getUserInfo(okapiHeaders);
+    addNote(note, okapiHeaders, asyncResultHandler, context, future)
+      .otherwise(exception -> {
+        if (exception instanceof InputValidationException) {
+          InputValidationException validationException = (InputValidationException) exception;
+          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond422WithApplicationJson(
+            ValidationHelper.createValidationErrorMessage(
+              validationException.getField(), validationException.getValue(), validationException.getMessage())
           )));
-      } else if (exception instanceof NotFoundException || exception instanceof NotAuthorizedException ||
-        exception instanceof IllegalArgumentException || exception instanceof IllegalStateException ||
-        exception instanceof BadRequestException) {
-        asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exception.getMessage())));
-      } else {
-        asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond500WithTextPlain(exception.getMessage())));
-      }
+        } else if (exception instanceof NotFoundException || exception instanceof NotAuthorizedException ||
+          exception instanceof IllegalArgumentException || exception instanceof IllegalStateException ||
+          exception instanceof BadRequestException) {
+          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exception.getMessage())));
+        } else {
+          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond500WithTextPlain(exception.getMessage())));
+        }
+        return null;
+      });
+  }
+
+  private Future<Object> addNote(Note note, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context context, Future<UserLookUp> future) {
+    return future.compose(userInfo -> setNoteCreator(note, userInfo))
+    .compose(voidObject -> {
+      saveNote(note, okapiHeaders, context, asyncResultHandler);
       return null;
     });
+  }
+
+  private Future<Void> setNoteCreator(Note note, UserLookUp userInfo) {
+    final List<Link> links = note.getLinks();
+    if (Objects.isNull(links) || links.isEmpty()) {
+      throw new InputValidationException("links", "links", "At least one link should be present");
+    }
+    return setNoteCreator(note, Future.succeededFuture(userInfo));
   }
 
   /**
