@@ -16,6 +16,7 @@ import org.folio.db.model.NoteView;
 import org.folio.note.NoteService;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
+import org.folio.rest.exceptions.InputValidationException;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
@@ -98,30 +99,33 @@ public class NotesResourceImpl implements Notes {
   @Validate
   public void postNotes(String lang, Note note, Map<String, String> okapiHeaders,
                         Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
-
-    final List<Link> links = note.getLinks();
-    if (Objects.isNull(links) || links.isEmpty()) {
-      Errors validationErrorMessage = ValidationHelper.createValidationErrorMessage(
-        "links", "links", "At least one link should be present");
-      asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond422WithApplicationJson(validationErrorMessage)));
-      return;
-    }
-
-    Future.succeededFuture()
-      .compose(o -> setNoteCreator(note, okapiHeaders))
+    UserLookUp.getUserInfo(okapiHeaders)
+      .compose(userInfo -> {
+        final List<Link> links = note.getLinks();
+        if (Objects.isNull(links) || links.isEmpty()) {
+          throw new InputValidationException("links", "links", "At least one link should be present");
+        }
+        return setNoteCreator(note, Future.succeededFuture(userInfo));
+      })
       .compose(voidObject -> {
         saveNote(note, okapiHeaders, context, asyncResultHandler);
         return null;
       }).otherwise(exception -> {
-        if (exception instanceof NotFoundException || exception instanceof NotAuthorizedException ||
-            exception instanceof IllegalArgumentException || exception instanceof IllegalStateException ||
-            exception instanceof BadRequestException) {
-          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exception.getMessage())));
-        } else {
-          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond500WithTextPlain(exception.getMessage())));
-        }
-        return null;
-      });
+      if (exception instanceof InputValidationException) {
+        InputValidationException validationException = (InputValidationException) exception;
+        asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond422WithApplicationJson(
+          ValidationHelper.createValidationErrorMessage(
+            validationException.getField(), validationException.getValue(), validationException.getMessage())
+          )));
+      } else if (exception instanceof NotFoundException || exception instanceof NotAuthorizedException ||
+        exception instanceof IllegalArgumentException || exception instanceof IllegalStateException ||
+        exception instanceof BadRequestException) {
+        asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exception.getMessage())));
+      } else {
+        asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond500WithTextPlain(exception.getMessage())));
+      }
+      return null;
+    });
   }
 
   /**
@@ -134,7 +138,6 @@ public class NotesResourceImpl implements Notes {
    */
   private Future<Void> saveNote(Note note, Map<String, String> okapiHeaders, Context context,
                                 Handler<AsyncResult<Response>> asyncResultHandler) {
-
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
 
     initId(note);
@@ -269,8 +272,8 @@ public class NotesResourceImpl implements Notes {
     });
   }
 
-  private Future<Void> setNoteCreator(Note note, Map<String, String> okapiHeaders) {
-    return UserLookUp.getUserInfo(okapiHeaders)
+  private Future<Void> setNoteCreator(Note note, Future<UserLookUp> userInfo) {
+    return userInfo
       .map(userLookUp -> {
         note.setCreator(getUserDisplayInfo(userLookUp.getFirstName(), userLookUp.getMiddleName(), userLookUp.getLastName()));
         note.getMetadata().setCreatedByUsername(userLookUp.getUserName());
