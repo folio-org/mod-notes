@@ -32,6 +32,8 @@ import org.folio.spring.SpringContextUtil;
 import org.folio.userlookup.UserLookUp;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.github.mauricio.async.db.postgresql.exceptions.GenericDatabaseException;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -100,9 +102,17 @@ public class NotesResourceImpl implements Notes {
   public void postNotes(String lang, Note note, Map<String, String> okapiHeaders,
                         Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
     Future<UserLookUp> future = UserLookUp.getUserInfo(okapiHeaders);
-    addNote(note, okapiHeaders, asyncResultHandler, context, future)
+    addNote(note, okapiHeaders, context, future)
+      .map(updatedNote -> {
+        asyncResultHandler.handle(succeededFuture(PostNotesResponse
+          .respond201WithApplicationJson(note,
+            PostNotesResponse.headersFor201().withLocation(LOCATION_PREFIX + updatedNote.getId()))));
+        return null;
+      })
       .otherwise(exception -> {
-        if (exception instanceof InputValidationException) {
+        if(exception instanceof GenericDatabaseException){
+          ValidationHelper.handleError(exception, asyncResultHandler);
+        } else if (exception instanceof InputValidationException) {
           InputValidationException validationException = (InputValidationException) exception;
           asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond422WithApplicationJson(
             ValidationHelper.createValidationErrorMessage(
@@ -119,20 +129,15 @@ public class NotesResourceImpl implements Notes {
       });
   }
 
-  private Future<Object> addNote(Note note, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context context, Future<UserLookUp> future) {
-    return future.compose(userInfo -> setNoteCreator(note, userInfo))
-    .compose(voidObject -> {
-      saveNote(note, okapiHeaders, context, asyncResultHandler);
-      return null;
-    });
-  }
-
-  private Future<Void> setNoteCreator(Note note, UserLookUp userInfo) {
-    final List<Link> links = note.getLinks();
-    if (Objects.isNull(links) || links.isEmpty()) {
-      throw new InputValidationException("links", "links", "At least one link should be present");
-    }
-    return setNoteCreator(note, Future.succeededFuture(userInfo));
+  private Future<Note> addNote(Note note, Map<String, String> okapiHeaders, Context context, Future<UserLookUp> future) {
+    return future.compose(userInfo -> {
+      final List<Link> links = note.getLinks();
+      if (Objects.isNull(links) || links.isEmpty()) {
+        throw new InputValidationException("links", "links", "At least one link should be present");
+      }
+      return setNoteCreator(note, Future.succeededFuture(userInfo));
+    })
+    .compose(voidObject -> saveNote(note, okapiHeaders, context));
   }
 
   /**
@@ -141,26 +146,19 @@ public class NotesResourceImpl implements Notes {
    * @param note - current Note  {@link Note} object to save
    * @param okapiHeaders - okapiHeaders headers with tenant id
    * @param context - the Vertx Context Object
-   * @param asyncResultHandler - an AsyncResult<Response> Handler
    */
-  private Future<Void> saveNote(Note note, Map<String, String> okapiHeaders, Context context,
-                                Handler<AsyncResult<Response>> asyncResultHandler) {
+  private Future<Note> saveNote(Note note, Map<String, String> okapiHeaders, Context context) {
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
 
     initId(note);
+    Future<String> future = Future.future();
     PostgresClient.getInstance(context.owner(), tenantId)
-      .save(NOTE_TABLE, note.getId(), note, reply -> {
-        if (reply.succeeded()) {
-          String noteId = reply.result();
-          note.setId(noteId);
-          asyncResultHandler.handle(succeededFuture(PostNotesResponse
-            .respond201WithApplicationJson(note,
-              PostNotesResponse.headersFor201().withLocation(LOCATION_PREFIX + noteId))));
-        } else {
-          ValidationHelper.handleError(reply.cause(), asyncResultHandler);
-        }
-      });
-   return null;
+      .save(NOTE_TABLE, note.getId(), note, future.completer());
+
+    return future.map(noteId -> {
+      note.setId(noteId);
+      return note;
+    });
   }
 
   /**
