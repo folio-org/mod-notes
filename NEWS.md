@@ -1,3 +1,10 @@
+## 2.5.0 2019-06-06
+ * MODNOTES-102 - Add endpoint for searching notes by assignment status
+ * MODNOTES-101 - Update to RMB 24 / remove notify dependency
+ * MODNOTES-99 - Migrate the code to folio-service-tools library
+ * MODNOTES-96 - Check note title and detail limit
+ * MODNOTES-93 - Improvements: Modify metadata triggers not to use additional columns
+ 
 ## 2.4.0 2019-05-08
  * MODNOTES-97 - Modify Module Descriptor, Dependencies and group id
  * MODNOTES-98 - Fix failing API Tests - missing validate annotation
