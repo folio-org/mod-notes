@@ -21,7 +21,9 @@ import org.folio.config.ModConfiguration;
 import org.folio.rest.tools.messages.Messages;
 
 @Configuration
-@ComponentScan(basePackages = {"org.folio.type"})
+@ComponentScan(basePackages = {
+  "org.folio.type",
+  "org.folio.note"})
 public class ApplicationConfig {
 
   @Bean

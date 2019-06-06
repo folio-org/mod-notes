@@ -6,12 +6,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
+
+import org.folio.db.model.NoteView;
+import org.folio.note.NoteService;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Link;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.UserDisplayInfo;
+import org.folio.rest.jaxrs.resource.Notes;
+import org.folio.rest.persist.PgExceptionUtil;
+import org.folio.rest.persist.PgUtil;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.messages.Messages;
+import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.tools.utils.ValidationHelper;
+import org.folio.spring.SpringContextUtil;
+import org.folio.userlookup.UserLookUp;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -22,33 +40,7 @@ import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
-import org.z3950.zing.cql.cql2pgjson.SchemaException;
 
-import org.folio.db.model.NoteView;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.Link;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.jaxrs.model.UserDisplayInfo;
-import org.folio.rest.jaxrs.resource.Notes;
-import org.folio.rest.persist.PgExceptionUtil;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
-import org.folio.rest.persist.cql.CQLWrapper;
-import org.folio.rest.persist.interfaces.Results;
-import org.folio.rest.tools.messages.Messages;
-import org.folio.rest.tools.utils.TenantTool;
-import org.folio.rest.tools.utils.ValidationHelper;
-import org.folio.userlookup.UserLookUp;
-
-
-@java.lang.SuppressWarnings({"squid:S1192"}) // This can be removed once John sets SQ up properly
 public class NotesResourceImpl implements Notes {
   private static final String NOTE_TABLE = "note_data";
   private static final String NOTE_VIEW = "note_view";
@@ -57,41 +49,27 @@ public class NotesResourceImpl implements Notes {
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
   private final Messages messages = Messages.getInstance();
 
+  @Autowired
+  private NoteService noteService;
+
   // Get this from the restVerticle, like the rest, when it gets defined there.
-
   public NotesResourceImpl(Vertx vertx, String tenantId) {
+    SpringContextUtil.autowireDependencies(this, vertx.getOrCreateContext());
     PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
-  }
-
-  private CQLWrapper getCQLForNoteView(String query, int limit, int offset) throws FieldException, SchemaException  {
-    CQL2PgJSON cql2pgJson = new CQL2PgJSON(NOTE_VIEW + ".jsonb");
-    return new CQLWrapper(cql2pgJson, query)
-      .setLimit(new Limit(limit))
-      .setOffset(new Offset(offset));
   }
 
   @Override
   @Validate
   public void getNotes(String query,
-    int offset, int limit, String lang,
-    Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler,
-    Context vertxContext) {
-
+                       int offset, int limit, String lang,
+                       Map<String, String> okapiHeaders,
+                       Handler<AsyncResult<Response>> asyncResultHandler,
+                       Context vertxContext) {
     logger.debug("Getting notes. " + offset + "+" + limit + " q=" + query);
-
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
 
-    logger.debug("Getting notes. new query:" + query);
-    CQLWrapper cql;
-    try {
-      cql = getCQLForNoteView(query, limit, offset);
-    } catch (Exception e) {
-      ValidationHelper.handleError(e, asyncResultHandler);
-      return;
-    }
-    getNotes(vertxContext, tenantId, cql)
+    noteService.getNotes(query, offset, limit, vertxContext, tenantId)
       .map(notes -> {
         asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)));
         return null;
@@ -100,29 +78,6 @@ public class NotesResourceImpl implements Notes {
         ValidationHelper.handleError(e, asyncResultHandler);
         return null;
       });
-  }
-
-  private Future<NoteCollection> getNotes(Context vertxContext, String tenantId, CQLWrapper cql) {
-    Future<Results<NoteView>> future = Future.future();
-    PostgresClient.getInstance(vertxContext.owner(), tenantId)
-      .get(NOTE_VIEW, NoteView.class, new String[]{"*"}, cql,
-        true /*get count too*/, false /* set id */,
-        future.completer());
-
-    return future
-      .map(this::mapNoteResults);
-  }
-
-  private NoteCollection mapNoteResults(Results<NoteView> results) {
-    List<Note> notes = results.getResults().stream()
-      .map(this::mapNoteView)
-      .collect(Collectors.toList());
-
-    NoteCollection noteCollection = new NoteCollection();
-    noteCollection.setNotes(notes);
-    Integer totalRecords = results.getResultInfo().getTotalRecords();
-    noteCollection.setTotalRecords(totalRecords);
-    return noteCollection;
   }
 
   private Note mapNoteView(NoteView noteView) {
