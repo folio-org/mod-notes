@@ -25,7 +25,8 @@ import com.rits.cloning.Cloner;
 @Configuration
 @ComponentScan(basePackages = {
   "org.folio.type",
-  "org.folio.note"})
+  "org.folio.note",
+  "org.folio.links"})
 public class ApplicationConfig {
 
   @Bean
