@@ -38,6 +38,7 @@ import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinkPut;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
+import org.folio.spring.SpringContextUtil;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteLinksImplTest extends TestBase {
@@ -57,6 +58,7 @@ public class NoteLinksImplTest extends TestBase {
 
   @Before
   public void setUp() throws Exception {
+    SpringContextUtil.autowireDependenciesFromFirstContext(this, vertx);
     stubFor(
       get(new UrlPathPattern(new EqualToPattern("/users/88888888-8888-4888-8888-888888888888"), false))
         .willReturn(new ResponseDefinitionBuilder()
@@ -213,11 +215,12 @@ public class NoteLinksImplTest extends TestBase {
     createNote();
     createNote();
 
-    NoteCollection notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1")
+    NoteCollection notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1")
       .as(NoteCollection.class);
 
     assertEquals(1, notes.getNotes().size());
-    assertEquals(2, (int)notes.getTotalRecords());
+    assertEquals(2, (int) notes.getTotalRecords());
   }
 
   @Test
