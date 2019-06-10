@@ -60,7 +60,7 @@ public class NotesResourceImpl implements Notes {
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
 
-    noteService.getNotes(query, offset, limit, vertxContext, tenantId)
+    noteService.getNotes(query, offset, limit, tenantId, vertxContext.owner())
       .map(notes -> {
         asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)));
         return null;
@@ -141,7 +141,7 @@ public class NotesResourceImpl implements Notes {
                               Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    noteService.deleteNote(id, asyncResultHandler, vertxContext, tenantId)
+    noteService.deleteNote(id, asyncResultHandler, tenantId, vertxContext.owner())
       .map(response -> {
         asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse.respond204()));
         return null;
