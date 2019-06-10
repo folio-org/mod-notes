@@ -141,7 +141,7 @@ public class NotesResourceImpl implements Notes {
                               Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    noteService.deleteNote(id, asyncResultHandler, tenantId, vertxContext.owner())
+    noteService.deleteNote(id, tenantId, vertxContext.owner())
       .map(response -> {
         asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse.respond204()));
         return null;

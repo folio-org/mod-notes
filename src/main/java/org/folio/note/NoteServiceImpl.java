@@ -8,7 +8,6 @@ import java.util.Objects;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
 
 import org.folio.common.OkapiParams;
 import org.folio.rest.RestVerticle;
@@ -24,10 +23,8 @@ import org.folio.userlookup.UserLookUp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.sql.UpdateResult;
 
@@ -70,7 +67,7 @@ public class NoteServiceImpl implements NoteService {
   }
 
   @Override
-  public Future<Void> deleteNote(String id, Handler<AsyncResult<Response>> asyncResultHandler, String tenantId, Vertx vertx) {
+  public Future<Void> deleteNote(String id, String tenantId, Vertx vertx) {
     return repository.deleteNote(id, tenantId, vertx);
   }
 
