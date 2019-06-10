@@ -9,19 +9,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.UpdateResult;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
-
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.z3950.zing.cql.cql2pgjson.FieldException;
+
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.ext.sql.ResultSet;
+import io.vertx.ext.sql.UpdateResult;
 
 @Component
 public class NoteTypeRepositoryImpl implements NoteTypeRepository {
@@ -30,13 +30,8 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   private static final String NOTE_TYPE_VIEW = "note_type_view";
   private static final String SELECT_TOTAL_COUNT = "SELECT count(*) FROM " + NOTE_TYPE_TABLE;
 
-  private Vertx vertx;
-
-
   @Autowired
-  public NoteTypeRepositoryImpl(Vertx vertx) {
-    this.vertx = vertx;
-  }
+  private Vertx vertx;
 
   @Override
   public Future<NoteTypeCollection> findByQuery(String query, int offset, int limit, String tenantId) {
@@ -145,7 +140,5 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
       return future;
     }
-
   }
-
 }

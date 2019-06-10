@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
 
 import org.folio.db.model.NoteView;
 import org.folio.rest.jaxrs.model.Note;
@@ -31,7 +30,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.sql.UpdateResult;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 @Component
 public class NoteRepositoryImpl implements NoteRepository {
@@ -99,7 +97,7 @@ public class NoteRepositoryImpl implements NoteRepository {
             String error = PgExceptionUtil.badRequestMessage(reply.cause());
             logger.error(error, reply.cause());
             if (error == null) {
-              future.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), reply.cause().getMessage()));
+              future.fail(reply.cause());
             } else {
               future.fail(new BadRequestException(reply.cause().getMessage()));
             }
