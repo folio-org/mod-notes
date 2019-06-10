@@ -49,7 +49,7 @@ public class NoteLinksImpl implements NoteLinks {
     }
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
     Link link = new Link().withId(id).withType(type);
-    noteLinksService.putNoteLinkTypeIdToNote(entity, link, tenantId)
+    noteLinksService.updateNoteLinks(entity, link, tenantId)
       .map(o -> {
         handleSuccess(asyncResultHandler);
         return null;

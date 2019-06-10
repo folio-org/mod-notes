@@ -23,11 +23,11 @@ public class NoteLinksServiceImpl implements NoteLinksService {
   private NoteLinksRepository noteLinksRepository;
 
   @Override
-  public Future<Void> putNoteLinkTypeIdToNote(NoteLinksPut entity, Link link, String tenantId) {
+  public Future<Void> updateNoteLinks(NoteLinksPut entity, Link link, String tenantId) {
     List<String> assignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.ASSIGNED);
     List<String> unAssignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.UNASSIGNED);
 
-    return noteLinksRepository.putNoteLinkTypeIdToNote(link, tenantId, assignNotes,
+    return noteLinksRepository.updateNoteLinks(link, tenantId, assignNotes,
       unAssignNotes);
   }
 
