@@ -21,7 +21,6 @@ import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.spring.SpringContextUtil;
-import org.folio.userlookup.UserLookUp;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.github.mauricio.async.db.postgresql.exceptions.GenericDatabaseException;
@@ -60,7 +59,7 @@ public class NotesResourceImpl implements Notes {
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
 
-    noteService.getNotes(query, offset, limit, tenantId, vertxContext.owner())
+    noteService.getNotes(query, offset, limit, tenantId)
       .map(notes -> {
         asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)));
         return null;
@@ -76,8 +75,8 @@ public class NotesResourceImpl implements Notes {
   public void postNotes(String lang, Note note, Map<String, String> okapiHeaders,
                         Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
     OkapiParams okapiParams = new OkapiParams(okapiHeaders);
-    UserLookUp.getUserInfo(okapiHeaders)
-      .compose(userLookUp -> noteService.addNote(note, userLookUp, context.owner(), okapiParams))
+
+      noteService.addNote(note, okapiParams)
       .map(updatedNote -> {
         asyncResultHandler.handle(succeededFuture(PostNotesResponse
           .respond201WithApplicationJson(note,
@@ -109,7 +108,7 @@ public class NotesResourceImpl implements Notes {
   public void getNotesById(String id, String lang, Map<String, String> okapiHeaders,
                            Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    noteService.getOneNote(id, tenantId, context.owner())
+    noteService.getOneNote(id, tenantId)
       .map(note -> {
         asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
           .respond200WithApplicationJson(note)));
@@ -141,7 +140,7 @@ public class NotesResourceImpl implements Notes {
                               Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    noteService.deleteNote(id, tenantId, vertxContext.owner())
+    noteService.deleteNote(id, tenantId)
       .map(response -> {
         asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse.respond204()));
         return null;
@@ -172,7 +171,9 @@ public class NotesResourceImpl implements Notes {
       return;
     }
 
-    noteService.updateNoteWithUser(id, note, okapiHeaders, vertxContext)
+    OkapiParams okapiParams = new OkapiParams(okapiHeaders);
+
+    noteService.updateNote(id, note, okapiParams)
       .map(o -> {
         asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond204()));
         return null;
