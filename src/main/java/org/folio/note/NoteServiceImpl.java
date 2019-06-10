@@ -14,9 +14,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import io.vertx.core.Future;
+import io.vertx.core.json.Json;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 @Component
 public class NoteServiceImpl implements NoteService {
+
+  private final Logger logger = LoggerFactory.getLogger(NoteServiceImpl.class);
 
   @Autowired
   private NoteRepository repository;
@@ -57,6 +62,16 @@ public class NoteServiceImpl implements NoteService {
 
   @Override
   public Future<Void> updateNote(String id, Note note, OkapiParams okapiParams) {
+    logger.debug("PUT note with id:{} and content: {}", id, Json.encode(note));
+    if (note.getId() == null) {
+      note.setId(id);
+      logger.debug("No Id in the note, taking the one from the link");
+      // The RMB should handle this. See RMB-94
+    }
+    if (!note.getId().equals(id)) {
+      throw new InputValidationException("id", note.getId(), "Can not change Id");
+    }
+
     return UserLookUp.getUserInfo(okapiParams.getHeadersAsMap())
       .compose(userLookUp -> {
         final UserDisplayInfo userDisplayInfo = getUserDisplayInfo(userLookUp.getFirstName(), userLookUp.getMiddleName(), userLookUp.getLastName());

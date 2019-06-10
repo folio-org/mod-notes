@@ -3,33 +3,31 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 
 import java.util.Map;
+import java.util.function.Function;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 
 import org.folio.common.OkapiParams;
+import org.folio.common.pf.PartialFunction;
+import org.folio.common.pf.PartialFunctions;
 import org.folio.note.NoteService;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
-import org.folio.rest.exceptions.InputValidationException;
-import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.resource.Notes;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantTool;
-import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.spring.SpringContextUtil;
+import org.glassfish.jersey.internal.util.Producer;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.github.mauricio.async.db.postgresql.exceptions.GenericDatabaseException;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
@@ -41,6 +39,8 @@ public class NotesResourceImpl implements Notes {
 
   @Autowired
   private NoteService noteService;
+  @Autowired @Qualifier("defaultExcHandler")
+  private PartialFunction<Throwable, Response> exceptionHandler;
 
   // Get this from the restVerticle, like the rest, when it gets defined there.
   public NotesResourceImpl(Vertx vertx, String tenantId) {
@@ -58,49 +58,20 @@ public class NotesResourceImpl implements Notes {
     logger.debug("Getting notes. " + offset + "+" + limit + " q=" + query);
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-
-    noteService.getNotes(query, offset, limit, tenantId)
-      .map(notes -> {
-        asyncResultHandler.handle(succeededFuture(GetNotesResponse.respond200WithApplicationJson(notes)));
-        return null;
-      })
-      .otherwise(e -> {
-        ValidationHelper.handleError(e, asyncResultHandler);
-        return null;
-      });
+    respond(noteService.getNotes(query, offset, limit, tenantId), GetNotesResponse::respond200WithApplicationJson, asyncResultHandler);
   }
 
   @Override
   @Validate
   public void postNotes(String lang, Note note, Map<String, String> okapiHeaders,
                         Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
-    OkapiParams okapiParams = new OkapiParams(okapiHeaders);
-
-      noteService.addNote(note, okapiParams)
-      .map(updatedNote -> {
-        asyncResultHandler.handle(succeededFuture(PostNotesResponse
-          .respond201WithApplicationJson(note,
-            PostNotesResponse.headersFor201().withLocation(LOCATION_PREFIX + updatedNote.getId()))));
-        return null;
-      })
-      .otherwise(exception -> {
-        if (exception instanceof GenericDatabaseException) {
-          ValidationHelper.handleError(exception, asyncResultHandler);
-        } else if (exception instanceof InputValidationException) {
-          InputValidationException validationException = (InputValidationException) exception;
-          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond422WithApplicationJson(
-            ValidationHelper.createValidationErrorMessage(
-              validationException.getField(), validationException.getValue(), validationException.getMessage())
-          )));
-        } else if (exception instanceof NotFoundException || exception instanceof NotAuthorizedException ||
-          exception instanceof IllegalArgumentException || exception instanceof IllegalStateException ||
-          exception instanceof BadRequestException) {
-          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond400WithTextPlain(exception.getMessage())));
-        } else {
-          asyncResultHandler.handle(succeededFuture(PostNotesResponse.respond500WithTextPlain(exception.getMessage())));
-        }
-        return null;
-      });
+    succeededFuture()
+      .compose(o -> noteService.addNote(note, new OkapiParams(okapiHeaders)))
+      .map(handleSuccessfulPost())
+      .otherwise(
+        userNotFoundHandler()
+          .orElse(exceptionHandler))
+      .setHandler(asyncResultHandler);
   }
 
   @Override
@@ -159,37 +130,35 @@ public class NotesResourceImpl implements Notes {
   @Validate
   public void putNotesById(String id, String lang, Note note, Map<String, String> okapiHeaders,
                            Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    logger.debug("PUT note with id:{} and content: {}", id, Json.encode(note));
-    if (note.getId() == null) {
-      note.setId(id);
-      logger.debug("No Id in the note, taking the one from the link");
-      // The RMB should handle this. See RMB-94
-    }
-    if (!note.getId().equals(id)) {
-      Errors validationErrorMessage = ValidationHelper.createValidationErrorMessage("id", note.getId(), "Can not change Id");
-      asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond422WithApplicationJson(validationErrorMessage)));
-      return;
-    }
+    respond(() -> {
+        OkapiParams okapiParams = new OkapiParams(okapiHeaders);
+        return noteService.updateNote(id, note, okapiParams);
+      },
+      o -> PutNotesByIdResponse.respond204(),
+      asyncResultHandler);
+  }
 
-    OkapiParams okapiParams = new OkapiParams(okapiHeaders);
+  private Function<Note, Response> handleSuccessfulPost() {
+    return note ->
+      PostNotesResponse.respond201WithApplicationJson(note,
+        PostNotesResponse.headersFor201().withLocation(LOCATION_PREFIX + note.getId()));
+  }
 
-    noteService.updateNote(id, note, okapiParams)
-      .map(o -> {
-        asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond204()));
-        return null;
-      })
-      .otherwise(exception -> {
-        if (exception instanceof NotFoundException) {
-          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond404WithTextPlain(exception.getMessage())));
-        }
-        if (exception instanceof NotAuthorizedException ||
-          exception instanceof IllegalArgumentException || exception instanceof IllegalStateException ||
-          exception instanceof BadRequestException) {
-          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond400WithTextPlain(exception.getMessage())));
-        } else {
-          asyncResultHandler.handle(succeededFuture(PutNotesByIdResponse.respond500WithTextPlain(exception.getMessage())));
-        }
-        return null;
-      });
+  private PartialFunction<Throwable, Response> userNotFoundHandler() {
+    return PartialFunctions.pf((NotFoundException.class::isInstance), t -> PostNotesResponse.respond400WithTextPlain(t.getMessage()));
+  }
+
+  private <T> void respond(Producer<Future<T>> futureProducer, Function<T, Response> mapper,
+                           Handler<AsyncResult<Response>> asyncResultHandler) {
+    Future<T> future = succeededFuture()
+      .compose(o -> futureProducer.call());
+    respond(future, mapper, asyncResultHandler);
+  }
+
+  private <T> void respond(Future<T> result, Function<T, Response> mapper,
+                           Handler<AsyncResult<Response>> asyncResultHandler) {
+    result.map(mapper)
+      .otherwise(exceptionHandler)
+      .setHandler(asyncResultHandler);
   }
 }

@@ -211,7 +211,7 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldReturn422WhenPostHasInvalidUUID() {
     String bad4 = NOTE_1.replaceAll("-1111-", "-2-");  // make bad UUID
-    final String response = postWithStatus(NOTES_PATH,  bad4, SC_UNPROCESSABLE_ENTITY, USER9).asString();
+    final String response = postWithStatus(NOTES_PATH,  bad4, SC_BAD_REQUEST, USER9).asString();
     Assert.assertThat(response, containsString("invalid input syntax for type uuid"));
   }
 
@@ -368,8 +368,8 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn422OnInvalidCQLQuery() {
-    final String response = getWithStatus("/notes?query=VERYBADQUERY", SC_UNPROCESSABLE_ENTITY).asString();
+  public void shouldReturn400OnInvalidCQLQuery() {
+    final String response = getWithStatus("/notes?query=VERYBADQUERY", SC_BAD_REQUEST).asString();
     assertThat(response, containsString("no serverChoiceIndexes defined"));
   }
 
