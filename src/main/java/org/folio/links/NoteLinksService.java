@@ -11,7 +11,7 @@ import org.folio.rest.model.Status;
 
 public interface NoteLinksService {
 
-  Future<Void> putNoteLinkTypeIdToNote(NoteLinksPut entity, Link link, String tenantId);
+  Future<Void> updateNoteLinks(NoteLinksPut entity, Link link, String tenantId);
 
   Future<NoteCollection> getNoteCollection(Status status, String tenantId, Order order,
                                            OrderBy orderBy, String domain, String title, Link link, int limit, int offset);
