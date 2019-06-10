@@ -91,7 +91,7 @@ public class NoteRepositoryImpl implements NoteRepository {
           if (reply.succeeded()) {
             NoteView noteView = reply.result();
             if (Objects.isNull(noteView)) {
-              future.fail(new HttpStatusException(Response.Status.NOT_FOUND.getStatusCode(), "Note " + id + " not found"));
+              future.fail(new NotFoundException("Note " + id + " not found"));
             } else {
               future.complete(mapNoteView(noteView));
             }
@@ -101,7 +101,7 @@ public class NoteRepositoryImpl implements NoteRepository {
             if (error == null) {
               future.fail(new HttpStatusException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), reply.cause().getMessage()));
             } else {
-              future.fail(new HttpStatusException(Response.Status.BAD_REQUEST.getStatusCode(), error));
+              future.fail(new BadRequestException(reply.cause().getMessage()));
             }
           }
         });

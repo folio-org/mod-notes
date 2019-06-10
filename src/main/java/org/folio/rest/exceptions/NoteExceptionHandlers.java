@@ -20,7 +20,8 @@ public class NoteExceptionHandlers {
 
   public static PartialFunction<Throwable, Response> badRequestExtendedHandler() {
     return PartialFunctions.pf(
-      isInstance(NotAuthorizedException.class).or(isInstance(IllegalArgumentException.class).or(isInstance(IllegalStateException.class))), NoteExceptionHandlers::toBadRequest);
+      isInstance(NotAuthorizedException.class),
+      NoteExceptionHandlers::toBadRequest);
   }
 
   private static Predicate<Throwable> isInstance(Class<?> clazz) {

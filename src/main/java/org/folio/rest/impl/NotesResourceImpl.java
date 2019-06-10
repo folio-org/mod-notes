@@ -30,7 +30,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.handler.impl.HttpStatusException;
 
 public class NotesResourceImpl implements Notes {
   private static final String LOCATION_PREFIX = "/notes/";
@@ -79,30 +78,8 @@ public class NotesResourceImpl implements Notes {
   public void getNotesById(String id, String lang, Map<String, String> okapiHeaders,
                            Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
     String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    noteService.getOneNote(id, tenantId)
-      .map(note -> {
-        asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse
-          .respond200WithApplicationJson(note)));
-        return null;
-      })
-      .otherwise(exception -> {
-        if (exception instanceof HttpStatusException) {
-          final int cause = ((HttpStatusException) exception).getStatusCode();
-          if (Response.Status.NOT_FOUND.getStatusCode() == cause) {
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse.respond404WithTextPlain(
-              ((HttpStatusException) exception).getPayload())));
-          } else if (Response.Status.BAD_REQUEST.getStatusCode() == cause) {
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse.respond400WithTextPlain(
-              ((HttpStatusException) exception).getPayload())));
-          } else {
-            asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse.respond500WithTextPlain(
-              exception.getMessage())));
-          }
-        } else {
-          asyncResultHandler.handle(succeededFuture(GetNotesByIdResponse.respond500WithTextPlain(exception.getMessage())));
-        }
-        return null;
-      });
+    respond(noteService.getOneNote(id, tenantId), GetNotesByIdResponse
+      ::respond200WithApplicationJson, asyncResultHandler);
   }
 
   @Override
@@ -111,19 +88,7 @@ public class NotesResourceImpl implements Notes {
                               Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     String tenantId = TenantTool.calculateTenantId(
       okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    noteService.deleteNote(id, tenantId)
-      .map(response -> {
-        asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse.respond204()));
-        return null;
-      })
-      .otherwise(e -> {
-        if (e instanceof NotFoundException) {
-          asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse.respond404WithTextPlain("Not found")));
-        } else {
-          asyncResultHandler.handle(succeededFuture(DeleteNotesByIdResponse.respond500WithTextPlain(e.getMessage())));
-        }
-        return null;
-      });
+    respond(noteService.deleteNote(id, tenantId), o -> DeleteNotesByIdResponse.respond204(), asyncResultHandler);
   }
 
   @Override

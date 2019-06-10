@@ -150,7 +150,7 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturnEmptyListOfNotesByDefault(){
+  public void shouldReturnEmptyListOfNotesByDefault() {
 
     final String response = getWithOk(NOTES_PATH).asString();
     Assert.assertThat(response, containsString("\"notes\" : [ ]"));
@@ -205,13 +205,13 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldReturn400WhenUserDoesntExist() {
     // Post by an unknown user 19, lookup fails
-    postWithStatus(NOTES_PATH,  NOTE_1, SC_BAD_REQUEST, USER19);
+    postWithStatus(NOTES_PATH, NOTE_1, SC_BAD_REQUEST, USER19);
   }
 
   @Test
   public void shouldReturn422WhenPostHasInvalidUUID() {
     String bad4 = NOTE_1.replaceAll("-1111-", "-2-");  // make bad UUID
-    final String response = postWithStatus(NOTES_PATH,  bad4, SC_BAD_REQUEST, USER9).asString();
+    final String response = postWithStatus(NOTES_PATH, bad4, SC_BAD_REQUEST, USER9).asString();
     Assert.assertThat(response, containsString("invalid input syntax for type uuid"));
   }
 
@@ -265,7 +265,7 @@ public class NotesTest extends TestBase {
     final Note note = getWithOk("/notes/11111111-1111-1111-a111-111111111111").as(Note.class);
 
     assertEquals(NOTE_TYPE_ID, note.getTypeId());
-    assertEquals(NOTE_TYPE_NAME , note.getType());
+    assertEquals(NOTE_TYPE_NAME, note.getType());
   }
 
   @Test
@@ -282,7 +282,7 @@ public class NotesTest extends TestBase {
     assertThat(notes.getNotes(), hasItem(allOf(
       hasProperty("typeId", is(NOTE_TYPE2_ID)),
       hasProperty("type", is(NOTE_TYPE2_NAME)
-    ))));
+      ))));
   }
 
   @Test
@@ -407,7 +407,7 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldReturn400WhenUserLookupFails() {
 
-    final String response = postWithStatus(NOTES_PATH,  NOTE_2, SC_BAD_REQUEST, USER19).asString();
+    final String response = postWithStatus(NOTES_PATH, NOTE_2, SC_BAD_REQUEST, USER19).asString();
     assertThat(response, containsString("User not found"));
   }
 
@@ -415,14 +415,14 @@ public class NotesTest extends TestBase {
   public void shouldReturn400WhenUserLookupFailsWithAuthorizationError() {
     // Simulate permission problem in user lookup
     final Header userWithoutPermission = new Header(XOkapiHeaders.USER_ID, "22999999-9999-4999-9999-999999999922");
-    postWithStatus(NOTES_PATH,  NOTE_2, SC_BAD_REQUEST, userWithoutPermission);
+    postWithStatus(NOTES_PATH, NOTE_2, SC_BAD_REQUEST, userWithoutPermission);
   }
 
   @Test
   public void shouldReturn400WhenUserIsRetrievedWithoutNecessaryFields() {
 
     final Header userWithoutPermission = new Header(XOkapiHeaders.USER_ID, "33999999-9999-4999-9999-999999999933");
-    final String response = postWithStatus(NOTES_PATH,  NOTE_2, SC_BAD_REQUEST, userWithoutPermission).asString();
+    final String response = postWithStatus(NOTES_PATH, NOTE_2, SC_BAD_REQUEST, userWithoutPermission).asString();
     assertThat(response, containsString("Missing fields"));
   }
 
@@ -430,7 +430,7 @@ public class NotesTest extends TestBase {
   public void shouldReturn422WhenPostHasIdThatAlreadyExists() {
     postNoteWithOk(NOTE_2, USER8);
     // Post the same id again
-    final String response = postWithStatus(NOTES_PATH,  NOTE_2, SC_UNPROCESSABLE_ENTITY, USER8).asString();
+    final String response = postWithStatus(NOTES_PATH, NOTE_2, SC_UNPROCESSABLE_ENTITY, USER8).asString();
     assertThat(response, containsString("violates unique constraint"));
   }
 
@@ -440,12 +440,12 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn422WhenPostNoteTitleIsTooLong(){
+  public void shouldReturn422WhenPostNoteTitleIsTooLong() {
     postWithStatus(NOTES_PATH, NOTE_5_LONG_TITLE, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
   @Test
-  public void shouldReturn422WhenPostNoteContentIsTooLong(){
+  public void shouldReturn422WhenPostNoteContentIsTooLong() {
     postWithStatus(NOTES_PATH, NOTE_5_LONG_CONTENT, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
@@ -503,7 +503,7 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldDeleteNoteWhenPutRequestHasNoLinks(){
+  public void shouldDeleteNoteWhenPutRequestHasNoLinks() {
 
     postNoteWithOk(NOTE_4, USER8);
     final String resourcePath = "/notes/33333333-1111-1111-a333-333333333333";
@@ -514,7 +514,7 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn400WhenNonExistingTypeIdInPutRequest(){
+  public void shouldReturn400WhenNonExistingTypeIdInPutRequest() {
     postNoteWithOk(NOTE_4, USER8);
     putWithStatus("/notes/33333333-1111-1111-a333-333333333333", UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID, SC_BAD_REQUEST, USER8);
   }
@@ -530,13 +530,13 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn422WhenPutNoteTitleIsTooLong(){
+  public void shouldReturn422WhenPutNoteTitleIsTooLong() {
     postNoteWithOk(NOTE_4, USER8);
     putWithStatus("/notes/33333333-1111-1111-a333-333333333333", NOTE_5_LONG_TITLE, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
   @Test
-  public void shouldReturn422WhenPutNoteContentIsTooLong(){
+  public void shouldReturn422WhenPutNoteContentIsTooLong() {
     postNoteWithOk(NOTE_4, USER8);
     putWithStatus("/notes/33333333-1111-1111-a333-333333333333", NOTE_5_LONG_CONTENT, SC_UNPROCESSABLE_ENTITY, USER8);
   }
