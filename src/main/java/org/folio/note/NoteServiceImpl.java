@@ -1,5 +1,7 @@
 package org.folio.note;
 
+import static io.vertx.core.Future.failedFuture;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -28,20 +30,21 @@ public class NoteServiceImpl implements NoteService {
 
   @Override
   public Future<NoteCollection> getNotes(String cqlQuery, int offset, int limit, String tenantId) {
-    return repository.getNotes(cqlQuery, offset, limit, tenantId);
+    return repository.findByQuery(cqlQuery, offset, limit, tenantId);
   }
 
   @Override
   public Future<Note> addNote(Note note, OkapiParams okapiParams) {
+    final List<Link> links = note.getLinks();
+    if (Objects.isNull(links) || links.isEmpty()) {
+      return failedFuture(new InputValidationException("links", "links", "At least one link should be present"));
+    }
+
     return UserLookUp.getUserInfo(okapiParams.getHeadersAsMap())
       .compose(creatorUser -> {
-        final List<Link> links = note.getLinks();
-        if (Objects.isNull(links) || links.isEmpty()) {
-          throw new InputValidationException("links", "links", "At least one link should be present");
-        }
         note.setCreator(getUserDisplayInfo(creatorUser.getFirstName(), creatorUser.getMiddleName(), creatorUser.getLastName()));
         note.getMetadata().setCreatedByUsername(creatorUser.getUserName());
-        return repository.saveNote(note, okapiParams.getTenant());
+        return repository.save(note, okapiParams.getTenant());
       });
   }
 
@@ -52,12 +55,12 @@ public class NoteServiceImpl implements NoteService {
    */
   @Override
   public Future<Note> getOneNote(String id, String tenantId) {
-    return repository.getOneNote(id, tenantId);
+    return repository.findOne(id, tenantId);
   }
 
   @Override
   public Future<Void> deleteNote(String id, String tenantId) {
-    return repository.deleteNote(id, tenantId);
+    return repository.delete(id, tenantId);
   }
 
   @Override
@@ -77,7 +80,7 @@ public class NoteServiceImpl implements NoteService {
         final UserDisplayInfo userDisplayInfo = getUserDisplayInfo(userLookUp.getFirstName(), userLookUp.getMiddleName(), userLookUp.getLastName());
         note.setUpdater(userDisplayInfo);
         note.getMetadata().setUpdatedByUsername(userLookUp.getUserName());
-        return repository.updateNote(id, note, okapiParams.getTenant());
+        return repository.save(id, note, okapiParams.getTenant());
       });
   }
 

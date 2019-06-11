@@ -514,9 +514,9 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn400WhenNonExistingTypeIdInPutRequest() {
+  public void shouldReturn422WhenNonExistingTypeIdInPutRequest() {
     postNoteWithOk(NOTE_4, USER8);
-    putWithStatus("/notes/33333333-1111-1111-a333-333333333333", UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID, SC_BAD_REQUEST, USER8);
+    putWithStatus("/notes/33333333-1111-1111-a333-333333333333", UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
   @Test

@@ -7,13 +7,13 @@ import org.folio.rest.jaxrs.model.NoteCollection;
 import io.vertx.core.Future;
 
 public interface NoteRepository {
-  Future<NoteCollection> getNotes(String cqlQuery, int offset, int limit, String tenantId);
+  Future<NoteCollection> findByQuery(String cqlQuery, int offset, int limit, String tenantId);
 
-  Future<Note> saveNote(Note note, String tenantId);
+  Future<Note> save(Note note, String tenantId);
 
-  Future<Note> getOneNote(String id, String tenantId);
+  Future<Note> findOne(String id, String tenantId);
 
-  Future<Void> deleteNote(String id, String tenantId);
+  Future<Void> delete(String id, String tenantId);
 
-  Future<Void> updateNote(String id, Note note, String tenantId);
+  Future<Void> save(String id, Note note, String tenantId);
 }

@@ -7,23 +7,18 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 
+import org.folio.db.DbUtils;
 import org.folio.db.model.NoteView;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSONException;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -43,15 +38,15 @@ public class NoteRepositoryImpl implements NoteRepository {
   private Vertx vertx;
 
   @Override
-  public Future<NoteCollection> getNotes(String cqlQuery, int offset, int limit, String tenantId) {
+  public Future<NoteCollection> findByQuery(String cqlQuery, int offset, int limit, String tenantId) {
     logger.debug("Getting notes. new query:" + cqlQuery);
     Future<NoteCollection> future = Future.succeededFuture(null);
     return future.compose(o -> {
       CQLWrapper cql;
       try {
-        cql = getCQLForNoteView(cqlQuery, limit, offset);
+        cql = DbUtils.getCQLWrapper(NOTE_VIEW, cqlQuery, limit, offset);
       } catch (CQL2PgJSONException e) {
-        throw new IllegalArgumentException("Failed to parse cql query");
+        return failedFuture(new IllegalArgumentException("Failed to parse cql query", e));
       }
       return getNotes(tenantId, cql);
     });
@@ -63,7 +58,7 @@ public class NoteRepositoryImpl implements NoteRepository {
    * @param note - current Note  {@link Note} object to save
    */
   @Override
-  public Future<Note> saveNote(Note note, String tenantId) {
+  public Future<Note> save(Note note, String tenantId) {
     initId(note);
     Future<String> future = Future.future();
     PostgresClient.getInstance(vertx, tenantId)
@@ -81,46 +76,34 @@ public class NoteRepositoryImpl implements NoteRepository {
    * @param id id of note to get
    */
   @Override
-  public Future<Note> getOneNote(String id, String tenantId) {
-    Future<Note> future = Future.future();
+  public Future<Note> findOne(String id, String tenantId) {
+    Future<NoteView> future = Future.future();
     PostgresClient.getInstance(vertx, tenantId)
-      .getById(NOTE_VIEW, id, NoteView.class,
-        reply -> {
-          if (reply.succeeded()) {
-            NoteView noteView = reply.result();
-            if (Objects.isNull(noteView)) {
-              future.fail(new NotFoundException("Note " + id + " not found"));
-            } else {
-              future.complete(mapNoteView(noteView));
-            }
-          } else {
-            String error = PgExceptionUtil.badRequestMessage(reply.cause());
-            logger.error(error, reply.cause());
-            if (error == null) {
-              future.fail(reply.cause());
-            } else {
-              future.fail(new BadRequestException(reply.cause().getMessage()));
-            }
-          }
-        });
-    return future;
+      .getById(NOTE_VIEW, id, NoteView.class, future.completer());
+
+    return future.map(noteView -> {
+      if(Objects.isNull(noteView)){
+        throw new NotFoundException("Note " + id + " not found");
+      }
+      return mapNoteView(noteView);
+    });
   }
 
   @Override
-  public Future<Void> deleteNote(String id, String tenantId) {
+  public Future<Void> delete(String id, String tenantId) {
     Future<UpdateResult> future = Future.future();
     PostgresClient.getInstance(vertx, tenantId)
       .delete(NOTE_TABLE, id, future.completer());
     return future.map(updateResult -> {
       if(updateResult.getUpdated() == 0){
-        throw new NotFoundException();
+        throw new NotFoundException("Note with id " + id + " doesn't exist");
       }
       return null;
     });
   }
 
   @Override
-  public Future<Void> updateNote(String id, Note note, String tenantId) {
+  public Future<Void> save(String id, Note note, String tenantId) {
     Future<UpdateResult> future = Future.future();
     if (note.getLinks().isEmpty()) {
       PostgresClient.getInstance(vertx, tenantId)
@@ -132,17 +115,9 @@ public class NoteRepositoryImpl implements NoteRepository {
     return future
       .map(updateResult -> {
         if(updateResult.getUpdated() == 0){
-          throw new NotFoundException();
+          throw new NotFoundException("Note with id " + id + " doesn't exist");
         }
-        return (Void) null;
-      })
-      .recover(throwable -> {
-        String badRequestMessage = PgExceptionUtil.badRequestMessage(throwable);
-        if (badRequestMessage != null) {
-          return failedFuture(new BadRequestException(badRequestMessage, throwable));
-        } else {
-          return failedFuture(throwable);
-        }
+        return null;
       });
   }
 
@@ -181,13 +156,6 @@ public class NoteRepositoryImpl implements NoteRepository {
       .withUpdater(noteView.getUpdater())
       .withMetadata(noteView.getMetadata())
       .withLinks(noteView.getLinks());
-  }
-
-  private CQLWrapper getCQLForNoteView(String query, int limit, int offset) throws FieldException {
-    CQL2PgJSON cql2pgJson = new CQL2PgJSON(NOTE_VIEW + ".jsonb");
-    return new CQLWrapper(cql2pgJson, query)
-      .setLimit(new Limit(limit))
-      .setOffset(new Offset(offset));
   }
 
   /**
