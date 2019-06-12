@@ -1,5 +1,7 @@
 package org.folio.links;
 
+import static io.vertx.core.Future.succeededFuture;
+
 import static org.folio.links.NoteLinksConstants.ANY_STRING_PATTERN;
 import static org.folio.links.NoteLinksConstants.COUNT_NOTES_BY_DOMAIN_AND_TITLE;
 import static org.folio.links.NoteLinksConstants.DELETE_NOTES_WITHOUT_LINKS;
@@ -32,6 +34,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.folio.db.DbUtils;
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
@@ -55,89 +58,101 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     PostgresClient postgresClient = pgClient(tenantId);
     MutableObject<AsyncResult<SQLConnection>> connection = new MutableObject<>();
 
-    return startTransaction(postgresClient).compose(resultConnection -> {
-      connection.setValue(resultConnection);
-      return assignToNotes(assignNotes, link, postgresClient, connection.getValue(), tenantId);
-    }).compose(o -> unAssignFromNotes(unAssignNotes, link, postgresClient, connection.getValue(),
-      tenantId)).compose(result -> endTransaction(postgresClient, connection.getValue()))
+    return startTransaction(postgresClient)
+      .compose(resultConnection -> {
+        connection.setValue(resultConnection);
+        return assignToNotes(assignNotes, link, postgresClient, connection.getValue(), tenantId);
+      })
+      .compose(o -> unAssignFromNotes(unAssignNotes, link, postgresClient, connection.getValue(), tenantId))
+      .compose(result -> endTransaction(postgresClient, connection.getValue()))
       // recover is used to do a rollback and keep processing failed Future after rollback
       .recover(e -> rollbackTransaction(postgresClient, connection, e));
   }
 
   @Override
   public Future<NoteCollection> getNoteCollection(Status status, String tenantId, Order order,
-                                                  OrderBy orderBy, String domain, String title, Link link, int limit, int offset) {
-    String jsonLink = Json.encode(link);
+                                                  OrderBy orderBy, String domain, String title, Link link, int limit,
+                                                  int offset) {
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
+
     addSelectClause(parameters, queryBuilder, tenantId, domain, title);
+    
+    String jsonLink = Json.encode(link);
     addWhereClause(parameters, queryBuilder, status, jsonLink);
+
     if (status == Status.ALL) {
       addOrderByClause(parameters, queryBuilder, order, orderBy, jsonLink);
     }
     addLimitOffset(parameters, queryBuilder, limit, offset);
 
     Future<ResultSet> future = Future.future();
-    pgClient(tenantId).select(queryBuilder.toString(), parameters, future.completer());
+    pgClient(tenantId).select(queryBuilder.toString(), parameters, future);
+
     return future.map(this::mapResultToNoteCollection);
   }
 
   @Override
   public Future<Integer> getNoteCount(Status status, String domain, String title, Link link,
                                       String tenantId) {
-    String jsonLink = Json.encode(link);
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
+
     addSelectCountClause(parameters, queryBuilder, tenantId, domain, title);
+
+    String jsonLink = Json.encode(link);
     addWhereClause(parameters, queryBuilder, status, jsonLink);
 
     Future<ResultSet> future = Future.future();
-    pgClient(tenantId).select(queryBuilder.toString(), parameters, future.completer());
+    pgClient(tenantId).select(queryBuilder.toString(), parameters, future);
+
     return future.map(this::mapCount);
   }
 
   private Future<Void> assignToNotes(List<String> notesIds, Link linkToAssign, PostgresClient postgresClient,
                                      AsyncResult<SQLConnection> connection, String tenantId) {
     if (notesIds.isEmpty()) {
-      return Future.succeededFuture(null);
+      return succeededFuture(null);
     }
     String placeholders = createIdPlaceholders(notesIds.size());
     String query = String.format(INSERT_LINKS, getTableName(tenantId), placeholders);
     JsonArray parameters = createAssignParameters(notesIds, linkToAssign);
-    Future<UpdateResult> future = Future.future();
 
-    postgresClient.execute(connection, query, parameters, future.completer());
+    Future<UpdateResult> future = Future.future();
+    postgresClient.execute(connection, query, parameters, future);
+    
     return future.map(result -> null);
   }
 
   private Future<Void> unAssignFromNotes(List<String> notesIds, Link link, PostgresClient postgresClient,
                                          AsyncResult<SQLConnection> connection, String tenantId) {
     if (notesIds.isEmpty()) {
-      return Future.succeededFuture(null);
+      return succeededFuture(null);
     }
     String placeholders = createIdPlaceholders(notesIds.size());
     String query = String.format(REMOVE_LINKS, getTableName(tenantId), placeholders);
     JsonArray parameters = createUnAssignParameters(notesIds, link);
 
     Future<UpdateResult> future = Future.future();
-    postgresClient.execute(connection, query, parameters, future.completer());
-    return future.compose(o -> deleteNotesWithoutLinks(notesIds, postgresClient, connection, tenantId)).map(
-      result -> null);
+    postgresClient.execute(connection, query, parameters, future);
+    
+    return future.compose(o -> deleteNotesWithoutLinks(notesIds, postgresClient, connection, tenantId))
+      .map(result -> null);
   }
 
   private Future<Void> deleteNotesWithoutLinks(List<String> notesIds, PostgresClient postgresClient,
                                                AsyncResult<SQLConnection> connection, String tenantId) {
     if (notesIds.isEmpty()) {
-      return Future.succeededFuture(null);
+      return succeededFuture(null);
     }
 
     String placeholders = createIdPlaceholders(notesIds.size());
     String query = String.format(DELETE_NOTES_WITHOUT_LINKS, getTableName(tenantId), placeholders);
-    JsonArray parameters = new JsonArray();
-    notesIds.forEach(parameters::add);
+    JsonArray parameters = DbUtils.createParams(notesIds);
 
     Future<UpdateResult> future = Future.future();
-    postgresClient.execute(connection, query, parameters, future.completer());
+    postgresClient.execute(connection, query, parameters, future);
+
     return future.map(result -> null);
   }
 
@@ -160,7 +175,6 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
    * Rollback transaction and return failed future with either specified exception
    * or rollback exception that contains initial exception as suppressed
    */
-
   private Future<Void> rollbackTransaction(PostgresClient postgresClient,
                                            MutableObject<AsyncResult<SQLConnection>> connection, Throwable e) {
     if (connection.getValue() != null) {
@@ -187,7 +201,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
   private Future<Void> endTransaction(PostgresClient postgresClient, AsyncResult<SQLConnection> connection) {
     Future<Void> future = Future.future();
-    postgresClient.endTx(connection, future.completer());
+    postgresClient.endTx(connection, future);
     return future;
   }
 
@@ -267,6 +281,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
         query.append("AND NOT " + HAS_LINK_CONDITION);
         parameters.add(jsonLink);
         break;
+      case ALL: // do nothing
     }
   }
 
