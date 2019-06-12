@@ -1,22 +1,19 @@
 package org.folio.type;
 
-import static org.folio.db.DbUtils.ALL_FIELDS;
 import static org.folio.db.DbUtils.createParams;
-import static org.folio.db.DbUtils.getCQLWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.folio.db.CqlQuery;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -112,33 +109,5 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
       .withName(entity.getName())
       .withUsage(entity.getUsage()) // this field is not cloned deeply
       .withMetadata(entity.getMetadata()); // this field is not cloned deeply
-  }
-
-  private static class CqlQuery<T> {
-
-    private PostgresClient pg;
-    private String table;
-    private Class<T> clazz;
-
-
-    CqlQuery(PostgresClient pg, String table, Class<T> clazz) {
-      this.pg = pg;
-      this.table = table;
-      this.clazz = clazz;
-    }
-
-    Future<Results<T>> get(String cqlQuery, int offset, int limit) {
-      CQLWrapper cql;
-      try {
-        cql = getCQLWrapper(table, cqlQuery, limit, offset);
-      } catch (FieldException e) {
-        return Future.failedFuture(e);
-      }
-
-      Future<Results<T>> future = Future.future();
-      pg.get(table, clazz, ALL_FIELDS, cql, true, false, future);
-
-      return future;
-    }
   }
 }

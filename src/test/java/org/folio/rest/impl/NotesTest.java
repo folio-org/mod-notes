@@ -556,7 +556,6 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldGenerateUuidInPostRequestIfItIsNotSet() {
     postNoteWithOk(NOTE_3, USER9);
-    // Fetch the noteCollection in various ways
     final NoteCollection noteCollection = getWithOk(NOTES_PATH).as(NoteCollection.class);
     assertThat(noteCollection.getTotalRecords(), equalTo(1));
 

@@ -72,7 +72,7 @@ public class NoteServiceImpl implements NoteService {
       // The RMB should handle this. See RMB-94
     }
     if (!note.getId().equals(id)) {
-      throw new InputValidationException("id", note.getId(), "Can not change Id");
+      return failedFuture(new InputValidationException("id", note.getId(), "Can not change Id"));
     }
 
     return UserLookUp.getUserInfo(okapiParams.getHeadersAsMap())
