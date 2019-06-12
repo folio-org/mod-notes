@@ -11,9 +11,21 @@ public interface NoteRepository {
 
   Future<Note> save(Note note, String tenantId);
 
+  /**
+   * Returns note with given id.
+   * If note with given id doesn't exist then returns failed Future with NotFoundException as a cause.
+   */
   Future<Note> findOne(String id, String tenantId);
 
+  /**
+   * Deletes note with given id.
+   * If note with given id doesn't exist then returns failed Future with NotFoundException as a cause.
+   */
   Future<Void> delete(String id, String tenantId);
 
-  Future<Void> save(String id, Note note, String tenantId);
+  /**
+   * Updates note with given id.
+   * If note with given id doesn't exist then returns failed Future with NotFoundException as a cause.
+   */
+  Future<Void> update(String id, Note note, String tenantId);
 }

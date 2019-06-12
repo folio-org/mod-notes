@@ -91,7 +91,7 @@ public class NoteRepositoryImpl implements NoteRepository {
   }
 
   @Override
-  public Future<Void> save(String id, Note note, String tenantId) {
+  public Future<Void> update(String id, Note note, String tenantId) {
     Future<UpdateResult> future = Future.future();
     if (note.getLinks().isEmpty()) {
       PostgresClient.getInstance(vertx, tenantId)

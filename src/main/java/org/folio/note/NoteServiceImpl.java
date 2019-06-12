@@ -80,7 +80,7 @@ public class NoteServiceImpl implements NoteService {
         final UserDisplayInfo userDisplayInfo = getUserDisplayInfo(userLookUp.getFirstName(), userLookUp.getMiddleName(), userLookUp.getLastName());
         note.setUpdater(userDisplayInfo);
         note.getMetadata().setUpdatedByUsername(userLookUp.getUserName());
-        return repository.save(id, note, okapiParams.getTenant());
+        return repository.update(id, note, okapiParams.getTenant());
       });
   }
 
