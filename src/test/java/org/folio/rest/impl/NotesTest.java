@@ -6,16 +6,6 @@ import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_NO_CONTENT;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import static org.folio.test.util.TestUtil.readFile;
 import static org.folio.util.NoteTestData.DOMAIN;
 import static org.folio.util.NoteTestData.NOTE_1;
@@ -36,24 +26,17 @@ import static org.folio.util.NoteTestData.UPDATE_NOTE_REQUEST;
 import static org.folio.util.NoteTestData.UPDATE_NOTE_REQUEST_WITH_LINKS;
 import static org.folio.util.NoteTestData.USER19;
 import static org.folio.util.NoteTestData.USER8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
-
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-import io.restassured.RestAssured;
-import io.restassured.http.Header;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.TestBase;
@@ -62,6 +45,24 @@ import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+
+import io.restassured.RestAssured;
+import io.restassured.http.Header;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 /**
  * Interface test for mod-notes. Tests the API with restAssured, directly
@@ -84,7 +85,14 @@ public class NotesTest extends TestBase {
 
   @BeforeClass
   public static void setUpBeforeClass(TestContext context) {
+    TestBase.setUpBeforeClass(context);
     createNoteTypes(context);
+  }
+
+  @AfterClass
+  public static void tearDownAfterClass() {
+    DBTestUtil.deleteAllNoteTypes(vertx);
+    TestBase.tearDownAfterClass();
   }
 
   @Before
@@ -142,7 +150,7 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturnEmptyListOfNotesByDefault(){
+  public void shouldReturnEmptyListOfNotesByDefault() {
 
     final String response = getWithOk(NOTES_PATH).asString();
     Assert.assertThat(response, containsString("\"notes\" : [ ]"));
@@ -197,13 +205,13 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldReturn400WhenUserDoesntExist() {
     // Post by an unknown user 19, lookup fails
-    postWithStatus(NOTES_PATH,  NOTE_1, SC_BAD_REQUEST, USER19);
+    postWithStatus(NOTES_PATH, NOTE_1, SC_BAD_REQUEST, USER19);
   }
 
   @Test
   public void shouldReturn422WhenPostHasInvalidUUID() {
     String bad4 = NOTE_1.replaceAll("-1111-", "-2-");  // make bad UUID
-    final String response = postWithStatus(NOTES_PATH,  bad4, SC_UNPROCESSABLE_ENTITY, USER9).asString();
+    final String response = postWithStatus(NOTES_PATH, bad4, SC_BAD_REQUEST, USER9).asString();
     Assert.assertThat(response, containsString("invalid input syntax for type uuid"));
   }
 
@@ -257,7 +265,7 @@ public class NotesTest extends TestBase {
     final Note note = getWithOk("/notes/11111111-1111-1111-a111-111111111111").as(Note.class);
 
     assertEquals(NOTE_TYPE_ID, note.getTypeId());
-    assertEquals(NOTE_TYPE_NAME , note.getType());
+    assertEquals(NOTE_TYPE_NAME, note.getType());
   }
 
   @Test
@@ -274,7 +282,7 @@ public class NotesTest extends TestBase {
     assertThat(notes.getNotes(), hasItem(allOf(
       hasProperty("typeId", is(NOTE_TYPE2_ID)),
       hasProperty("type", is(NOTE_TYPE2_NAME)
-    ))));
+      ))));
   }
 
   @Test
@@ -360,8 +368,8 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn422OnInvalidCQLQuery() {
-    final String response = getWithStatus("/notes?query=VERYBADQUERY", SC_UNPROCESSABLE_ENTITY).asString();
+  public void shouldReturn400OnInvalidCQLQuery() {
+    final String response = getWithStatus("/notes?query=VERYBADQUERY", SC_BAD_REQUEST).asString();
     assertThat(response, containsString("no serverChoiceIndexes defined"));
   }
 
@@ -399,7 +407,7 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldReturn400WhenUserLookupFails() {
 
-    final String response = postWithStatus(NOTES_PATH,  NOTE_2, SC_BAD_REQUEST, USER19).asString();
+    final String response = postWithStatus(NOTES_PATH, NOTE_2, SC_BAD_REQUEST, USER19).asString();
     assertThat(response, containsString("User not found"));
   }
 
@@ -407,14 +415,14 @@ public class NotesTest extends TestBase {
   public void shouldReturn400WhenUserLookupFailsWithAuthorizationError() {
     // Simulate permission problem in user lookup
     final Header userWithoutPermission = new Header(XOkapiHeaders.USER_ID, "22999999-9999-4999-9999-999999999922");
-    postWithStatus(NOTES_PATH,  NOTE_2, SC_BAD_REQUEST, userWithoutPermission);
+    postWithStatus(NOTES_PATH, NOTE_2, SC_BAD_REQUEST, userWithoutPermission);
   }
 
   @Test
   public void shouldReturn400WhenUserIsRetrievedWithoutNecessaryFields() {
 
     final Header userWithoutPermission = new Header(XOkapiHeaders.USER_ID, "33999999-9999-4999-9999-999999999933");
-    final String response = postWithStatus(NOTES_PATH,  NOTE_2, SC_BAD_REQUEST, userWithoutPermission).asString();
+    final String response = postWithStatus(NOTES_PATH, NOTE_2, SC_BAD_REQUEST, userWithoutPermission).asString();
     assertThat(response, containsString("Missing fields"));
   }
 
@@ -422,7 +430,7 @@ public class NotesTest extends TestBase {
   public void shouldReturn422WhenPostHasIdThatAlreadyExists() {
     postNoteWithOk(NOTE_2, USER8);
     // Post the same id again
-    final String response = postWithStatus(NOTES_PATH,  NOTE_2, SC_UNPROCESSABLE_ENTITY, USER8).asString();
+    final String response = postWithStatus(NOTES_PATH, NOTE_2, SC_UNPROCESSABLE_ENTITY, USER8).asString();
     assertThat(response, containsString("violates unique constraint"));
   }
 
@@ -432,12 +440,12 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn422WhenPostNoteTitleIsTooLong(){
+  public void shouldReturn422WhenPostNoteTitleIsTooLong() {
     postWithStatus(NOTES_PATH, NOTE_5_LONG_TITLE, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
   @Test
-  public void shouldReturn422WhenPostNoteContentIsTooLong(){
+  public void shouldReturn422WhenPostNoteContentIsTooLong() {
     postWithStatus(NOTES_PATH, NOTE_5_LONG_CONTENT, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
@@ -495,7 +503,7 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldDeleteNoteWhenPutRequestHasNoLinks(){
+  public void shouldDeleteNoteWhenPutRequestHasNoLinks() {
 
     postNoteWithOk(NOTE_4, USER8);
     final String resourcePath = "/notes/33333333-1111-1111-a333-333333333333";
@@ -506,9 +514,9 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn400WhenNonExistingTypeIdInPutRequest(){
+  public void shouldReturn422WhenNonExistingTypeIdInPutRequest() {
     postNoteWithOk(NOTE_4, USER8);
-    putWithStatus("/notes/33333333-1111-1111-a333-333333333333", UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID, SC_BAD_REQUEST, USER8);
+    putWithStatus("/notes/33333333-1111-1111-a333-333333333333", UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
   @Test
@@ -522,13 +530,13 @@ public class NotesTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn422WhenPutNoteTitleIsTooLong(){
+  public void shouldReturn422WhenPutNoteTitleIsTooLong() {
     postNoteWithOk(NOTE_4, USER8);
     putWithStatus("/notes/33333333-1111-1111-a333-333333333333", NOTE_5_LONG_TITLE, SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
   @Test
-  public void shouldReturn422WhenPutNoteContentIsTooLong(){
+  public void shouldReturn422WhenPutNoteContentIsTooLong() {
     postNoteWithOk(NOTE_4, USER8);
     putWithStatus("/notes/33333333-1111-1111-a333-333333333333", NOTE_5_LONG_CONTENT, SC_UNPROCESSABLE_ENTITY, USER8);
   }
@@ -548,7 +556,6 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldGenerateUuidInPostRequestIfItIsNotSet() {
     postNoteWithOk(NOTE_3, USER9);
-    // Fetch the noteCollection in various ways
     final NoteCollection noteCollection = getWithOk(NOTES_PATH).as(NoteCollection.class);
     assertThat(noteCollection.getTotalRecords(), equalTo(1));
 
@@ -585,7 +592,7 @@ public class NotesTest extends TestBase {
   public void shouldReturn400WhenLimitIsInvalid() {
     getWithStatus("/notes?query=title=testing&limit=-1", SC_BAD_REQUEST);
   }
-  
+
   @Test
   public void shouldDeleteNoteByPathReturnedFromPost() {
     final String location = postNoteWithOk(NOTE_3, USER9).headers().get("Location").getValue();

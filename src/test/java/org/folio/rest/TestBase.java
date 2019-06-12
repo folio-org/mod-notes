@@ -1,7 +1,6 @@
 package org.folio.rest;
 
 import static io.restassured.RestAssured.given;
-
 import static org.folio.util.NoteTestData.NOTE_TYPE;
 import static org.folio.util.NoteTestData.NOTE_TYPE2;
 import static org.folio.util.NoteTestData.NOTE_TYPE2_ID;
@@ -11,9 +10,24 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.client.TenantClient;
+import org.folio.rest.impl.DBTestUtil;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.test.junit.TestStartLoggingRule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
@@ -28,20 +42,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.TestContext;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
-
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.impl.DBTestUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.folio.test.junit.TestStartLoggingRule;
 
 /**
  * Base test class for tests that use wiremock and vertx http servers,
@@ -75,7 +75,7 @@ public class TestBase {
       .notifier(new Slf4jNotifier(true)));
 
   @BeforeClass
-  public static void setup(TestContext context) {
+  public static void setUpBeforeClass(TestContext context) {
 
     vertx = Vertx.vertx();
 
@@ -96,8 +96,6 @@ public class TestBase {
     RestAssured.port = port;
 
     startVerticle(options);
-
-    postTenant(options);
   }
 
   private static void startVerticle(DeploymentOptions options) {
@@ -105,22 +103,12 @@ public class TestBase {
     logger.info("Start verticle");
 
     CompletableFuture<Void> future = new CompletableFuture<>();
-    vertx.deployVerticle(RestVerticle.class.getName(), options, event -> future.complete(null));
-    future.join();
-  }
-
-  private static void postTenant(DeploymentOptions options) {
-
-    logger.info("Post tenant");
-
-    TenantClient tenantClient = new TenantClient(host + ":" + port, STUB_TENANT, STUB_TOKEN);
-
-    CompletableFuture<Void> future = new CompletableFuture<>();
-    vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
+    vertx.deployVerticle(RestVerticle.class.getName(), options, event -> {
       try {
+        TenantClient tenantClient = new TenantClient(host + ":" + port, STUB_TENANT, STUB_TOKEN);
         tenantClient.postTenant(null, res2 -> future.complete(null));
       } catch (Exception e) {
-        e.printStackTrace();
+        future.completeExceptionally(e);
       }
     });
     future.join();

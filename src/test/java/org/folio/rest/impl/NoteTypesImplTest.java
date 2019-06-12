@@ -7,6 +7,13 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
+import static org.folio.test.util.TestUtil.mockGet;
+import static org.folio.test.util.TestUtil.readFile;
+import static org.folio.test.util.TestUtil.toJson;
+import static org.folio.util.NoteTestData.NOTE_2;
+import static org.folio.util.NoteTestData.NOTE_4;
+import static org.folio.util.NoteTestData.USER8;
+import static org.folio.util.NoteTestData.USER9;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.jeasy.random.FieldPredicates.named;
@@ -16,30 +23,19 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import static org.folio.test.util.TestUtil.mockGet;
-import static org.folio.test.util.TestUtil.readFile;
-import static org.folio.test.util.TestUtil.toJson;
-import static org.folio.util.NoteTestData.NOTE_2;
-import static org.folio.util.NoteTestData.NOTE_4;
-import static org.folio.util.NoteTestData.USER8;
-import static org.folio.util.NoteTestData.USER9;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import com.github.tomakehurst.wiremock.matching.RegexPattern;
-import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-import io.restassured.RestAssured;
-import io.restassured.http.Header;
-import io.restassured.response.Response;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.apache.http.HttpStatus;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.TestBase;
+import org.folio.rest.jaxrs.model.Metadata;
+import org.folio.rest.jaxrs.model.NoteType;
+import org.folio.rest.jaxrs.model.NoteTypeUsage;
+import org.folio.spring.SpringContextUtil;
 import org.hamcrest.MatcherAssert;
 import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
@@ -47,12 +43,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.TestBase;
-import org.folio.rest.jaxrs.model.Metadata;
-import org.folio.rest.jaxrs.model.NoteType;
-import org.folio.rest.jaxrs.model.NoteTypeUsage;
-import org.folio.spring.SpringContextUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.RegexPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+
+import io.restassured.RestAssured;
+import io.restassured.http.Header;
+import io.restassured.response.Response;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteTypesImplTest extends TestBase {
@@ -60,7 +60,7 @@ public class NoteTypesImplTest extends TestBase {
   private static final int NOTE_TOTAL = 10;
   private static final String STUB_NOTE_TYPE_ID = "13f21797-d25b-46dc-8427-1759d1db2057";
   private static final String NOT_EXISTING_STUB_ID = "9798274e-ce9d-46ab-aa28-00ca9cf4698a";
-  
+
   private static final String NOTE_TYPES_ENDPOINT = "/note-types";
   private static final String TOTAL_RECORDS = "totalRecords";
   private static final String NOTE_TYPES = "noteTypes";
@@ -68,13 +68,12 @@ public class NoteTypesImplTest extends TestBase {
   private static final int MAX_LIMIT_AND_OFFSET = 2147483647;
   private static final int NULL_LIMIT_AND_OFFSET = 0;
 
-  private static final RegexPattern CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN = 
+  private static final RegexPattern CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN =
     //new RegexPattern("/configurations/entries.+NOTES.+note\\.types\\.number\\.limit.*"), true);
     new RegexPattern("/configurations/entries.*");
 
   private ObjectMapper mapper;
   private EasyRandom noteTypeRandom;
-
 
   @Before
   public void setUp() throws IOException, URISyntaxException {
