@@ -1,13 +1,7 @@
 package org.folio.links;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import io.vertx.core.Future;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinkPut;
@@ -15,6 +9,11 @@ import org.folio.rest.jaxrs.model.NoteLinksPut;
 import org.folio.rest.model.Order;
 import org.folio.rest.model.OrderBy;
 import org.folio.rest.model.Status;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class NoteLinksServiceImpl implements NoteLinksService {
@@ -27,20 +26,18 @@ public class NoteLinksServiceImpl implements NoteLinksService {
     List<String> assignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.ASSIGNED);
     List<String> unAssignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.UNASSIGNED);
 
-    return noteLinksRepository.updateNoteLinks(link, tenantId, assignNotes,
-      unAssignNotes);
+    return noteLinksRepository.updateNoteLinks(link, assignNotes, unAssignNotes, tenantId);
   }
 
   @Override
-  public Future<NoteCollection> getNoteCollection(Status parsedStatus, String tenantId, Order parsedOrder,
-                                                  OrderBy parsedOrderBy, String domain, String title, Link link, int limit, int offset) {
+  public Future<NoteCollection> findByQueryNotes(Status parsedStatus, Order parsedOrder,
+                                                 OrderBy parsedOrderBy, String domain, String title, Link link, int limit, int offset, String tenantId) {
     MutableObject<Integer> mutableTotalRecords = new MutableObject<>();
-    return noteLinksRepository.getNoteCount(parsedStatus, domain, title, link, tenantId)
+    return noteLinksRepository.countNotes(parsedStatus, domain, title, link, tenantId)
       .compose(count -> {
         mutableTotalRecords.setValue(count);
-        return noteLinksRepository.getNoteCollection(parsedStatus, tenantId, parsedOrder, parsedOrderBy,
-          domain, title,
-          link, limit, offset);
+        return noteLinksRepository.findByQueryNotes(parsedStatus, parsedOrder, parsedOrderBy,
+          domain, title, link, limit, offset, tenantId);
       })
       .map(notes -> {
         notes.setTotalRecords(mutableTotalRecords.getValue());

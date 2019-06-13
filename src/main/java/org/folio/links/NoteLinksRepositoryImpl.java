@@ -1,7 +1,33 @@
 package org.folio.links;
 
-import static io.vertx.core.Future.succeededFuture;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.ext.sql.ResultSet;
+import io.vertx.ext.sql.SQLConnection;
+import io.vertx.ext.sql.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.folio.db.DbUtils;
+import org.folio.rest.jaxrs.model.Link;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.model.Order;
+import org.folio.rest.model.OrderBy;
+import org.folio.rest.model.Status;
+import org.folio.rest.persist.PostgresClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static io.vertx.core.Future.succeededFuture;
 import static org.folio.links.NoteLinksConstants.ANY_STRING_PATTERN;
 import static org.folio.links.NoteLinksConstants.COUNT_NOTES_BY_DOMAIN_AND_TITLE;
 import static org.folio.links.NoteLinksConstants.DELETE_NOTES_WITHOUT_LINKS;
@@ -15,34 +41,6 @@ import static org.folio.links.NoteLinksConstants.REMOVE_LINKS;
 import static org.folio.links.NoteLinksConstants.SELECT_NOTES_BY_DOMAIN_AND_TITLE;
 import static org.folio.links.NoteLinksConstants.WORD_PATTERN;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.SQLConnection;
-import io.vertx.ext.sql.UpdateResult;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import org.folio.db.DbUtils;
-import org.folio.rest.jaxrs.model.Link;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.model.Order;
-import org.folio.rest.model.OrderBy;
-import org.folio.rest.model.Status;
-import org.folio.rest.persist.PostgresClient;
-
 @Component
 public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
@@ -54,7 +52,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<Void> updateNoteLinks(Link link, String tenantId, List<String> assignNotes, List<String> unAssignNotes) {
+  public Future<Void> updateNoteLinks(Link link, List<String> assignNotes, List<String> unAssignNotes, String tenantId) {
     PostgresClient postgresClient = pgClient(tenantId);
     MutableObject<AsyncResult<SQLConnection>> connection = new MutableObject<>();
 
@@ -70,14 +68,14 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<NoteCollection> getNoteCollection(Status status, String tenantId, Order order,
-                                                  OrderBy orderBy, String domain, String title, Link link, int limit,
-                                                  int offset) {
+  public Future<NoteCollection> findByQueryNotes(Status status, Order order,
+                                                 OrderBy orderBy, String domain, String title, Link link, int limit,
+                                                 int offset, String tenantId) {
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
 
-    addSelectClause(parameters, queryBuilder, tenantId, domain, title);
-    
+    addSelectClause(parameters, queryBuilder, domain, title, tenantId);
+
     String jsonLink = Json.encode(link);
     addWhereClause(parameters, queryBuilder, status, jsonLink);
 
@@ -93,12 +91,12 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<Integer> getNoteCount(Status status, String domain, String title, Link link,
-                                      String tenantId) {
+  public Future<Integer> countNotes(Status status, String domain, String title, Link link,
+                                    String tenantId) {
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
 
-    addSelectCountClause(parameters, queryBuilder, tenantId, domain, title);
+    addSelectCountClause(parameters, queryBuilder, domain, title, tenantId);
 
     String jsonLink = Json.encode(link);
     addWhereClause(parameters, queryBuilder, status, jsonLink);
@@ -120,7 +118,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
     Future<UpdateResult> future = Future.future();
     postgresClient.execute(connection, query, parameters, future);
-    
+
     return future.map(result -> null);
   }
 
@@ -135,7 +133,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
     Future<UpdateResult> future = Future.future();
     postgresClient.execute(connection, query, parameters, future);
-    
+
     return future.compose(o -> deleteNotesWithoutLinks(notesIds, postgresClient, connection, tenantId))
       .map(result -> null);
   }
@@ -248,14 +246,14 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
       .add(offset);
   }
 
-  private void addSelectClause(JsonArray parameters, StringBuilder query, String tenantId, String domain, String title) {
+  private void addSelectClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {
     query.append(String.format(SELECT_NOTES_BY_DOMAIN_AND_TITLE, getTableName(tenantId)));
     parameters
       .add(domain)
       .add(getTitleRegexp(title));
   }
 
-  private void addSelectCountClause(JsonArray parameters, StringBuilder query, String tenantId, String domain, String title) {
+  private void addSelectCountClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {
     query.append(String.format(COUNT_NOTES_BY_DOMAIN_AND_TITLE, getTableName(tenantId)));
     parameters
       .add(domain)
