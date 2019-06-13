@@ -75,7 +75,7 @@ public class TestBase {
       .notifier(new Slf4jNotifier(true)));
 
   @BeforeClass
-  public static void setup(TestContext context) {
+  public static void setUpBeforeClass(TestContext context) {
 
     vertx = Vertx.vertx();
 
@@ -96,8 +96,6 @@ public class TestBase {
     RestAssured.port = port;
 
     startVerticle(options);
-
-    postTenant(options);
   }
 
   private static void startVerticle(DeploymentOptions options) {
@@ -105,22 +103,12 @@ public class TestBase {
     logger.info("Start verticle");
 
     CompletableFuture<Void> future = new CompletableFuture<>();
-    vertx.deployVerticle(RestVerticle.class.getName(), options, event -> future.complete(null));
-    future.join();
-  }
-
-  private static void postTenant(DeploymentOptions options) {
-
-    logger.info("Post tenant");
-
-    TenantClient tenantClient = new TenantClient(host + ":" + port, STUB_TENANT, STUB_TOKEN);
-
-    CompletableFuture<Void> future = new CompletableFuture<>();
-    vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
+    vertx.deployVerticle(RestVerticle.class.getName(), options, event -> {
       try {
+        TenantClient tenantClient = new TenantClient(host + ":" + port, STUB_TENANT, STUB_TOKEN);
         tenantClient.postTenant(null, res2 -> future.complete(null));
       } catch (Exception e) {
-        e.printStackTrace();
+        future.completeExceptionally(e);
       }
     });
     future.join();

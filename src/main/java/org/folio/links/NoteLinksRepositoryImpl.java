@@ -54,7 +54,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<Void> updateNoteLinks(Link link, String tenantId, List<String> assignNotes, List<String> unAssignNotes) {
+  public Future<Void> updateNoteLinks(Link link, List<String> assignNotes, List<String> unAssignNotes, String tenantId) {
     PostgresClient postgresClient = pgClient(tenantId);
     MutableObject<AsyncResult<SQLConnection>> connection = new MutableObject<>();
 
@@ -70,14 +70,14 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<NoteCollection> getNoteCollection(Status status, String tenantId, Order order,
-                                                  OrderBy orderBy, String domain, String title, Link link, int limit,
-                                                  int offset) {
+  public Future<NoteCollection> findNotesByQuery(Status status, Order order,
+                                                 OrderBy orderBy, String domain, String title, Link link, int limit,
+                                                 int offset, String tenantId) {
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
 
-    addSelectClause(parameters, queryBuilder, tenantId, domain, title);
-    
+    addSelectClause(parameters, queryBuilder, domain, title, tenantId);
+
     String jsonLink = Json.encode(link);
     addWhereClause(parameters, queryBuilder, status, jsonLink);
 
@@ -93,12 +93,12 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<Integer> getNoteCount(Status status, String domain, String title, Link link,
-                                      String tenantId) {
+  public Future<Integer> countNotes(Status status, String domain, String title, Link link,
+                                    String tenantId) {
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
 
-    addSelectCountClause(parameters, queryBuilder, tenantId, domain, title);
+    addSelectCountClause(parameters, queryBuilder, domain, title, tenantId);
 
     String jsonLink = Json.encode(link);
     addWhereClause(parameters, queryBuilder, status, jsonLink);
@@ -120,7 +120,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
     Future<UpdateResult> future = Future.future();
     postgresClient.execute(connection, query, parameters, future);
-    
+
     return future.map(result -> null);
   }
 
@@ -135,7 +135,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
     Future<UpdateResult> future = Future.future();
     postgresClient.execute(connection, query, parameters, future);
-    
+
     return future.compose(o -> deleteNotesWithoutLinks(notesIds, postgresClient, connection, tenantId))
       .map(result -> null);
   }
@@ -248,14 +248,14 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
       .add(offset);
   }
 
-  private void addSelectClause(JsonArray parameters, StringBuilder query, String tenantId, String domain, String title) {
+  private void addSelectClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {
     query.append(String.format(SELECT_NOTES_BY_DOMAIN_AND_TITLE, getTableName(tenantId)));
     parameters
       .add(domain)
       .add(getTitleRegexp(title));
   }
 
-  private void addSelectCountClause(JsonArray parameters, StringBuilder query, String tenantId, String domain, String title) {
+  private void addSelectCountClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {
     query.append(String.format(COUNT_NOTES_BY_DOMAIN_AND_TITLE, getTableName(tenantId)));
     parameters
       .add(domain)

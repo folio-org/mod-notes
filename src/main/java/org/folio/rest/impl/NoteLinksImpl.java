@@ -78,8 +78,8 @@ public class NoteLinksImpl implements NoteLinks {
     Order parsedOrder = Order.valueOf(order.toUpperCase());
     OrderBy parsedOrderBy = OrderBy.valueOf(orderBy.toUpperCase());
 
-    Future<NoteCollection> notes = noteLinksService.getNoteCollection(parsedStatus, tenantId, parsedOrder,
-      parsedOrderBy, domain, title, link, limit, offset);
+    Future<NoteCollection> notes = noteLinksService.findNotesByQuery(parsedStatus, parsedOrder,
+      parsedOrderBy, domain, title, link, limit, offset, tenantId);
 
     respond(notes, GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse::respond200WithApplicationJson,
       asyncResultHandler);

@@ -27,20 +27,18 @@ public class NoteLinksServiceImpl implements NoteLinksService {
     List<String> assignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.ASSIGNED);
     List<String> unAssignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.UNASSIGNED);
 
-    return noteLinksRepository.updateNoteLinks(link, tenantId, assignNotes,
-      unAssignNotes);
+    return noteLinksRepository.updateNoteLinks(link, assignNotes, unAssignNotes, tenantId);
   }
 
   @Override
-  public Future<NoteCollection> getNoteCollection(Status parsedStatus, String tenantId, Order parsedOrder,
-                                                  OrderBy parsedOrderBy, String domain, String title, Link link, int limit, int offset) {
+  public Future<NoteCollection> findNotesByQuery(Status parsedStatus, Order parsedOrder,
+                                                 OrderBy parsedOrderBy, String domain, String title, Link link, int limit, int offset, String tenantId) {
     MutableObject<Integer> mutableTotalRecords = new MutableObject<>();
-    return noteLinksRepository.getNoteCount(parsedStatus, domain, title, link, tenantId)
+    return noteLinksRepository.countNotes(parsedStatus, domain, title, link, tenantId)
       .compose(count -> {
         mutableTotalRecords.setValue(count);
-        return noteLinksRepository.getNoteCollection(parsedStatus, tenantId, parsedOrder, parsedOrderBy,
-          domain, title,
-          link, limit, offset);
+        return noteLinksRepository.findNotesByQuery(parsedStatus, parsedOrder, parsedOrderBy,
+          domain, title, link, limit, offset, tenantId);
       })
       .map(notes -> {
         notes.setTotalRecords(mutableTotalRecords.getValue());

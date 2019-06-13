@@ -12,10 +12,10 @@ import org.folio.rest.model.Status;
 
 public interface NoteLinksRepository {
 
-  Future<Void> updateNoteLinks(Link link, String tenantId, List<String> assignNotes, List<String> unAssignNotes);
+  Future<Void> updateNoteLinks(Link link, List<String> assignNotes, List<String> unAssignNotes, String tenantId);
 
-  Future<NoteCollection> getNoteCollection(Status status, String tenantId, Order order,
-                                           OrderBy orderBy, String domain, String title, Link link, int limit, int offset);
+  Future<NoteCollection> findNotesByQuery(Status status, Order order, OrderBy orderBy, String domain, String title,
+                                          Link link, int limit, int offset, String tenantId);
 
-  Future<Integer> getNoteCount(Status status, String domain, String title, Link link, String tenantId);
+  Future<Integer> countNotes(Status status, String domain, String title, Link link, String tenantId);
 }

@@ -60,7 +60,7 @@ public class NoteTypesImplTest extends TestBase {
   private static final int NOTE_TOTAL = 10;
   private static final String STUB_NOTE_TYPE_ID = "13f21797-d25b-46dc-8427-1759d1db2057";
   private static final String NOT_EXISTING_STUB_ID = "9798274e-ce9d-46ab-aa28-00ca9cf4698a";
-  
+
   private static final String NOTE_TYPES_ENDPOINT = "/note-types";
   private static final String TOTAL_RECORDS = "totalRecords";
   private static final String NOTE_TYPES = "noteTypes";
@@ -68,13 +68,12 @@ public class NoteTypesImplTest extends TestBase {
   private static final int MAX_LIMIT_AND_OFFSET = 2147483647;
   private static final int NULL_LIMIT_AND_OFFSET = 0;
 
-  private static final RegexPattern CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN = 
+  private static final RegexPattern CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN =
     //new RegexPattern("/configurations/entries.+NOTES.+note\\.types\\.number\\.limit.*"), true);
     new RegexPattern("/configurations/entries.*");
 
   private ObjectMapper mapper;
   private EasyRandom noteTypeRandom;
-
 
   @Before
   public void setUp() throws IOException, URISyntaxException {

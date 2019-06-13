@@ -24,7 +24,7 @@ import org.folio.rest.tools.utils.TenantTool;
  */
 public class UserLookUp {
   private static final Logger logger = LoggerFactory.getLogger(UserLookUp.class);
-  
+
   private String userName;
   private String firstName;
   private String middleName;
@@ -60,7 +60,7 @@ public class UserLookUp {
   public String getMiddleName() {
     return middleName;
   }
-  
+
   /**
    * Returns the last name.
    *
@@ -75,7 +75,7 @@ public class UserLookUp {
     return "UserInfo [userName=" + userName
         + ", firstName=" + firstName + ", middleName=" + middleName + ", lastName=" + lastName + ']';
   }
-  
+
   /**
    * Returns the user information for the userid specified in the original
    * request.
@@ -86,7 +86,7 @@ public class UserLookUp {
   public static Future<UserLookUp> getUserInfo(final Map<String, String> okapiHeaders) {
     CaseInsensitiveHeaders headers = new CaseInsensitiveHeaders();
     headers.addAll(okapiHeaders);
-    
+
     final String tenantId = TenantTool.calculateTenantId(headers.get(RestVerticle.OKAPI_HEADER_TENANT));
     final String userId = headers.get(RestVerticle.OKAPI_USERID_HEADER);
     Future<UserLookUp> future = Future.future();
@@ -95,7 +95,7 @@ public class UserLookUp {
       future.fail(new BadRequestException("Missing user id header, cannot look up user"));
       return future;
     }
-    
+
     String okapiURL = headers.get(XOkapiHeaders.URL);
     String url = "/users/" + userId;
     try {
@@ -105,12 +105,12 @@ public class UserLookUp {
           try {
             if (Response.isSuccess(response.getCode())) {
                 return mapUserInfo(response);
-            } else if (response.getCode() == 401) {
+            } else if (response.getCode() == 401 || response.getCode() == 403) {
                 logger.error("Authorization failure");
-                throw new NotAuthorizedException("Authorization failure");  
+                throw new NotAuthorizedException("Authorization failure");
             } else if (response.getCode() == 404) {
                 logger.error("User not found");
-                throw new NotFoundException("User not found");  
+                throw new NotFoundException("User not found");
             } else {
                 logger.error("Cannot get user data: " + response.getError().toString(), response.getException());
                  throw new IllegalStateException(response.getError().toString());

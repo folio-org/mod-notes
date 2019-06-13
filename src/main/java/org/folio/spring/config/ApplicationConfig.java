@@ -5,6 +5,8 @@ import static org.folio.rest.exc.RestExceptionHandlers.completionCause;
 import static org.folio.rest.exc.RestExceptionHandlers.generalHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.logged;
 import static org.folio.rest.exc.RestExceptionHandlers.notFoundHandler;
+import static org.folio.rest.exceptions.NoteExceptionHandlers.badRequestExtendedHandler;
+import static org.folio.rest.exceptions.NoteExceptionHandlers.entityValidationHandler;
 
 import javax.ws.rs.core.Response;
 
@@ -21,7 +23,10 @@ import org.folio.config.ModConfiguration;
 import org.folio.rest.tools.messages.Messages;
 
 @Configuration
-@ComponentScan(basePackages = {"org.folio.type","org.folio.links"})
+@ComponentScan(basePackages = {
+  "org.folio.type",
+  "org.folio.note",
+  "org.folio.links"})
 public class ApplicationConfig {
 
   @Bean
@@ -38,7 +43,9 @@ public class ApplicationConfig {
 
   @Bean
   public PartialFunction<Throwable, Response> defaultExcHandler() {
-    return logged(badRequestHandler()
+    return logged(entityValidationHandler()
+                .orElse(badRequestHandler())
+                .orElse(badRequestExtendedHandler())
                 .orElse(notFoundHandler())
                 .orElse(generalHandler())
                 .compose(completionCause())); // extract the cause before applying any handler

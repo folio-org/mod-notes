@@ -27,6 +27,7 @@ import io.vertx.core.json.Json;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,7 +54,14 @@ public class NoteLinksImplTest extends TestBase {
 
   @BeforeClass
   public static void setUpBeforeClass(TestContext context) {
+    TestBase.setUpBeforeClass(context);
     createNoteTypes(context);
+  }
+
+  @AfterClass
+  public static void tearDownAfterClass() {
+    DBTestUtil.deleteAllNoteTypes(vertx);
+    TestBase.tearDownAfterClass();
   }
 
   @Before

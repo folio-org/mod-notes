@@ -13,6 +13,6 @@ public interface NoteLinksService {
 
   Future<Void> updateNoteLinks(NoteLinksPut entity, Link link, String tenantId);
 
-  Future<NoteCollection> getNoteCollection(Status status, String tenantId, Order order,
-                                           OrderBy orderBy, String domain, String title, Link link, int limit, int offset);
+  Future<NoteCollection> findNotesByQuery(Status parsedStatus, Order parsedOrder, OrderBy parsedOrderBy, String domain,
+                                          String title, Link link, int limit, int offset, String tenantId);
 }
