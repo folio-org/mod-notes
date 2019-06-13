@@ -1,6 +1,7 @@
 package org.folio.links;
 
 import io.vertx.core.Future;
+
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
@@ -12,6 +13,6 @@ public interface NoteLinksService {
 
   Future<Void> updateNoteLinks(NoteLinksPut entity, Link link, String tenantId);
 
-  Future<NoteCollection> findByQueryNotes(Status parsedStatus, Order parsedOrder, OrderBy parsedOrderBy, String domain,
+  Future<NoteCollection> findNotesByQuery(Status parsedStatus, Order parsedOrder, OrderBy parsedOrderBy, String domain,
                                           String title, Link link, int limit, int offset, String tenantId);
 }

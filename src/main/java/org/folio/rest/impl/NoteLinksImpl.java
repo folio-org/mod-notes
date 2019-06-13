@@ -1,10 +1,20 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.Future.succeededFuture;
+
+import java.util.Map;
+import java.util.function.Function;
+
+import javax.ws.rs.core.Response;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+
 import org.folio.common.pf.PartialFunction;
 import org.folio.links.NoteLinksService;
 import org.folio.rest.RestVerticle;
@@ -18,14 +28,6 @@ import org.folio.rest.model.OrderBy;
 import org.folio.rest.model.Status;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.spring.SpringContextUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-
-import javax.ws.rs.core.Response;
-import java.util.Map;
-import java.util.function.Function;
-
-import static io.vertx.core.Future.succeededFuture;
 
 public class NoteLinksImpl implements NoteLinks {
 
@@ -76,7 +78,7 @@ public class NoteLinksImpl implements NoteLinks {
     Order parsedOrder = Order.valueOf(order.toUpperCase());
     OrderBy parsedOrderBy = OrderBy.valueOf(orderBy.toUpperCase());
 
-    Future<NoteCollection> notes = noteLinksService.findByQueryNotes(parsedStatus, parsedOrder,
+    Future<NoteCollection> notes = noteLinksService.findNotesByQuery(parsedStatus, parsedOrder,
       parsedOrderBy, domain, title, link, limit, offset, tenantId);
 
     respond(notes, GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse::respond200WithApplicationJson,
