@@ -35,12 +35,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.folio.db.DbUtils;
+import org.folio.model.EntityLink;
+import org.folio.model.Order;
+import org.folio.model.OrderBy;
+import org.folio.model.RowPortion;
+import org.folio.model.Status;
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.model.Order;
-import org.folio.rest.model.OrderBy;
-import org.folio.rest.model.Status;
 import org.folio.rest.persist.PostgresClient;
 
 @Component
@@ -70,21 +72,20 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<NoteCollection> findNotesByQuery(Status status, Order order,
-                                                 OrderBy orderBy, String domain, String title, Link link, int limit,
-                                                 int offset, String tenantId) {
+  public Future<NoteCollection> findNotesByTitleAndStatus(EntityLink link, String title, Status status, OrderBy orderBy,
+      Order order, RowPortion rowPortion, String tenantId) {
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
 
-    addSelectClause(parameters, queryBuilder, domain, title, tenantId);
+    addSelectClause(parameters, queryBuilder, link.getDomain(), title, tenantId);
 
-    String jsonLink = Json.encode(link);
+    String jsonLink = Json.encode(toLink(link));
     addWhereClause(parameters, queryBuilder, status, jsonLink);
 
     if (status == Status.ALL) {
       addOrderByClause(parameters, queryBuilder, order, orderBy, jsonLink);
     }
-    addLimitOffset(parameters, queryBuilder, limit, offset);
+    addLimitOffset(parameters, queryBuilder, rowPortion);
 
     Future<ResultSet> future = Future.future();
     pgClient(tenantId).select(queryBuilder.toString(), parameters, future);
@@ -93,14 +94,13 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<Integer> countNotes(Status status, String domain, String title, Link link,
-                                    String tenantId) {
+  public Future<Integer> countNotesWithTitleAndStatus(EntityLink link, String title, Status status, String tenantId) {
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
 
-    addSelectCountClause(parameters, queryBuilder, domain, title, tenantId);
+    addSelectCountClause(parameters, queryBuilder, link.getDomain(), title, tenantId);
 
-    String jsonLink = Json.encode(link);
+    String jsonLink = Json.encode(toLink(link));
     addWhereClause(parameters, queryBuilder, status, jsonLink);
 
     Future<ResultSet> future = Future.future();
@@ -205,6 +205,10 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     return future;
   }
 
+  private Link toLink(EntityLink link) {
+    return new Link().withType(link.getType()).withId(link.getId());
+  }
+
   private Integer mapCount(ResultSet resultSet) {
     return resultSet.getRows().get(0).getInteger("count");
   }
@@ -241,11 +245,11 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     return parameters;
   }
 
-  private void addLimitOffset(JsonArray parameters, StringBuilder query, int limit, int offset) {
+  private void addLimitOffset(JsonArray parameters, StringBuilder query, RowPortion rowPortion) {
     query.append(LIMIT_OFFSET);
     parameters
-      .add(limit)
-      .add(offset);
+      .add(rowPortion.getLimit())
+      .add(rowPortion.getOffset());
   }
 
   private void addSelectClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {

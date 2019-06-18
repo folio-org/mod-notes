@@ -8,13 +8,15 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.folio.model.EntityLink;
+import org.folio.model.Order;
+import org.folio.model.OrderBy;
+import org.folio.model.RowPortion;
+import org.folio.model.Status;
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinkPut;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
-import org.folio.rest.model.Order;
-import org.folio.rest.model.OrderBy;
-import org.folio.rest.model.Status;
 
 @Component
 public class NoteLinksServiceImpl implements NoteLinksService {
@@ -31,14 +33,15 @@ public class NoteLinksServiceImpl implements NoteLinksService {
   }
 
   @Override
-  public Future<NoteCollection> findNotesByQuery(Status parsedStatus, Order parsedOrder,
-                                                 OrderBy parsedOrderBy, String domain, String title, Link link, int limit, int offset, String tenantId) {
+  public Future<NoteCollection> findNotesByTitleAndStatus(EntityLink link, String title, Status status,
+                                                          OrderBy orderBy, Order order, RowPortion rowPortion, String tenantId) {
     MutableObject<Integer> mutableTotalRecords = new MutableObject<>();
-    return noteLinksRepository.countNotes(parsedStatus, domain, title, link, tenantId)
+
+    return noteLinksRepository.countNotesWithTitleAndStatus(link, title, status, tenantId)
       .compose(count -> {
         mutableTotalRecords.setValue(count);
-        return noteLinksRepository.findNotesByQuery(parsedStatus, parsedOrder, parsedOrderBy,
-          domain, title, link, limit, offset, tenantId);
+        return noteLinksRepository.findNotesByTitleAndStatus(link, title, status, orderBy, order, rowPortion,
+          tenantId);
       })
       .map(notes -> {
         notes.setTotalRecords(mutableTotalRecords.getValue());

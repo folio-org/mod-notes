@@ -2,17 +2,20 @@ package org.folio.links;
 
 import io.vertx.core.Future;
 
+import org.folio.model.EntityLink;
+import org.folio.model.Order;
+import org.folio.model.OrderBy;
+import org.folio.model.RowPortion;
+import org.folio.model.Status;
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
-import org.folio.rest.model.Order;
-import org.folio.rest.model.OrderBy;
-import org.folio.rest.model.Status;
 
 public interface NoteLinksService {
 
   Future<Void> updateNoteLinks(NoteLinksPut entity, Link link, String tenantId);
 
-  Future<NoteCollection> findNotesByQuery(Status parsedStatus, Order parsedOrder, OrderBy parsedOrderBy, String domain,
-                                          String title, Link link, int limit, int offset, String tenantId);
+  Future<NoteCollection> findNotesByTitleAndStatus(EntityLink link, String title, Status status,
+                                                   OrderBy orderBy, Order order,
+                                                   RowPortion rowPortion, String tenantId);
 }
