@@ -17,11 +17,11 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
-    <raml-module-builder.version>24.0.0</raml-module-builder.version>
+    <raml-module-builder.version>25.0.1</raml-module-builder.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <jsonschema_paths>types/**,raml-util/schemas</jsonschema_paths>
     <vertx-version>3.5.4</vertx-version>
-    <folio-service-tools.version>1.0.0</folio-service-tools.version>
+    <folio-service-tools.version>1.0.1</folio-service-tools.version>
   </properties>
 
   <repositories>
