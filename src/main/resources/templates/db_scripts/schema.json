@@ -4,8 +4,6 @@
       "tableName": "note_data",
       "fromModuleVersion": 0.2,
       "withMetadata": true,
-      "generateId": true,
-      "populateJsonWithId": true,
       "likeIndex": [
         {
           "fieldName": "title",
@@ -16,10 +14,8 @@
     },
     {
       "tableName": "note_type",
-      "generateId": true,
       "fromModuleVersion": 1.0,
       "withMetadata": true,
-      "populateJsonWithId": true,
       "uniqueIndex" : [
         {
           "fieldName" : "name",

@@ -6,11 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.ext.sql.ResultSet;
 import io.vertx.ext.sql.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -68,6 +70,10 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   public Future<NoteType> save(NoteType entity, String tenantId) {
     Future<String> future = Future.future(); // future with id as result
 
+    if (StringUtils.isBlank(entity.getId())) {
+      entity.setId(UUID.randomUUID().toString());
+    }
+
     pgClient(tenantId).save(NOTE_TYPE_TABLE, entity.getId(), entity, future);
 
     return future.map(id -> updateId(entity, id)); // update id only, copy the rest from the original entity
@@ -92,9 +98,7 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   }
 
   private PostgresClient pgClient(String tenantId) {
-    PostgresClient pg = PostgresClient.getInstance(vertx, tenantId);
-    pg.setIdField("id");
-    return pg;
+    return PostgresClient.getInstance(vertx, tenantId);
   }
 
   private NoteTypeCollection toNoteTypeCollection(Results<NoteType> results) {

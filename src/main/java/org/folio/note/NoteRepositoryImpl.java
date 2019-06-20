@@ -2,6 +2,7 @@ package org.folio.note;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.NotFoundException;
@@ -11,11 +12,12 @@ import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.sql.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.folio.db.CqlQuery;
-import org.folio.model.NoteView;
+import org.folio.db.model.NoteView;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.persist.PostgresClient;
@@ -49,6 +51,11 @@ public class NoteRepositoryImpl implements NoteRepository {
   @Override
   public Future<Note> save(Note note, String tenantId) {
     Future<String> future = Future.future();
+
+    if (StringUtils.isBlank(note.getId())) {
+      note.setId(UUID.randomUUID().toString());
+    }
+
     PostgresClient.getInstance(vertx, tenantId)
       .save(NOTE_TABLE, note.getId(), note, future);
 

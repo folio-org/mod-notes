@@ -27,13 +27,11 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.resource.Notes;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.spring.SpringContextUtil;
 
 public class NotesResourceImpl implements Notes {
   private static final String LOCATION_PREFIX = "/notes/";
-  private static final String IDFIELDNAME = "id";
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
 
   @Autowired
@@ -44,7 +42,6 @@ public class NotesResourceImpl implements Notes {
   // Get this from the restVerticle, like the rest, when it gets defined there.
   public NotesResourceImpl(Vertx vertx, String tenantId) {
     SpringContextUtil.autowireDependencies(this, vertx.getOrCreateContext());
-    PostgresClient.getInstance(vertx, tenantId).setIdField(IDFIELDNAME);
   }
 
   @Override

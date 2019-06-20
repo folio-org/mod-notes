@@ -343,7 +343,7 @@ public class NotesTest extends TestBase {
   public void shouldFindNoteByPartialUserId() {
     postNoteWithOk(NOTE_1, USER9);
 
-    final String response = getWithOk("/notes?query=metadata.createdByUserId=*9999*").asString();
+    final String response = getWithOk("/notes?query=metadata.createdByUserId=9999*").asString();
     assertThat(response, containsString("First note"));
   }
 
