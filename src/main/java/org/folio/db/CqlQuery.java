@@ -3,10 +3,10 @@ package org.folio.db;
 import static org.folio.db.DbUtils.ALL_FIELDS;
 import static org.folio.db.DbUtils.getCQLWrapper;
 
+import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 import io.vertx.core.Future;
 
