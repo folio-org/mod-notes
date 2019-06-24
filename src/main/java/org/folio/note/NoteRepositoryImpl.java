@@ -7,22 +7,21 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.NotFoundException;
 
-import org.apache.commons.lang3.StringUtils;
-import org.folio.db.CqlQuery;
-import org.folio.db.model.NoteView;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.interfaces.Results;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.sql.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import org.folio.db.CqlQuery;
+import org.folio.model.NoteView;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.interfaces.Results;
 
 @Component
 public class NoteRepositoryImpl implements NoteRepository {

@@ -2,16 +2,17 @@ package org.folio.rest.impl;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static org.folio.test.util.TestUtil.readFile;
-import static org.folio.util.NoteTestData.NOTE_2;
-import static org.folio.util.NoteTestData.PACKAGE_ID;
-import static org.folio.util.NoteTestData.PACKAGE_TYPE;
-import static org.folio.util.NoteTestData.USER8;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.folio.test.util.TestUtil.readFile;
+import static org.folio.util.NoteTestData.NOTE_2;
+import static org.folio.util.NoteTestData.PACKAGE_ID;
+import static org.folio.util.NoteTestData.PACKAGE_TYPE;
+import static org.folio.util.NoteTestData.USER8;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,12 +20,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.folio.rest.TestBase;
-import org.folio.rest.jaxrs.model.Link;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
-import org.folio.rest.jaxrs.model.NoteLinkPut;
-import org.folio.rest.jaxrs.model.NoteLinksPut;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+import io.vertx.core.json.Json;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -32,13 +33,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-
-import io.vertx.core.json.Json;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.folio.rest.TestBase;
+import org.folio.rest.jaxrs.model.Link;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.rest.jaxrs.model.NoteLinkPut;
+import org.folio.rest.jaxrs.model.NoteLinksPut;
+import org.folio.spring.SpringContextUtil;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteLinksImplTest extends TestBase {
@@ -65,6 +66,7 @@ public class NoteLinksImplTest extends TestBase {
 
   @Before
   public void setUp() throws Exception {
+    SpringContextUtil.autowireDependenciesFromFirstContext(this, vertx);
     stubFor(
       get(new UrlPathPattern(new EqualToPattern("/users/88888888-8888-4888-8888-888888888888"), false))
         .willReturn(new ResponseDefinitionBuilder()
@@ -189,9 +191,9 @@ public class NoteLinksImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn500OnTransactionFailure() {
+  public void shouldReturn400OnInvalidLinkId() {
     String putBody = Json.encode(createPutLinksRequest(NoteLinkPut.Status.ASSIGNED, INVALID_ID));
-    putWithStatus(NOTE_LINKS_PATH, putBody, 500, USER8);
+    putWithStatus(NOTE_LINKS_PATH, putBody, 400, USER8);
   }
 
   @Test
@@ -221,11 +223,12 @@ public class NoteLinksImplTest extends TestBase {
     createNote();
     createNote();
 
-    NoteCollection notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1")
+    NoteCollection notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1")
       .as(NoteCollection.class);
 
     assertEquals(1, notes.getNotes().size());
-    assertEquals(2, (int)notes.getTotalRecords());
+    assertEquals(2, (int) notes.getTotalRecords());
   }
 
   @Test

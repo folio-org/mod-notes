@@ -5,6 +5,13 @@ import static io.vertx.core.Future.failedFuture;
 import java.util.List;
 import java.util.Objects;
 
+import io.vertx.core.Future;
+import io.vertx.core.json.Json;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import org.folio.common.OkapiParams;
 import org.folio.rest.exceptions.InputValidationException;
 import org.folio.rest.jaxrs.model.Link;
@@ -12,13 +19,6 @@ import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.UserDisplayInfo;
 import org.folio.userlookup.UserLookUp;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import io.vertx.core.Future;
-import io.vertx.core.json.Json;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 @Component
 public class NoteServiceImpl implements NoteService {

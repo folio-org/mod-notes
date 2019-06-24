@@ -1,16 +1,16 @@
-package org.folio.db.model;
+package org.folio.model;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.UserDisplayInfo;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Database representation of a note

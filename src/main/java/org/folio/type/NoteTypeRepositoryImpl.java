@@ -8,19 +8,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.ext.sql.ResultSet;
+import io.vertx.ext.sql.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import org.folio.db.CqlQuery;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.interfaces.Results;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.UpdateResult;
 
 @Component
 public class NoteTypeRepositoryImpl implements NoteTypeRepository {

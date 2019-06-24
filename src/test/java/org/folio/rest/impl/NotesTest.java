@@ -6,6 +6,16 @@ import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_NO_CONTENT;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import static org.folio.test.util.TestUtil.readFile;
 import static org.folio.util.NoteTestData.DOMAIN;
 import static org.folio.util.NoteTestData.NOTE_1;
@@ -26,25 +36,18 @@ import static org.folio.util.NoteTestData.UPDATE_NOTE_REQUEST;
 import static org.folio.util.NoteTestData.UPDATE_NOTE_REQUEST_WITH_LINKS;
 import static org.folio.util.NoteTestData.USER19;
 import static org.folio.util.NoteTestData.USER8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
 
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.TestBase;
-import org.folio.rest.jaxrs.model.Error;
-import org.folio.rest.jaxrs.model.Errors;
-import org.folio.rest.jaxrs.model.Metadata;
-import org.folio.rest.jaxrs.model.Note;
-import org.folio.rest.jaxrs.model.NoteCollection;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+import io.restassured.RestAssured;
+import io.restassured.http.Header;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -53,16 +56,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-
-import io.restassured.RestAssured;
-import io.restassured.http.Header;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.TestBase;
+import org.folio.rest.jaxrs.model.Error;
+import org.folio.rest.jaxrs.model.Errors;
+import org.folio.rest.jaxrs.model.Metadata;
+import org.folio.rest.jaxrs.model.Note;
+import org.folio.rest.jaxrs.model.NoteCollection;
 
 /**
  * Interface test for mod-notes. Tests the API with restAssured, directly

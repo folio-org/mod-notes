@@ -6,18 +6,18 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 
+import io.vertx.core.Future;
+import io.vertx.core.http.CaseInsensitiveHeaders;
+import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.tools.client.HttpClientFactory;
 import org.folio.rest.tools.client.Response;
 import org.folio.rest.tools.client.interfaces.HttpClientInterface;
 import org.folio.rest.tools.utils.TenantTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.vertx.core.Future;
-import io.vertx.core.http.CaseInsensitiveHeaders;
-import io.vertx.core.json.JsonObject;
 
 /**
  * Retrieves user information from mod-users /users/{userId} endpoint.

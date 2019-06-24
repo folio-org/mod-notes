@@ -1,10 +1,10 @@
 package org.folio.note;
 
 
+import io.vertx.core.Future;
+
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
-
-import io.vertx.core.Future;
 
 public interface NoteRepository {
   Future<NoteCollection> findByQuery(String cqlQuery, int offset, int limit, String tenantId);
