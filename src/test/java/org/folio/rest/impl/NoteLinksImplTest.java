@@ -191,9 +191,9 @@ public class NoteLinksImplTest extends TestBase {
   }
 
   @Test
-  public void shouldReturn500OnTransactionFailure() {
+  public void shouldReturn400OnInvalidLinkId() {
     String putBody = Json.encode(createPutLinksRequest(NoteLinkPut.Status.ASSIGNED, INVALID_ID));
-    putWithStatus(NOTE_LINKS_PATH, putBody, 500, USER8);
+    putWithStatus(NOTE_LINKS_PATH, putBody, 400, USER8);
   }
 
   @Test
