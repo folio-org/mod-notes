@@ -1,9 +1,9 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.ResponseHelper.respond;
 import static org.folio.rest.tools.utils.TenantTool.tenantId;
 
 import java.util.Map;
-import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
 
@@ -28,8 +28,8 @@ public class NoteTypesImpl implements NoteTypes {
 
   @Autowired
   private NoteTypeService typeService;
-  @Autowired @Qualifier("defaultExcHandler")
-  private PartialFunction<Throwable, Response> exceptionHandler;
+  @Autowired @Qualifier("noteTypesExcHandler")
+  private PartialFunction<Throwable, Response> excHandler;
 
 
   public NoteTypesImpl() {
@@ -39,55 +39,48 @@ public class NoteTypesImpl implements NoteTypes {
   @Validate
   @Override
   public void getNoteTypes(String query, int offset, int limit, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
     Future<NoteTypeCollection> found = typeService.findByQuery(query, offset, limit, lang, tenantId(okapiHeaders));
 
-    respond(found, GetNoteTypesResponse::respond200WithApplicationJson, asyncResultHandler);
+    respond(found, GetNoteTypesResponse::respond200WithApplicationJson, asyncHandler, excHandler);
   }
 
   @Validate
   @Override
   public void postNoteTypes(String lang, NoteType entity, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
     Future<NoteType> saved = typeService.save(entity, new OkapiParams(okapiHeaders));
 
     respond(saved,
       noteType -> PostNoteTypesResponse.respond201WithApplicationJson(noteType, PostNoteTypesResponse.headersFor201()),
-      asyncResultHandler);
+      asyncHandler, excHandler);
   }
 
   @Validate
   @Override
   public void getNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
-                                   Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+                                   Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
     Future<NoteType> found = typeService.findById(typeId, tenantId(okapiHeaders));
 
-    respond(found, GetNoteTypesByTypeIdResponse::respond200WithApplicationJson, asyncResultHandler);
+    respond(found, GetNoteTypesByTypeIdResponse::respond200WithApplicationJson, asyncHandler, excHandler);
   }
 
   @Validate
   @Override
   public void deleteNoteTypesByTypeId(String typeId, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
     Future<Void> deleted = typeService.delete(typeId, tenantId(okapiHeaders));
 
-    respond(deleted, v -> DeleteNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
+    respond(deleted, v -> DeleteNoteTypesByTypeIdResponse.respond204(), asyncHandler, excHandler);
   }
 
   @Validate
   @Override
   public void putNoteTypesByTypeId(String typeId, String lang, NoteType entity, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+      Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
     Future<Void> updated = typeService.update(typeId, entity, new OkapiParams(okapiHeaders));
 
-    respond(updated, v -> PutNoteTypesByTypeIdResponse.respond204(), asyncResultHandler);
-  }
-
-  private <T> void respond(Future<T> result, Function<T, Response> mapper,
-                                       Handler<AsyncResult<Response>> asyncResultHandler) {
-    result.map(mapper)
-      .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);
+    respond(updated, v -> PutNoteTypesByTypeIdResponse.respond204(), asyncHandler, excHandler);
   }
 
 }

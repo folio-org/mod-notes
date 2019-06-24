@@ -1,13 +1,15 @@
 package org.folio.spring.config;
 
+import static org.folio.rest.exc.ExceptionPredicates.instanceOf;
 import static org.folio.rest.exc.RestExceptionHandlers.badRequestHandler;
+import static org.folio.rest.exc.RestExceptionHandlers.baseBadRequestHandler;
+import static org.folio.rest.exc.RestExceptionHandlers.baseNotFoundHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.completionCause;
 import static org.folio.rest.exc.RestExceptionHandlers.generalHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.logged;
-import static org.folio.rest.exc.RestExceptionHandlers.notFoundHandler;
-import static org.folio.rest.exceptions.NoteExceptionHandlers.badRequestExtendedHandler;
 import static org.folio.rest.exceptions.NoteExceptionHandlers.entityValidationHandler;
 
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
 
 import com.rits.cloning.Cloner;
@@ -42,13 +44,30 @@ public class ApplicationConfig {
   }
 
   @Bean
-  public PartialFunction<Throwable, Response> defaultExcHandler() {
+  public PartialFunction<Throwable, Response> notesExcHandler() {
     return logged(entityValidationHandler()
-                .orElse(badRequestHandler())
-                .orElse(badRequestExtendedHandler())
-                .orElse(notFoundHandler())
+                .orElse(baseBadRequestHandler())
+                .orElse(badRequestHandler(instanceOf(NotAuthorizedException.class)))
+                .orElse(baseNotFoundHandler())
                 .orElse(generalHandler())
                 .compose(completionCause())); // extract the cause before applying any handler
+  }
+
+  @Bean
+  public PartialFunction<Throwable, Response> noteTypesExcHandler() {
+    return logged(baseBadRequestHandler()
+      .orElse(baseNotFoundHandler())
+      .orElse(generalHandler())
+      .compose(completionCause())); // extract the cause before applying any handler
+  }
+
+  @Bean
+  public PartialFunction<Throwable, Response> noteLinksExcHandler() {
+    return logged(baseBadRequestHandler()
+      .orElse(badRequestHandler(instanceOf(IllegalArgumentException.class)))
+      .orElse(baseNotFoundHandler())
+      .orElse(generalHandler())
+      .compose(completionCause())); // extract the cause before applying any handler
   }
 
   @Bean

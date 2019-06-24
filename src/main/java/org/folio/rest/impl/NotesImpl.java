@@ -2,6 +2,9 @@ package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
 
+import static org.folio.common.pf.PartialFunctions.pf;
+import static org.folio.rest.tools.utils.TenantTool.tenantId;
+
 import java.util.Map;
 import java.util.function.Function;
 
@@ -21,26 +24,24 @@ import org.springframework.beans.factory.annotation.Qualifier;
 
 import org.folio.common.OkapiParams;
 import org.folio.common.pf.PartialFunction;
-import org.folio.common.pf.PartialFunctions;
 import org.folio.note.NoteService;
-import org.folio.rest.RestVerticle;
+import org.folio.rest.ResponseHelper;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.resource.Notes;
-import org.folio.rest.tools.utils.TenantTool;
 import org.folio.spring.SpringContextUtil;
 
-public class NotesResourceImpl implements Notes {
+public class NotesImpl implements Notes {
   private static final String LOCATION_PREFIX = "/notes/";
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
 
   @Autowired
   private NoteService noteService;
-  @Autowired @Qualifier("defaultExcHandler")
-  private PartialFunction<Throwable, Response> exceptionHandler;
+  @Autowired @Qualifier("notesExcHandler")
+  private PartialFunction<Throwable, Response> excHandler;
 
   // Get this from the restVerticle, like the rest, when it gets defined there.
-  public NotesResourceImpl(Vertx vertx, String tenantId) {
+  public NotesImpl(Vertx vertx, String tenantId) {
     SpringContextUtil.autowireDependencies(this, vertx.getOrCreateContext());
   }
 
@@ -49,55 +50,53 @@ public class NotesResourceImpl implements Notes {
   public void getNotes(String query,
                        int offset, int limit, String lang,
                        Map<String, String> okapiHeaders,
-                       Handler<AsyncResult<Response>> asyncResultHandler,
+                       Handler<AsyncResult<Response>> asyncHandler,
                        Context vertxContext) {
     logger.debug("Getting notes. " + offset + "+" + limit + " q=" + query);
-    String tenantId = TenantTool.calculateTenantId(
-      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    respond(noteService.getNotes(query, offset, limit, tenantId), GetNotesResponse::respond200WithApplicationJson, asyncResultHandler);
+    
+    ResponseHelper.respond(noteService.getNotes(query, offset, limit, tenantId(okapiHeaders)),
+      GetNotesResponse::respond200WithApplicationJson, asyncHandler, excHandler);
   }
 
   @Override
   @Validate
   public void postNotes(String lang, Note note, Map<String, String> okapiHeaders,
-                        Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
+                        Handler<AsyncResult<Response>> asyncHandler, Context context) {
     succeededFuture()
       .compose(o -> noteService.addNote(note, new OkapiParams(okapiHeaders)))
       .map(handleSuccessfulPost())
       .otherwise(
         userNotFoundHandler()
-          .orElse(exceptionHandler))
-      .setHandler(asyncResultHandler);
+          .orElse(excHandler))
+      .setHandler(asyncHandler);
   }
 
   @Override
   @Validate
   public void getNotesById(String id, String lang, Map<String, String> okapiHeaders,
-                           Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
-    String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    respond(noteService.getOneNote(id, tenantId), GetNotesByIdResponse
-      ::respond200WithApplicationJson, asyncResultHandler);
+                           Handler<AsyncResult<Response>> asyncHandler, Context context) {
+    ResponseHelper.respond(noteService.getOneNote(id, tenantId(okapiHeaders)),
+      GetNotesByIdResponse::respond200WithApplicationJson, asyncHandler, excHandler);
   }
 
   @Override
   @Validate
   public void deleteNotesById(String id, String lang, Map<String, String> okapiHeaders,
-                              Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    String tenantId = TenantTool.calculateTenantId(
-      okapiHeaders.get(RestVerticle.OKAPI_HEADER_TENANT));
-    respond(noteService.deleteNote(id, tenantId), o -> DeleteNotesByIdResponse.respond204(), asyncResultHandler);
+                              Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
+    ResponseHelper.respond(noteService.deleteNote(id, tenantId(okapiHeaders)),
+      o -> DeleteNotesByIdResponse.respond204(), asyncHandler, excHandler);
   }
 
   @Override
   @Validate
   public void putNotesById(String id, String lang, Note note, Map<String, String> okapiHeaders,
-                           Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+                           Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
     respond(() -> {
         OkapiParams okapiParams = new OkapiParams(okapiHeaders);
         return noteService.updateNote(id, note, okapiParams);
       },
       o -> PutNotesByIdResponse.respond204(),
-      asyncResultHandler);
+      asyncHandler);
   }
 
   private Function<Note, Response> handleSuccessfulPost() {
@@ -107,20 +106,14 @@ public class NotesResourceImpl implements Notes {
   }
 
   private PartialFunction<Throwable, Response> userNotFoundHandler() {
-    return PartialFunctions.pf((NotFoundException.class::isInstance), t -> PostNotesResponse.respond400WithTextPlain(t.getMessage()));
+    return pf((NotFoundException.class::isInstance), t -> PostNotesResponse.respond400WithTextPlain(t.getMessage()));
   }
 
   private <T> void respond(Producer<Future<T>> futureProducer, Function<T, Response> mapper,
-                           Handler<AsyncResult<Response>> asyncResultHandler) {
+                           Handler<AsyncResult<Response>> asyncHandler) {
     Future<T> future = succeededFuture()
       .compose(o -> futureProducer.call());
-    respond(future, mapper, asyncResultHandler);
+    ResponseHelper.respond(future, mapper, asyncHandler, excHandler);
   }
-
-  private <T> void respond(Future<T> result, Function<T, Response> mapper,
-                           Handler<AsyncResult<Response>> asyncResultHandler) {
-    result.map(mapper)
-      .otherwise(exceptionHandler)
-      .setHandler(asyncResultHandler);
-  }
+  
 }
