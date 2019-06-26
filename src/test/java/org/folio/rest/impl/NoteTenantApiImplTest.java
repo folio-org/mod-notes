@@ -17,7 +17,11 @@ public class NoteTenantApiImplTest extends TestBase {
 
   @Test
   public void shouldCreateDefaultNoteTypeWhenTenantCreated() {
-    getWithValidateBody(NOTE_TYPES_ENDPOINT,SC_OK)
-      .body("noteTypes[0].name",is(DEFAULT_NOTE_TYPE_NAME));
+    try {
+      getWithValidateBody(NOTE_TYPES_ENDPOINT, SC_OK)
+        .body("noteTypes[0].name", is(DEFAULT_NOTE_TYPE_NAME));
+    } finally {
+      DBTestUtil.deleteAllNoteTypes(vertx);
+    }
   }
 }

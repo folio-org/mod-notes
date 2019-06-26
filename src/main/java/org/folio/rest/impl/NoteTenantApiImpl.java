@@ -38,25 +38,31 @@ public class NoteTenantApiImpl extends TenantAPI {
   @Override
   public void postTenant(TenantAttributes entity, Map<String, String> headers, Handler<AsyncResult<Response>> handlers,
                          Context context) {
-    super.postTenant(entity, headers, result -> {
-      if (result.failed()) {
-        handlers.handle(result);
-      } else {
-        populateDefaultNoteType(headers)
-          .setHandler(event -> handlers.handle(result));
-      }
-    }, context);
+    Future<Response> future = Future.future();
+    super.postTenant(entity, headers, future, context);
+
+    future.compose(response -> populateDefaultNoteType(headers).map(response))
+    .setHandler(handlers);
   }
 
-  private Future<NoteType> populateDefaultNoteType(Map<String, String> headers) {
+  private Future<Object> populateDefaultNoteType(Map<String, String> headers) {
     return Future.succeededFuture(null)
       .compose(o -> {
+        String tenant = new OkapiParams(headers).getTenant();
         NoteType type = new NoteType()
           .withName(DEFAULT_NOTE_TYPE_NAME)
           .withMetadata(new Metadata()
-          .withCreatedDate(new Date())
-          .withUpdatedDate(new Date()));
-        return typeRepository.save(type, new OkapiParams(headers).getTenant());
+            .withCreatedDate(new Date())
+            .withUpdatedDate(new Date()));
+
+        return typeRepository.count(tenant)
+          .compose(count -> {
+            if(count == 0){
+              return typeRepository.save(type, tenant)
+                .map(savedType -> null);
+            }
+            return Future.succeededFuture(null);
+          });
       })
       .otherwise(e -> {
         logger.error("Failed to populate default note type", e);

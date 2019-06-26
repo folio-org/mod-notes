@@ -7,6 +7,13 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
+import static org.folio.test.util.TestUtil.mockGet;
+import static org.folio.test.util.TestUtil.readFile;
+import static org.folio.test.util.TestUtil.toJson;
+import static org.folio.util.NoteTestData.NOTE_2;
+import static org.folio.util.NoteTestData.NOTE_4;
+import static org.folio.util.NoteTestData.USER8;
+import static org.folio.util.NoteTestData.USER9;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.jeasy.random.FieldPredicates.named;
@@ -16,30 +23,19 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import static org.folio.test.util.TestUtil.mockGet;
-import static org.folio.test.util.TestUtil.readFile;
-import static org.folio.test.util.TestUtil.toJson;
-import static org.folio.util.NoteTestData.NOTE_2;
-import static org.folio.util.NoteTestData.NOTE_4;
-import static org.folio.util.NoteTestData.USER8;
-import static org.folio.util.NoteTestData.USER9;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import com.github.tomakehurst.wiremock.matching.RegexPattern;
-import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-import io.restassured.RestAssured;
-import io.restassured.http.Header;
-import io.restassured.response.Response;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.apache.http.HttpStatus;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.TestBase;
+import org.folio.rest.jaxrs.model.Metadata;
+import org.folio.rest.jaxrs.model.NoteType;
+import org.folio.rest.jaxrs.model.NoteTypeUsage;
+import org.folio.spring.SpringContextUtil;
 import org.hamcrest.MatcherAssert;
 import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
@@ -47,12 +43,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.TestBase;
-import org.folio.rest.jaxrs.model.Metadata;
-import org.folio.rest.jaxrs.model.NoteType;
-import org.folio.rest.jaxrs.model.NoteTypeUsage;
-import org.folio.spring.SpringContextUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.RegexPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+
+import io.restassured.RestAssured;
+import io.restassured.http.Header;
+import io.restassured.response.Response;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteTypesImplTest extends TestBase {
@@ -345,17 +345,14 @@ public class NoteTypesImplTest extends TestBase {
 
   @Test
   public void shouldReturn200WithEmptyNoteTypeCollection() {
-    try {
-      Response response = getWithOk(NOTE_TYPES_ENDPOINT).response();
+    DBTestUtil.deleteAllNoteTypes(vertx);
+    Response response = getWithOk(NOTE_TYPES_ENDPOINT).response();
 
-      int totalRecords = response.path(TOTAL_RECORDS);
-      List<NoteType> noteTypes = response.path(NOTE_TYPES);
+    int totalRecords = response.path(TOTAL_RECORDS);
+    List<NoteType> noteTypes = response.path(NOTE_TYPES);
 
-      assertEquals(0, noteTypes.size());
-      assertEquals(0, totalRecords);
-    } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
-    }
+    assertEquals(0, noteTypes.size());
+    assertEquals(0, totalRecords);
   }
 
   @Test
