@@ -13,6 +13,7 @@ import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.spring.SpringContextUtil;
 import org.folio.type.NoteTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -24,9 +25,10 @@ import io.vertx.core.logging.LoggerFactory;
 
 public class NoteTenantApiImpl extends TenantAPI {
 
-  public static final String DEFAULT_NOTE_TYPE_NAME = "General note";
   private final Logger logger = LoggerFactory.getLogger(NoteTenantApiImpl.class);
 
+  @Value("${note.types.default.name}")
+  private String defaultNoteTypeName;
   @Autowired
   private NoteTypeRepository typeRepository;
 
@@ -50,7 +52,7 @@ public class NoteTenantApiImpl extends TenantAPI {
       .compose(o -> {
         String tenant = new OkapiParams(headers).getTenant();
         NoteType type = new NoteType()
-          .withName(DEFAULT_NOTE_TYPE_NAME)
+          .withName(defaultNoteTypeName)
           .withMetadata(new Metadata()
             .withCreatedDate(new Date())
             .withUpdatedDate(new Date()));
@@ -59,7 +61,10 @@ public class NoteTenantApiImpl extends TenantAPI {
           .compose(count -> {
             if(count == 0){
               return typeRepository.save(type, tenant)
-                .map(savedType -> null);
+                .map(savedType -> {
+                  logger.info("Added default note type '{}'", savedType.getName());
+                  return null;
+                });
             }
             return Future.succeededFuture(null);
           });
