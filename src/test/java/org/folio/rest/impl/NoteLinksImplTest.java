@@ -1,11 +1,24 @@
 package org.folio.rest.impl;
 
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-import io.vertx.core.json.Json;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static org.folio.test.util.TestUtil.readFile;
+import static org.folio.util.NoteTestData.NOTE_2;
+import static org.folio.util.NoteTestData.PACKAGE_ID;
+import static org.folio.util.NoteTestData.PACKAGE_TYPE;
+import static org.folio.util.NoteTestData.USER8;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.folio.rest.TestBase;
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
@@ -20,24 +33,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static org.folio.test.util.TestUtil.readFile;
-import static org.folio.util.NoteTestData.NOTE_2;
-import static org.folio.util.NoteTestData.PACKAGE_ID;
-import static org.folio.util.NoteTestData.PACKAGE_TYPE;
-import static org.folio.util.NoteTestData.USER8;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import io.vertx.core.json.Json;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteLinksImplTest extends TestBase {
@@ -335,6 +337,32 @@ public class NoteLinksImplTest extends TestBase {
 
     assertEquals(1, notes.size());
     assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSearchedByTitleWithWildcard() {
+    Note firstNote = getNote().withTitle("Title ZZZ ABC");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?title=Z*")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(1, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  public void shouldInterpretSpecialRegexCharactersLiterally() {
+    Note firstNote = getNote().withTitle("a[abc1}{]z");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?title=a[abc1}{]z")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(1, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
   }
 
   @Test

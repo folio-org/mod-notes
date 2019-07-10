@@ -1,14 +1,24 @@
 package org.folio.links;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.SQLConnection;
-import io.vertx.ext.sql.UpdateResult;
+import static io.vertx.core.Future.succeededFuture;
+import static org.folio.links.NoteLinksConstants.ANY_STRING_PATTERN;
+import static org.folio.links.NoteLinksConstants.COUNT_NOTES_BY_DOMAIN_AND_TITLE;
+import static org.folio.links.NoteLinksConstants.DELETE_NOTES_WITHOUT_LINKS;
+import static org.folio.links.NoteLinksConstants.HAS_LINK_CONDITION;
+import static org.folio.links.NoteLinksConstants.INSERT_LINKS;
+import static org.folio.links.NoteLinksConstants.LIMIT_OFFSET;
+import static org.folio.links.NoteLinksConstants.NOTE_TABLE;
+import static org.folio.links.NoteLinksConstants.ORDER_BY_STATUS_CLAUSE;
+import static org.folio.links.NoteLinksConstants.ORDER_BY_TITLE_CLAUSE;
+import static org.folio.links.NoteLinksConstants.REMOVE_LINKS;
+import static org.folio.links.NoteLinksConstants.SELECT_NOTES_BY_DOMAIN_AND_TITLE;
+import static org.folio.links.NoteLinksConstants.WORD_PATTERN;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.folio.db.DbUtils;
@@ -24,28 +34,22 @@ import org.folio.rest.persist.PostgresClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static io.vertx.core.Future.succeededFuture;
-import static org.folio.links.NoteLinksConstants.ANY_STRING_PATTERN;
-import static org.folio.links.NoteLinksConstants.COUNT_NOTES_BY_DOMAIN_AND_TITLE;
-import static org.folio.links.NoteLinksConstants.DELETE_NOTES_WITHOUT_LINKS;
-import static org.folio.links.NoteLinksConstants.HAS_LINK_CONDITION;
-import static org.folio.links.NoteLinksConstants.INSERT_LINKS;
-import static org.folio.links.NoteLinksConstants.LIMIT_OFFSET;
-import static org.folio.links.NoteLinksConstants.NOTE_TABLE;
-import static org.folio.links.NoteLinksConstants.ORDER_BY_STATUS_CLAUSE;
-import static org.folio.links.NoteLinksConstants.ORDER_BY_TITLE_CLAUSE;
-import static org.folio.links.NoteLinksConstants.REMOVE_LINKS;
-import static org.folio.links.NoteLinksConstants.SELECT_NOTES_BY_DOMAIN_AND_TITLE;
-import static org.folio.links.NoteLinksConstants.WORD_PATTERN;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.ext.sql.ResultSet;
+import io.vertx.ext.sql.SQLConnection;
+import io.vertx.ext.sql.UpdateResult;
 
 @Component
 public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
+  private static final String SPECIAL_REGEX_SYMBOLS = "!$()*+.:<=>?[]\\^{|}-";
+  private static final String ESCAPED_ANY_STRING_WILDCARD = "\\*";
   private Vertx vertx;
 
   @Autowired
@@ -290,7 +294,14 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     if (StringUtils.isEmpty(title)) {
       return ANY_STRING_PATTERN;
     } else {
-      return String.format(WORD_PATTERN, title);
+      String regex = escapeRegex(title)
+        .replace(ESCAPED_ANY_STRING_WILDCARD, ".*");
+      return String.format(WORD_PATTERN, regex);
     }
+  }
+
+  private String escapeRegex(String str) {
+    return str
+      .replaceAll("[\\Q" + SPECIAL_REGEX_SYMBOLS + "\\E]", "\\\\$0");
   }
 }
