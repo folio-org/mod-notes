@@ -322,6 +322,42 @@ public class NoteLinksImplTest extends TestBase {
   }
 
   @Test
+  public void shouldReturnListOfNotesSortedByLinkNumberAsc() {
+    Note firstNote = getNote().withTitle("ABC");
+    Note secondNote = getNote().withTitle("ZZZ");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?order=asc&orderBy=linksNumber")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSortedByLinkNumberDesc() {
+    Note firstNote = getNote().withTitle("ABC");
+    Note secondNote = getNote().withTitle("ZZZ");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?order=desc&orderBy=linksNumber")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(secondNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
   public void shouldReturnListOfNotesSearchedByTitle() {
     Note firstNote = getNote().withTitle("Title ABC");
     Note secondNote = getNote().withTitle("Title ZZZ ABC");

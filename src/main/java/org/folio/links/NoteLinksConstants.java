@@ -42,6 +42,8 @@ class NoteLinksConstants {
 
   static final String ORDER_BY_TITLE_CLAUSE = "ORDER BY jsonb->>'title' %s ";
 
+  static final String ORDER_BY_LINKS_NUMBER = "ORDER BY json_array_length((jsonb->>'links')::json) %s ";
+
   static final String LIMIT_OFFSET = "LIMIT ? OFFSET ? ";
 
   static final String SELECT_NOTES_BY_DOMAIN_AND_TITLE =
