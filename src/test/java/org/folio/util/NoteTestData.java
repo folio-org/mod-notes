@@ -36,7 +36,6 @@ public class NoteTestData {
   public static final String UPDATE_NOTE_4_REQUEST;
   public static final String UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID;
   public static final String NOTE_5_LONG_TITLE;
-  public static final String NOTE_5_LONG_CONTENT;
   public static final String NOTE_TYPE;
   public static final String NOTE_TYPE2;
   public static final String UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS;
@@ -52,7 +51,6 @@ public class NoteTestData {
       UPDATE_NOTE_4_REQUEST = readFile("note/updateNote4Request.json");
       UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID = readFile("note/updateNote5RequestWithNonExistingTypeId.json");
       NOTE_5_LONG_TITLE = readFile("note/note5LongTitle.json");
-      NOTE_5_LONG_CONTENT = readFile("note/note6LongContent.json");
       NOTE_TYPE = readFile("notetype/noteType.json");
       NOTE_TYPE2 = readFile("notetype/noteType2.json");
       UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS = readFile("note/updateNoteRequestWithNoId.json");
