@@ -8,6 +8,7 @@ import static org.folio.links.NoteLinksConstants.HAS_LINK_CONDITION;
 import static org.folio.links.NoteLinksConstants.INSERT_LINKS;
 import static org.folio.links.NoteLinksConstants.LIMIT_OFFSET;
 import static org.folio.links.NoteLinksConstants.NOTE_TABLE;
+import static org.folio.links.NoteLinksConstants.ORDER_BY_LINKS_NUMBER;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_STATUS_CLAUSE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_TITLE_CLAUSE;
 import static org.folio.links.NoteLinksConstants.REMOVE_LINKS;
@@ -271,6 +272,8 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     if (orderBy == OrderBy.STATUS) {
       query.append(String.format(ORDER_BY_STATUS_CLAUSE, order.toString()));
       parameters.add(jsonLink);
+    } else if (orderBy == OrderBy.LINKSNUMBER) {
+      query.append(String.format(ORDER_BY_LINKS_NUMBER, order.toString()));
     } else {
       query.append(String.format(ORDER_BY_TITLE_CLAUSE, order.toString()));
     }
