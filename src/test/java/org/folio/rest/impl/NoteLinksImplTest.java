@@ -331,7 +331,7 @@ public class NoteLinksImplTest extends TestBase {
     createLinks(secondNote.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?title=ZZZ")
+      + "?title=ZZZ ")
       .as(NoteCollection.class)
       .getNotes();
 
