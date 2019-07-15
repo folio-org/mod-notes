@@ -33,7 +33,6 @@
     },
     "content": {
       "type": "string",
-      "maxLength": 1500,
       "description": "Content of the note",
       "example": "There are access issues at BU campus"
     },
