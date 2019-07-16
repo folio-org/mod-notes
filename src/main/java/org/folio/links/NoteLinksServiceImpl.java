@@ -3,11 +3,7 @@ package org.folio.links;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.vertx.core.Future;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import org.folio.model.EntityLink;
 import org.folio.model.Order;
 import org.folio.model.OrderBy;
@@ -17,6 +13,10 @@ import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinkPut;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import io.vertx.core.Future;
 
 @Component
 public class NoteLinksServiceImpl implements NoteLinksService {
@@ -37,10 +37,11 @@ public class NoteLinksServiceImpl implements NoteLinksService {
                                                           OrderBy orderBy, Order order, RowPortion rowPortion, String tenantId) {
     MutableObject<Integer> mutableTotalRecords = new MutableObject<>();
 
-    return noteLinksRepository.countNotesWithTitleAndStatus(link, title, status, tenantId)
+    String trimmedTitle = title != null ? title.trim() : "";
+    return noteLinksRepository.countNotesWithTitleAndStatus(link, trimmedTitle, status, tenantId)
       .compose(count -> {
         mutableTotalRecords.setValue(count);
-        return noteLinksRepository.findNotesByTitleAndStatus(link, title, status, orderBy, order, rowPortion,
+        return noteLinksRepository.findNotesByTitleAndStatus(link, trimmedTitle, status, orderBy, order, rowPortion,
           tenantId);
       })
       .map(notes -> {
