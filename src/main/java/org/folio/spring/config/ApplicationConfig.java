@@ -22,6 +22,8 @@ import org.springframework.core.io.ClassPathResource;
 
 import org.folio.common.pf.PartialFunction;
 import org.folio.config.ModConfiguration;
+import org.folio.db.exc.translation.DBExceptionTranslator;
+import org.folio.db.exc.translation.DBExceptionTranslatorFactory;
 import org.folio.rest.tools.messages.Messages;
 
 @Configuration
@@ -68,6 +70,12 @@ public class ApplicationConfig {
       .orElse(baseNotFoundHandler())
       .orElse(generalHandler())
       .compose(completionCause())); // extract the cause before applying any handler
+  }
+
+  @Bean
+  public DBExceptionTranslator excTranslator(@Value("${db.exception.translator.name}") String translatorName) {
+    DBExceptionTranslatorFactory factory = DBExceptionTranslatorFactory.instance();
+    return factory.create(translatorName);
   }
 
   @Bean
