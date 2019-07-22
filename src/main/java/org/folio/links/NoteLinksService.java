@@ -1,5 +1,7 @@
 package org.folio.links;
 
+import java.util.List;
+
 import io.vertx.core.Future;
 
 import org.folio.model.EntityLink;
@@ -15,7 +17,7 @@ public interface NoteLinksService {
 
   Future<Void> updateNoteLinks(NoteLinksPut entity, Link link, String tenantId);
 
-  Future<NoteCollection> findNotesByTitleAndStatus(EntityLink link, String title, Status status,
-                                                   OrderBy orderBy, Order order,
-                                                   RowPortion rowPortion, String tenantId);
+  Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes,
+                                                              Status status, OrderBy orderBy, Order order,
+                                                              RowPortion rowPortion, String tenantId);
 }
