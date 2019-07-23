@@ -66,6 +66,15 @@ traits:
               specified word or sequence of words anywhere in the title. Search is case-insensitive.
             example: important
             required: false
+          noteType:
+            displayName: Note type
+            type: string[]
+            description: Search string for note type. Note(s) is returned only if it equals to
+              specified word or sequence of words in the titleseparated by com type name. Multiple types should be
+              declared with query parameter sequentially as follows "noteType=a&noteType=b".
+              Search is case sensitive.
+            example: ["General support"]
+            required: false
           status:
             displayName: Selection status
             type: string

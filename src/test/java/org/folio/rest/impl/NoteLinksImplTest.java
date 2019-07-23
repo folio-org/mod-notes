@@ -2,22 +2,43 @@ package org.folio.rest.impl;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static org.folio.test.util.TestUtil.readFile;
-import static org.folio.util.NoteTestData.NOTE_2;
-import static org.folio.util.NoteTestData.PACKAGE_ID;
-import static org.folio.util.NoteTestData.PACKAGE_TYPE;
-import static org.folio.util.NoteTestData.USER8;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.folio.test.util.TestUtil.readFile;
+import static org.folio.util.NoteTestData.NOTE_2;
+import static org.folio.util.NoteTestData.NOTE_TYPE2_ID;
+import static org.folio.util.NoteTestData.NOTE_TYPE2_NAME;
+import static org.folio.util.NoteTestData.NOTE_TYPE_ID;
+import static org.folio.util.NoteTestData.NOTE_TYPE_NAME;
+import static org.folio.util.NoteTestData.PACKAGE_ID;
+import static org.folio.util.NoteTestData.PACKAGE_ID2;
+import static org.folio.util.NoteTestData.PACKAGE_TYPE;
+import static org.folio.util.NoteTestData.USER8;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+import io.vertx.core.json.Json;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import org.folio.rest.TestBase;
 import org.folio.rest.jaxrs.model.Link;
@@ -26,20 +47,6 @@ import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinkPut;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
 import org.folio.spring.SpringContextUtil;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-
-import io.vertx.core.json.Json;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteLinksImplTest extends TestBase {
@@ -526,6 +533,93 @@ public class NoteLinksImplTest extends TestBase {
 
     assertEquals(PACKAGE_ID, firstResultNote.getLinks().get(1).getId());
     assertEquals(PACKAGE_TYPE, firstResultNote.getLinks().get(1).getType());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesIfNoteTypeIsEmpty() {
+
+    createNote();
+    createNote();
+
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID2 +
+        "?noteType=&order=ASC&orderBy=status")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertThat(notes.size(), equalTo(2));
+
+  }
+
+  @Test
+  public void shouldReturnListOfNotesWhenNoteTypesAreNotExist() {
+
+    createNote();
+    createNote();
+
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID2 +
+        "?noteType=a&order=ASC&orderBy=status")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertThat(notes.size(), equalTo(0));
+
+  }
+
+  @Test
+  public void shouldReturnNoteListWhenOnlyOneTypeIsExists() {
+
+    createNote();
+    final Note note = getNote().withTypeId(NOTE_TYPE_ID);
+    postNoteWithOk(Json.encode(note), USER8);
+
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID2 +
+        "?noteType=" + NOTE_TYPE2_NAME + "&order=ASC&orderBy=status")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertThat(notes.size(), equalTo(1));
+    assertThat(notes.get(0).getTypeId(), equalTo(NOTE_TYPE2_ID));
+
+  }
+
+  @Test
+  public void shouldReturnNoteListWithNotesWhenNoteTypesValid() {
+
+    createNote();
+    final Note note = getNote().withTypeId(NOTE_TYPE_ID);
+    postNoteWithOk(Json.encode(note), USER8);
+
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID2 +
+        "?noteType=" + NOTE_TYPE2_NAME + " &noteType= " + NOTE_TYPE_NAME + "&order=ASC&orderBy=status")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertThat(notes.size(), equalTo(2));
+    assertThat(notes.stream().map(Note::getTypeId).collect(Collectors.toList()), containsInAnyOrder(NOTE_TYPE_ID, NOTE_TYPE2_ID));
+
+  }
+
+  @Test
+  public void shouldReturnNoteListWhenSearchByTitleAndNoteType() {
+
+    createNote();
+    final String noteTitle = "testNote";
+    final Note note = getNote().withTypeId(NOTE_TYPE_ID).withTitle(noteTitle);
+    postNoteWithOk(Json.encode(note), USER8);
+
+    List<Note> notes = getWithOk(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID2 +
+        "?title="+ noteTitle + "&noteType=" + NOTE_TYPE2_NAME + " &noteType= " + NOTE_TYPE_NAME + "&order=ASC&orderBy=status")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertThat(notes.size(), equalTo(1));
+    assertThat(notes.get(0).getTypeId(), equalTo(NOTE_TYPE_ID));
+
   }
 
   @Test
