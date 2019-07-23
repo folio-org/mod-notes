@@ -20,7 +20,7 @@
     <jsonschema_paths>types/**,raml-util/schemas</jsonschema_paths>
     <vertx-version>3.5.4</vertx-version>
     <aspectj.version>1.9.1</aspectj.version>
-    <folio-service-tools.version>1.0.2-SNAPSHOT</folio-service-tools.version>
+    <folio-service-tools.version>1.1.0</folio-service-tools.version>
   </properties>
 
   <repositories>
