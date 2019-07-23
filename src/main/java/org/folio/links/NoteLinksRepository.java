@@ -14,11 +14,12 @@ import org.folio.rest.jaxrs.model.NoteCollection;
 
 public interface NoteLinksRepository {
 
-  Future<Void> updateNoteLinks(Link link, List<String> assignNotes, List<String> unAssignNotes, String tenantId);
+  Future<Void> update(Link link, List<String> assignNotes, List<String> unAssignNotes, String tenantId);
 
-  Future<NoteCollection> findNotesByTitleAndStatus(EntityLink link, String title, Status status,
-                                                   OrderBy orderBy, Order order,
-                                                   RowPortion rowPortion, String tenantId);
+  Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes,
+                                                              Status status, OrderBy orderBy, Order order,
+                                                              RowPortion rowPortion, String tenantId);
 
-  Future<Integer> countNotesWithTitleAndStatus(EntityLink link, String title, Status status, String tenantId);
+  Future<Integer> countNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes, Status status,
+                                                        String tenantId);
 }

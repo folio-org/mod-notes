@@ -4,6 +4,7 @@ import static org.folio.rest.ResponseHelper.respond;
 import static org.folio.rest.tools.utils.TenantTool.tenantId;
 import static org.folio.rest.validate.ValidationMethods.validateEnum;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
@@ -60,8 +61,9 @@ public class NoteLinksImpl implements NoteLinks {
   @Validate
   @Override
   public void getNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id, String title,
-      String status, String orderBy, String order, int offset, int limit, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
+                                                           List<String> noteTypes, String status, String orderBy, String order,
+                                                           int offset, int limit, Map<String, String> okapiHeaders,
+                                                           Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
 
     Future<Void> validated = Validation.instance()
       .addTest(status, validateEnum(Status.class))
@@ -70,7 +72,7 @@ public class NoteLinksImpl implements NoteLinks {
       .validate();
 
     Future<NoteCollection> notes = validated.compose(
-        v -> noteLinksService.findNotesByTitleAndStatus(new EntityLink(domain, type, id), title,
+        v -> noteLinksService.findNotesByTitleAndNoteTypeAndStatus(new EntityLink(domain, type, id), title, noteTypes,
               Status.enumOf(status), OrderBy.enumOf(orderBy), Order.enumOf(order),
               new RowPortion(offset, limit), tenantId(okapiHeaders)));
 

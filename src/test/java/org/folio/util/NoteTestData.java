@@ -15,6 +15,7 @@ public class NoteTestData {
   private static final Logger logger = LoggerFactory.getLogger(NoteTestData.class);
 
   public static final String PACKAGE_ID = "18-2356521";
+  public static final String PACKAGE_ID2 = "123-456789";
   public static final String PACKAGE_TYPE = "package";
   public static final String DOMAIN = "eholdings";
 

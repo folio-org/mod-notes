@@ -3,7 +3,11 @@ package org.folio.links;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.vertx.core.Future;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import org.folio.model.EntityLink;
 import org.folio.model.Order;
 import org.folio.model.OrderBy;
@@ -13,10 +17,6 @@ import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinkPut;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import io.vertx.core.Future;
 
 @Component
 public class NoteLinksServiceImpl implements NoteLinksService {
@@ -29,19 +29,19 @@ public class NoteLinksServiceImpl implements NoteLinksService {
     List<String> assignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.ASSIGNED);
     List<String> unAssignNotes = getNoteIdsByStatus(entity, NoteLinkPut.Status.UNASSIGNED);
 
-    return noteLinksRepository.updateNoteLinks(link, assignNotes, unAssignNotes, tenantId);
+    return noteLinksRepository.update(link, assignNotes, unAssignNotes, tenantId);
   }
 
   @Override
-  public Future<NoteCollection> findNotesByTitleAndStatus(EntityLink link, String title, Status status,
-                                                          OrderBy orderBy, Order order, RowPortion rowPortion, String tenantId) {
+  public Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes, Status status,
+                                                                     OrderBy orderBy, Order order, RowPortion rowPortion, String tenantId) {
     MutableObject<Integer> mutableTotalRecords = new MutableObject<>();
 
     String trimmedTitle = title != null ? title.trim() : "";
-    return noteLinksRepository.countNotesWithTitleAndStatus(link, trimmedTitle, status, tenantId)
+    return noteLinksRepository.countNotesByTitleAndNoteTypeAndStatus(link, trimmedTitle, noteTypes, status, tenantId)
       .compose(count -> {
         mutableTotalRecords.setValue(count);
-        return noteLinksRepository.findNotesByTitleAndStatus(link, trimmedTitle, status, orderBy, order, rowPortion,
+        return noteLinksRepository.findNotesByTitleAndNoteTypeAndStatus(link, trimmedTitle, noteTypes, status, orderBy, order, rowPortion,
           tenantId);
       })
       .map(notes -> {

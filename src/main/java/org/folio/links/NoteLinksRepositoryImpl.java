@@ -1,6 +1,7 @@
 package org.folio.links;
 
 import static io.vertx.core.Future.succeededFuture;
+
 import static org.folio.links.NoteLinksConstants.ANY_STRING_PATTERN;
 import static org.folio.links.NoteLinksConstants.COUNT_NOTES_BY_DOMAIN_AND_TITLE;
 import static org.folio.links.NoteLinksConstants.DELETE_NOTES_WITHOUT_LINKS;
@@ -8,11 +9,13 @@ import static org.folio.links.NoteLinksConstants.HAS_LINK_CONDITION;
 import static org.folio.links.NoteLinksConstants.INSERT_LINKS;
 import static org.folio.links.NoteLinksConstants.LIMIT_OFFSET;
 import static org.folio.links.NoteLinksConstants.NOTE_TABLE;
+import static org.folio.links.NoteLinksConstants.NOTE_TYPE_TABLE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_LINKS_NUMBER;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_STATUS_CLAUSE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_TITLE_CLAUSE;
 import static org.folio.links.NoteLinksConstants.REMOVE_LINKS;
 import static org.folio.links.NoteLinksConstants.SELECT_NOTES_BY_DOMAIN_AND_TITLE;
+import static org.folio.links.NoteLinksConstants.WHERE_CLAUSE_BY_NOTE_TYPE;
 import static org.folio.links.NoteLinksConstants.WORD_PATTERN;
 
 import java.io.IOException;
@@ -20,8 +23,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.ext.sql.ResultSet;
+import io.vertx.ext.sql.SQLConnection;
+import io.vertx.ext.sql.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import org.folio.db.DbUtils;
 import org.folio.model.EntityLink;
 import org.folio.model.Order;
@@ -32,19 +47,6 @@ import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.persist.PostgresClient;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.SQLConnection;
-import io.vertx.ext.sql.UpdateResult;
 
 @Component
 public class NoteLinksRepositoryImpl implements NoteLinksRepository {
@@ -59,7 +61,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<Void> updateNoteLinks(Link link, List<String> assignNotes, List<String> unAssignNotes, String tenantId) {
+  public Future<Void> update(Link link, List<String> assignNotes, List<String> unAssignNotes, String tenantId) {
     PostgresClient postgresClient = pgClient(tenantId);
     MutableObject<AsyncResult<SQLConnection>> connection = new MutableObject<>();
 
@@ -75,12 +77,14 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<NoteCollection> findNotesByTitleAndStatus(EntityLink link, String title, Status status, OrderBy orderBy,
-                                                          Order order, RowPortion rowPortion, String tenantId) {
+  public Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes, Status status,
+                                                                     OrderBy orderBy, Order order, RowPortion rowPortion, String tenantId) {
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
 
     addSelectClause(parameters, queryBuilder, link.getDomain(), title, tenantId);
+
+    addWhereNoteTypeClause(parameters, queryBuilder, noteTypes);
 
     String jsonLink = Json.encode(toLink(link));
     addWhereClause(parameters, queryBuilder, status, jsonLink);
@@ -95,12 +99,28 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     return future.map(this::mapResultToNoteCollection);
   }
 
+  private void addWhereNoteTypeClause(JsonArray parameters, StringBuilder query, List<String> noteTypes) {
+
+    noteTypes.replaceAll(String::trim);
+
+    if(noteTypes.stream().allMatch(StringUtils::isBlank)){
+      return;
+    }
+
+    query.append(String.format(WHERE_CLAUSE_BY_NOTE_TYPE, createIdPlaceholders(noteTypes.size())));
+    noteTypes.forEach(parameters::add);
+  }
+
   @Override
-  public Future<Integer> countNotesWithTitleAndStatus(EntityLink link, String title, Status status, String tenantId) {
+  public Future<Integer> countNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes,
+                                                               Status status, String tenantId) {
+
     JsonArray parameters = new JsonArray();
     StringBuilder queryBuilder = new StringBuilder();
 
     addSelectCountClause(parameters, queryBuilder, link.getDomain(), title, tenantId);
+
+    addWhereNoteTypeClause(parameters, queryBuilder, noteTypes);
 
     String jsonLink = Json.encode(toLink(link));
     addWhereClause(parameters, queryBuilder, status, jsonLink);
@@ -117,7 +137,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
       return succeededFuture(null);
     }
     String placeholders = createIdPlaceholders(notesIds.size());
-    String query = String.format(INSERT_LINKS, getTableName(tenantId), placeholders);
+    String query = String.format(INSERT_LINKS, getNoteTableName(tenantId), placeholders);
     JsonArray parameters = createAssignParameters(notesIds, linkToAssign);
 
     Future<UpdateResult> future = Future.future();
@@ -132,7 +152,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
       return succeededFuture(null);
     }
     String placeholders = createIdPlaceholders(notesIds.size());
-    String query = String.format(REMOVE_LINKS, getTableName(tenantId), placeholders);
+    String query = String.format(REMOVE_LINKS, getNoteTableName(tenantId), placeholders);
     JsonArray parameters = createUnAssignParameters(notesIds, link);
 
     Future<UpdateResult> future = Future.future();
@@ -149,7 +169,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     }
 
     String placeholders = createIdPlaceholders(notesIds.size());
-    String query = String.format(DELETE_NOTES_WITHOUT_LINKS, getTableName(tenantId), placeholders);
+    String query = String.format(DELETE_NOTES_WITHOUT_LINKS, getNoteTableName(tenantId), placeholders);
     JsonArray parameters = DbUtils.createParams(notesIds);
 
     Future<UpdateResult> future = Future.future();
@@ -219,8 +239,11 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     return PostgresClient.getInstance(vertx, tenantId);
   }
 
-  private String getTableName(String tenantId) {
+  private String getNoteTableName(String tenantId) {
     return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TABLE;
+  }
+  private String getNoteTypeTableName(String tenantId) {
+    return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TYPE_TABLE;
   }
 
   private String createIdPlaceholders(int amountOfIds) {
@@ -255,14 +278,14 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   private void addSelectClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {
-    query.append(String.format(SELECT_NOTES_BY_DOMAIN_AND_TITLE, getTableName(tenantId)));
+    query.append(String.format(SELECT_NOTES_BY_DOMAIN_AND_TITLE, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
     parameters
       .add(domain)
       .add(getTitleRegexp(title));
   }
 
   private void addSelectCountClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {
-    query.append(String.format(COUNT_NOTES_BY_DOMAIN_AND_TITLE, getTableName(tenantId)));
+    query.append(String.format(COUNT_NOTES_BY_DOMAIN_AND_TITLE, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
     parameters
       .add(domain)
       .add(getTitleRegexp(title));
