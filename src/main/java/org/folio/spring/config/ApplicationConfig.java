@@ -4,6 +4,8 @@ import static org.folio.rest.exc.ExceptionPredicates.instanceOf;
 import static org.folio.rest.exc.RestExceptionHandlers.badRequestHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.baseBadRequestHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.baseNotFoundHandler;
+import static org.folio.rest.exc.RestExceptionHandlers.baseUnauthorizedHandler;
+import static org.folio.rest.exc.RestExceptionHandlers.baseUnprocessableHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.completionCause;
 import static org.folio.rest.exc.RestExceptionHandlers.generalHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.logged;
@@ -59,6 +61,8 @@ public class ApplicationConfig {
   public PartialFunction<Throwable, Response> noteTypesExcHandler() {
     return logged(baseBadRequestHandler()
       .orElse(baseNotFoundHandler())
+      .orElse(baseUnauthorizedHandler())
+      .orElse(baseUnprocessableHandler())
       .orElse(generalHandler())
       .compose(completionCause())); // extract the cause before applying any handler
   }
