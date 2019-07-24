@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.folio</groupId>
   <artifactId>mod-notes</artifactId>
-  <version>2.7.0-SNAPSHOT</version>
+  <version>2.6.1</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -52,7 +52,7 @@
     <url>https://github.com/folio-org/mod-notes</url>
     <connection>scm:git:git://github.com/folio-org/mod-notes</connection>
     <developerConnection>scm:git:git@github.com:folio-org/mod-notes.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v2.6.1</tag>
   </scm>
 
   <dependencyManagement>
