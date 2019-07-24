@@ -1,3 +1,14 @@
+## 2.6.1 2019-07-24
+ * MODNOTES-115 - Ability to filter by notes types
+ * MODNOTES-113 - Get funky error message after you exceed Note details character limit
+ * MODNOTES-116 - Support the ability to sort Notes by links number
+ * MODNOTES-111 - Searching note titles - Support wildcard searching
+ * MODNOTES-109 - Set a default Note Type
+ * MODNOTES-110 - Note Links: Sorting doesn't work as expected for status = assigned/unassigned
+ * MODNOTES-104 - Refactoring: split NoteLinksImpl into fine grained REST / Service / Repository parts
+ * MODNOTES-107 - Upgrade to RMB 25
+ * MODNOTES-105 - Refactoring: split NotesResourceImpl into fine grained REST / Service / Repository parts
+
 ## 2.6.0 2019-07-23
  * MODKBEKBJ-290 - Ability to filter by notes types
  * MODNOTES-113 - Get funky error message after you exceed Note details character limit
