@@ -43,6 +43,8 @@ import org.apache.http.HttpStatus;
 import org.hamcrest.MatcherAssert;
 import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
+import org.jeasy.random.api.Randomizer;
+import org.jeasy.random.randomizers.text.StringRandomizer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,6 +52,7 @@ import org.junit.runner.RunWith;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.TestBase;
 import org.folio.rest.jaxrs.model.Metadata;
+import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.spring.SpringContextUtil;
@@ -74,6 +77,7 @@ public class NoteTypesImplTest extends TestBase {
 
   private ObjectMapper mapper;
   private EasyRandom noteTypeRandom;
+  private EasyRandom noteRandom;
 
   @Before
   public void setUp() throws IOException, URISyntaxException {
@@ -81,11 +85,22 @@ public class NoteTypesImplTest extends TestBase {
 
     // configure random object generator for NoteType
     EasyRandomParameters params = new EasyRandomParameters()
-      .randomize(named("id"), () -> UUID.randomUUID().toString())
+      .randomize(named("id"), randomUUID())
       .excludeField(named("usage"))
       .excludeField(named("metadata"));
 
     noteTypeRandom = new EasyRandom(params);
+
+    // configure random object generator for Note
+    params = new EasyRandomParameters()
+      .randomize(named("id"), randomUUID())
+      .randomize(named("typeId"), randomUUID())
+      .randomize(named("title"), StringRandomizer.aNewStringRandomizer(75))
+      .excludeField(named("creator"))
+      .excludeField(named("updater"))
+      .excludeField(named("metadata"));
+
+    noteRandom = new EasyRandom(params);
 
     mapper = new ObjectMapper();
 
@@ -111,6 +126,10 @@ public class NoteTypesImplTest extends TestBase {
         ));
 
     mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, HttpStatus.SC_NOT_FOUND); // default limit will be applied
+  }
+
+  private Randomizer<String> randomUUID() {
+    return () -> UUID.randomUUID().toString();
   }
 
   @Test
@@ -572,8 +591,27 @@ public class NoteTypesImplTest extends TestBase {
   }
 
   @Test
-  public void shouldFailOnDeleteWith404WhenNoteNotFound() {
+  public void shouldFailOnDeleteWith404WhenNoteTypeNotFound() {
     deleteWithStatus(NOTE_TYPES_ENDPOINT + "/" + NOT_EXISTING_STUB_ID, SC_NOT_FOUND);
+  }
+
+  @Test
+  public void shouldFailOnDeleteWith400WhenNoteTypeIsUsed() {
+    try {
+      NoteType noteType = nextRandomNoteType();
+      DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, toJson(noteType));
+
+      Note note = nextRandomNote();
+      note.setType(noteType.getName());
+      note.setTypeId(noteType.getId());
+      DBTestUtil.insertNote(vertx, note.getId(), STUB_TENANT, toJson(note));
+
+      String response = deleteWithStatus(NOTE_TYPES_ENDPOINT + "/" + noteType.getId(), SC_BAD_REQUEST).asString();
+      assertThat(response, is("Note type is referenced by note(s) and cannot be deleted"));
+    } finally {
+      DBTestUtil.deleteAllNotes(vertx);
+      DBTestUtil.deleteAllNoteTypes(vertx);
+    }
   }
 
   private NoteType loadSingleNoteType() {
@@ -585,6 +623,10 @@ public class NoteTypesImplTest extends TestBase {
 
   private NoteType nextRandomNoteType() {
     return noteTypeRandom.nextObject(NoteType.class);
+  }
+
+  private Note nextRandomNote() {
+    return noteRandom.nextObject(Note.class);
   }
 
 }

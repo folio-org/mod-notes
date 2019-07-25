@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.folio.db.CqlQuery;
+import org.folio.db.exc.translation.DBExceptionTranslator;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.rest.persist.PostgresClient;
@@ -31,6 +32,9 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
   @Autowired
   private Vertx vertx;
+  @Autowired
+  private DBExceptionTranslator excTranslator;
+
 
   @Override
   public Future<NoteTypeCollection> findByQuery(String query, int offset, int limit, String tenantId) {
@@ -76,7 +80,8 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
     pgClient(tenantId).save(NOTE_TYPE_TABLE, entity.getId(), entity, future);
 
-    return future.map(id -> updateId(entity, id)); // update id only, copy the rest from the original entity
+    return future.map(id -> updateId(entity, id)) // update id only, copy the rest from the original entity
+      .recover(excTranslator.translateOrPassBy());
   }
 
   @Override
@@ -85,7 +90,8 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
     pgClient(tenantId).update(NOTE_TYPE_TABLE, entity, entity.getId(), future);
 
-    return future.map(updateResult -> updateResult.getUpdated() == 1);
+    return future.map(updateResult -> updateResult.getUpdated() == 1)
+      .recover(excTranslator.translateOrPassBy());
   }
 
   @Override
@@ -94,7 +100,8 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
     pgClient(tenantId).delete(NOTE_TYPE_TABLE, id, future);
 
-    return future.map(updateResult -> updateResult.getUpdated() == 1);
+    return future.map(updateResult -> updateResult.getUpdated() == 1)
+      .recover(excTranslator.translateOrPassBy());
   }
 
   private PostgresClient pgClient(String tenantId) {

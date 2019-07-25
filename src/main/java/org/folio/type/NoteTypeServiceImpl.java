@@ -1,18 +1,16 @@
 package org.folio.type;
 
 import static io.vertx.core.Future.failedFuture;
-import static io.vertx.core.Future.future;
 import static io.vertx.core.Future.succeededFuture;
 
 import java.util.List;
+import java.util.function.Function;
 
 import javax.ws.rs.BadRequestException;
 
 import com.rits.cloning.Cloner;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,9 +18,9 @@ import org.springframework.stereotype.Component;
 
 import org.folio.common.OkapiParams;
 import org.folio.config.Configuration;
+import org.folio.db.exc.DbExcUtils;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
-import org.folio.rest.persist.PgExceptionUtil;
 import org.folio.service.exc.ServiceExceptions;
 import org.folio.userlookup.UserLookUp;
 
@@ -60,13 +58,21 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   public Future<NoteType> save(NoteType entity, OkapiParams params) {
     Future<Void> validation = validateNoteTypeLimit(params);
 
-    Future<NoteType> result = future();
-
-    validation.compose(v -> populateCreator(entity, params))
+    return validation.compose(v -> populateCreator(entity, params))
       .compose(type -> repository.save(type, params.getTenant()))
-      .setHandler(handleDuplicateType(entity.getName(), result));
+      .recover(handleDuplicateType(entity));
+  }
 
-    return result;
+  private <T> Function<Throwable, Future<T>> handleDuplicateType(NoteType entity) {
+    return t -> {
+      Throwable exc = t;
+
+      if (DbExcUtils.isUniqueViolation(t)) {
+        exc = new BadRequestException("Note type '" + entity.getName() + "' already exists");
+      }
+
+      return Future.failedFuture(exc);
+    };
   }
 
   private Future<Void> validateNoteTypeLimit(OkapiParams params) {
@@ -89,13 +95,10 @@ public class NoteTypeServiceImpl implements NoteTypeService {
     NoteType updating = cloner.deepClone(entity);
     updating.setId(id);
 
-    Future<Boolean> duplFuture = future();
-
-    populateUpdater(updating, params)
+    return populateUpdater(updating, params)
       .compose(type -> repository.update(type, params.getTenant()))
-      .setHandler(handleDuplicateType(updating.getName(), duplFuture));
-
-    return duplFuture.compose(updated -> failIfNotFound(updated, id));
+      .compose(updated -> failIfNotFound(updated, id))
+      .recover(handleDuplicateType(updating));
   }
 
   private Future<NoteType> populateCreator(NoteType entity, OkapiParams params) {
@@ -127,34 +130,19 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   @Override
   public Future<Void> delete(String id, String tenantId) {
     return repository.delete(id, tenantId)
-            .compose(deleted -> failIfNotFound(deleted, id));
+            .compose(deleted -> failIfNotFound(deleted, id))
+            .recover(handleReferencedType());
   }
 
-  private <T> Handler<AsyncResult<T>> handleDuplicateType(String type, Future<T> result) {
-    return ar -> {
-      // TO BE REFACTORED:
-      // There have to be separate exceptions per different DB errors: unique constraint/foreign key/invalid UUID
-      // These exceptions should be thrown by repository
-      if (ar.succeeded()) {
-        result.complete(ar.result());
-      } else {
-        Throwable t = ar.cause();
+  private Function<Throwable, Future<Void>> handleReferencedType() {
+    return t -> {
+      Throwable exc = t;
 
-        String msg = PgExceptionUtil.badRequestMessage(t);
-
-        if (msg != null) {
-          BadRequestException bre;
-          if (msg.contains("duplicate key value violates unique constraint")) {
-            bre = new BadRequestException("Note type '" + type + "' already exists");
-          } else {
-            bre = new BadRequestException(t);
-          }
-
-          result.fail(bre);
-        } else {
-          result.fail(t);
-        }
+      if (DbExcUtils.isFKViolation(t)) {
+        exc = new BadRequestException("Note type is referenced by note(s) and cannot be deleted");
       }
+
+      return Future.failedFuture(exc);
     };
   }
 
