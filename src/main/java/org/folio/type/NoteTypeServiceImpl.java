@@ -139,7 +139,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
       Throwable exc = t;
 
       if (DbExcUtils.isFKViolation(t)) {
-        exc = new BadRequestException("Note type is referenced by note(s) and cannot be deleted");
+        exc = new BadRequestException("Note type is assigned to a note(s) and cannot be deleted");
       }
 
       return Future.failedFuture(exc);

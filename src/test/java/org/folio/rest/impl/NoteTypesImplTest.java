@@ -607,7 +607,7 @@ public class NoteTypesImplTest extends TestBase {
       DBTestUtil.insertNote(vertx, note.getId(), STUB_TENANT, toJson(note));
 
       String response = deleteWithStatus(NOTE_TYPES_ENDPOINT + "/" + noteType.getId(), SC_BAD_REQUEST).asString();
-      assertThat(response, is("Note type is referenced by note(s) and cannot be deleted"));
+      assertThat(response, is("Note type is assigned to a note(s) and cannot be deleted"));
     } finally {
       DBTestUtil.deleteAllNotes(vertx);
       DBTestUtil.deleteAllNoteTypes(vertx);
