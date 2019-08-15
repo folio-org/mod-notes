@@ -8,21 +8,22 @@ import java.util.function.Function;
 
 import javax.ws.rs.BadRequestException;
 
-import com.rits.cloning.Cloner;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import org.folio.common.OkapiParams;
 import org.folio.config.Configuration;
 import org.folio.db.exc.DbExcUtils;
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.service.exc.ServiceExceptions;
-import org.folio.userlookup.UserLookUp;
+import org.folio.userlookup.UserLookUpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.rits.cloning.Cloner;
+
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 
 @Component
 public class NoteTypeServiceImpl implements NoteTypeService {
@@ -31,6 +32,8 @@ public class NoteTypeServiceImpl implements NoteTypeService {
 
   @Autowired
   private NoteTypeRepository repository;
+  @Autowired
+  private UserLookUpService userLookUpService;
   @Autowired
   private Configuration configuration;
   @Autowired @Qualifier("restModelCloner")
@@ -102,7 +105,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   }
 
   private Future<NoteType> populateCreator(NoteType entity, OkapiParams params) {
-    return UserLookUp.getUserInfo(params.getHeadersAsMap()).map(user -> {
+    return userLookUpService.getUserInfo(params.getHeadersAsMap()).map(user -> {
       if (entity.getMetadata() == null) {
         return entity;
       }
@@ -115,7 +118,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   }
 
   private Future<NoteType> populateUpdater(NoteType entity, OkapiParams params) {
-    return UserLookUp.getUserInfo(params.getHeadersAsMap()).map(user -> {
+    return userLookUpService.getUserInfo(params.getHeadersAsMap()).map(user -> {
       if (entity.getMetadata() == null) {
         return entity;
       }

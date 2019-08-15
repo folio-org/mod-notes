@@ -11,25 +11,26 @@ import java.util.Map;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.TestBase;
+import org.folio.test.junit.TestStartLoggingRule;
+import org.folio.test.util.TestUtil;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.matching.RegexPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+
 import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.TestBase;
-import org.folio.test.junit.TestStartLoggingRule;
-import org.folio.test.util.TestUtil;
 
 @RunWith(VertxUnitRunner.class)
 public class UserLookUpTest {
@@ -39,6 +40,8 @@ public class UserLookUpTest {
   private final String GET_USER_ENDPOINT = "/users/";
   private static final String USER_INFO_STUB_FILE = "responses/userlookup/mock_user_response_200.json";
 
+  private UserLookUpService userLookUpService = new UserLookUpService();
+
   @Rule
   public TestRule watcher = TestStartLoggingRule.instance();
 
@@ -47,6 +50,7 @@ public class UserLookUpTest {
     WireMockConfiguration.wireMockConfig()
       .dynamicPort()
       .notifier(new Slf4jNotifier(true)));
+
 
   @Test
   public void shouldReturn200WhenUserIdIsValid(TestContext context) throws IOException, URISyntaxException {
@@ -63,7 +67,7 @@ public class UserLookUpTest {
         .willReturn(new ResponseDefinitionBuilder()
             .withBody(TestUtil.readFile(USER_INFO_STUB_FILE))));
 
-    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    Future<UserLookUp> info = userLookUpService.getUserInfo(okapiHeaders);
     info.compose(userInfo -> {
       context.assertNotNull(userInfo);
 
@@ -97,7 +101,7 @@ public class UserLookUpTest {
             .withStatus(401)
             .withStatusMessage("Authorization Failure")));
 
-    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    Future<UserLookUp> info = userLookUpService.getUserInfo(okapiHeaders);
     info.compose(result -> {
       context.assertNull(result);
       async.complete();
@@ -125,7 +129,7 @@ public class UserLookUpTest {
             .withStatus(404)
             .withStatusMessage("User Not Found")));
 
-    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    Future<UserLookUp> info = userLookUpService.getUserInfo(okapiHeaders);
     info.compose(result -> {
       context.assertNull(result);
       async.complete();
@@ -143,7 +147,7 @@ public class UserLookUpTest {
 
     okapiHeaders.put(XOkapiHeaders.TENANT, STUB_TENANT);
 
-    Future<UserLookUp> info = UserLookUp.getUserInfo(okapiHeaders);
+    Future<UserLookUp> info = userLookUpService.getUserInfo(okapiHeaders);
     info.compose(result -> {
       context.assertNull(result);
       async.complete();
