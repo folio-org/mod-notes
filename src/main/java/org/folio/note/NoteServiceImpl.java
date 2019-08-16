@@ -39,6 +39,9 @@ public class NoteServiceImpl implements NoteService {
 
   @Override
   public Future<Note> addNote(Note note, OkapiParams okapiParams) {
+    logger.debug("Removing unsafe tags");
+    note.setContent(sanitizeHtml(note.getContent()));
+    logger.debug("Create note with content: {}", Json.encode(note));
     final List<Link> links = note.getLinks();
     if (Objects.isNull(links) || links.isEmpty()) {
       return failedFuture(new InputValidationException("links", "links", "At least one link should be present"));
@@ -70,6 +73,8 @@ public class NoteServiceImpl implements NoteService {
 
   @Override
   public Future<Void> updateNote(String id, Note note, OkapiParams okapiParams) {
+    logger.debug("Removing unsafe tags");
+    note.setContent(sanitizeHtml(note.getContent()));
     logger.debug("PUT note with id:{} and content: {}", id, Json.encode(note));
     if (note.getId() == null) {
       note.setId(id);
@@ -79,7 +84,7 @@ public class NoteServiceImpl implements NoteService {
     if (!note.getId().equals(id)) {
       return failedFuture(new InputValidationException("id", note.getId(), "Can not change Id"));
     }
-    note.setContent(sanitizeHtml(note.getContent()));
+
 
     return userLookUpService.getUserInfo(okapiParams.getHeadersAsMap())
       .compose(userLookUp -> {
