@@ -9,6 +9,7 @@ import static org.folio.rest.exc.RestExceptionHandlers.baseUnprocessableHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.completionCause;
 import static org.folio.rest.exc.RestExceptionHandlers.generalHandler;
 import static org.folio.rest.exc.RestExceptionHandlers.logged;
+import static org.folio.rest.exceptions.NoteExceptionHandlers.cqlValidationHandler;
 import static org.folio.rest.exceptions.NoteExceptionHandlers.entityValidationHandler;
 
 import javax.ws.rs.NotAuthorizedException;
@@ -51,6 +52,7 @@ public class ApplicationConfig {
   @Bean
   public PartialFunction<Throwable, Response> notesExcHandler() {
     return logged(entityValidationHandler()
+                .orElse(cqlValidationHandler())
                 .orElse(baseBadRequestHandler())
                 .orElse(badRequestHandler(instanceOf(NotAuthorizedException.class)))
                 .orElse(baseNotFoundHandler())

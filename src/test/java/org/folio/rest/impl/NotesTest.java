@@ -369,7 +369,13 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldReturn400OnInvalidCQLQuery() {
     final String response = getWithStatus("/notes?query=VERYBADQUERY", SC_BAD_REQUEST).asString();
-    assertThat(response, containsString("no serverChoiceIndexes defined"));
+    assertThat(response, equalTo("Invalid query"));
+  }
+
+  @Test
+  public void shouldReturn400OnEmptyCQLQuery() {
+    final String response = getWithStatus("/notes?query=", SC_BAD_REQUEST).asString();
+    assertThat(response, equalTo("Invalid query"));
   }
 
   @Test

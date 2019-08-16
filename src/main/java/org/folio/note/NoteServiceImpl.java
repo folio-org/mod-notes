@@ -46,7 +46,6 @@ public class NoteServiceImpl implements NoteService {
     if (Objects.isNull(links) || links.isEmpty()) {
       return failedFuture(new InputValidationException("links", "links", "At least one link should be present"));
     }
-    note.setContent(sanitizeHtml(note.getContent()));
 
     return userLookUpService.getUserInfo(okapiParams.getHeadersAsMap())
       .compose(creatorUser -> {
