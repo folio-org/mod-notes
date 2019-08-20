@@ -20,7 +20,7 @@
     <jsonschema_paths>types/**,raml-util/schemas</jsonschema_paths>
     <vertx-version>3.5.4</vertx-version>
     <aspectj.version>1.9.1</aspectj.version>
-    <folio-service-tools.version>1.1.0</folio-service-tools.version>
+    <folio-service-tools.version>1.2.0</folio-service-tools.version>
     <jackson-databind.version>2.9.9.2</jackson-databind.version>
     <spring.version>5.1.1.RELEASE</spring.version>
   </properties>
@@ -126,20 +126,6 @@
       <artifactId>junit</artifactId>
       <version>4.12</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.jayway.restassured</groupId>
-      <artifactId>rest-assured-common</artifactId>
-      <version>2.8.0</version>
-      <scope>test</scope>
-      <type>jar</type>
-    </dependency>
-    <dependency>
-      <groupId>com.jayway.restassured</groupId>
-      <artifactId>rest-assured</artifactId>
-      <version>2.8.0</version>
-      <scope>test</scope>
-      <type>jar</type>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>

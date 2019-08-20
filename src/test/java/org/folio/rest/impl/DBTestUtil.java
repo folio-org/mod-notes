@@ -1,6 +1,6 @@
 package org.folio.rest.impl;
 
-import static org.folio.rest.TestBase.STUB_TENANT;
+import static org.folio.test.util.TestUtil.STUB_TENANT;
 
 import java.io.IOException;
 import java.util.List;
@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.vertx.core.Vertx;
 
 import org.folio.rest.jaxrs.model.NoteType;
@@ -16,8 +17,8 @@ import org.folio.rest.persist.PostgresClient;
 public class DBTestUtil {
 
   private static final String JSONB_COLUMN = "jsonb";
-  public static final String NOTE_TYPE_TABLE = "note_type";
-  public static final String NOTE_TABLE = "note_data";
+  private static final String NOTE_TYPE_TABLE = "note_type";
+  private static final String NOTE_TABLE = "note_data";
 
   private DBTestUtil() {
   }

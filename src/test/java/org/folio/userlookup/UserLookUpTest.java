@@ -11,15 +11,6 @@ import java.util.Map;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.TestBase;
-import org.folio.test.junit.TestStartLoggingRule;
-import org.folio.test.util.TestUtil;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -32,25 +23,32 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.test.junit.TestStartLoggingRule;
+import org.folio.test.util.TestUtil;
+
 @RunWith(VertxUnitRunner.class)
 public class UserLookUpTest {
   private static final String STUB_TENANT = "testlib";
   private static final String host = "http://127.0.0.1";
+  private static final String USER_INFO_STUB_FILE = "responses/userlookup/mock_user_response_200.json";
   private static Map<String, String> okapiHeaders = new HashMap<>();
   private final String GET_USER_ENDPOINT = "/users/";
-  private static final String USER_INFO_STUB_FILE = "responses/userlookup/mock_user_response_200.json";
 
   private UserLookUpService userLookUpService = new UserLookUpService();
 
   @Rule
   public TestRule watcher = TestStartLoggingRule.instance();
-
   @Rule
   public WireMockRule userMockServer = new WireMockRule(
     WireMockConfiguration.wireMockConfig()
       .dynamicPort()
       .notifier(new Slf4jNotifier(true)));
-
 
   @Test
   public void shouldReturn200WhenUserIdIsValid(TestContext context) throws IOException, URISyntaxException {
@@ -58,7 +56,7 @@ public class UserLookUpTest {
     final String stubUserIdEndpoint = GET_USER_ENDPOINT + stubUserId;
     Async async = context.async();
 
-    okapiHeaders.put(XOkapiHeaders.TENANT, TestBase.STUB_TENANT);
+    okapiHeaders.put(XOkapiHeaders.TENANT, STUB_TENANT);
     okapiHeaders.put(XOkapiHeaders.URL, getWiremockUrl());
     okapiHeaders.put(XOkapiHeaders.USER_ID, stubUserId);
 

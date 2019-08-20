@@ -16,6 +16,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import static org.folio.test.util.TestUtil.STUB_TENANT;
 import static org.folio.test.util.TestUtil.mockGet;
 import static org.folio.test.util.TestUtil.readFile;
 import static org.folio.test.util.TestUtil.toJson;
@@ -35,10 +36,12 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.RegexPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+
 import org.apache.http.HttpStatus;
 import org.hamcrest.MatcherAssert;
 import org.jeasy.random.EasyRandom;
@@ -50,7 +53,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.TestBase;
+import org.folio.rest.NotesTestBase;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteType;
@@ -58,7 +61,7 @@ import org.folio.rest.jaxrs.model.NoteTypeUsage;
 import org.folio.spring.SpringContextUtil;
 
 @RunWith(VertxUnitRunner.class)
-public class NoteTypesImplTest extends TestBase {
+public class NoteTypesImplTest extends NotesTestBase {
 
   private static final int NOTE_TOTAL = 10;
   private static final String STUB_NOTE_TYPE_ID = "13f21797-d25b-46dc-8427-1759d1db2057";
@@ -419,7 +422,7 @@ public class NoteTypesImplTest extends TestBase {
       postNoteTypeWithOk(readFile("post_note_type.json"), USER9);
       NoteType updatedNoteType = mapper.readValue(readFile("put_note_type.json"), NoteType.class);
 
-      putWithOk(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, mapper.writeValueAsString(updatedNoteType), USER8);
+      putWithNoContent(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, mapper.writeValueAsString(updatedNoteType), USER8);
 
       NoteType loaded = loadSingleNoteType();
       assertEquals(updatedNoteType.getName(), loaded.getName());
@@ -444,7 +447,7 @@ public class NoteTypesImplTest extends TestBase {
 
       postNoteTypeWithOk(toJson(updatedNoteType), USER8);
 
-      putWithOk(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, mapper.writeValueAsString(updatedNoteType), USER8);
+      putWithNoContent(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, mapper.writeValueAsString(updatedNoteType), USER8);
 
       NoteType loaded = loadSingleNoteType();
       assertNull(loaded.getUsage());
@@ -581,7 +584,7 @@ public class NoteTypesImplTest extends TestBase {
       NoteType existing = nextRandomNoteType();
       DBTestUtil.insertNoteType(vertx, existing.getId(), STUB_TENANT, toJson(existing));
 
-      deleteWithOk(NOTE_TYPES_ENDPOINT + "/" + existing.getId());
+      deleteWithNoContent(NOTE_TYPES_ENDPOINT + "/" + existing.getId());
 
       List<NoteType> noteTypes = DBTestUtil.getAllNoteTypes(vertx);
       assertEquals(0, noteTypes.size());
