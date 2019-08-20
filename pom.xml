@@ -22,6 +22,7 @@
     <aspectj.version>1.9.1</aspectj.version>
     <folio-service-tools.version>1.1.0</folio-service-tools.version>
     <jackson-databind.version>2.9.9.2</jackson-databind.version>
+    <spring.version>5.1.1.RELEASE</spring.version>
   </properties>
 
   <repositories>
@@ -99,6 +100,12 @@
       <version>1.0.0</version>
     </dependency>
     <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>${spring.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.folio</groupId>
       <artifactId>folio-service-tools-dev</artifactId>
       <version>${folio-service-tools.version}</version>
@@ -143,6 +150,11 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web</artifactId>
       <version>${vertx-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jsoup</groupId>
+      <artifactId>jsoup</artifactId>
+      <version>1.12.1</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>

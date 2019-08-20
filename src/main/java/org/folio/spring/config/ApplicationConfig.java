@@ -15,7 +15,11 @@ import static org.folio.rest.exceptions.NoteExceptionHandlers.entityValidationHa
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
 
-import com.rits.cloning.Cloner;
+import org.folio.common.pf.PartialFunction;
+import org.folio.config.ModConfiguration;
+import org.folio.db.exc.translation.DBExceptionTranslator;
+import org.folio.db.exc.translation.DBExceptionTranslatorFactory;
+import org.folio.rest.tools.messages.Messages;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -23,17 +27,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 
-import org.folio.common.pf.PartialFunction;
-import org.folio.config.ModConfiguration;
-import org.folio.db.exc.translation.DBExceptionTranslator;
-import org.folio.db.exc.translation.DBExceptionTranslatorFactory;
-import org.folio.rest.tools.messages.Messages;
+import com.rits.cloning.Cloner;
 
 @Configuration
 @ComponentScan(basePackages = {
   "org.folio.type",
   "org.folio.note",
-  "org.folio.links"})
+  "org.folio.links",
+  "org.folio.userlookup"})
 public class ApplicationConfig {
 
   @Bean
