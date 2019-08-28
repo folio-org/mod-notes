@@ -41,12 +41,14 @@ import java.util.Objects;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -56,12 +58,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.TestBase;
+import org.folio.rest.NotesTestBase;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
+import org.folio.test.util.TestBase;
 
 /**
  * Interface test for mod-notes. Tests the API with restAssured, directly
@@ -72,7 +75,7 @@ import org.folio.rest.jaxrs.model.NoteCollection;
  * @author heikki
  */
 @RunWith(VertxUnitRunner.class)
-public class NotesTest extends TestBase {
+public class NotesTest extends NotesTestBase {
 
   private static final Logger logger = LoggerFactory.getLogger("okapi");
 
@@ -83,15 +86,15 @@ public class NotesTest extends TestBase {
   private static final String NOTES_PATH = "/notes";
 
   @BeforeClass
-  public static void setUpBeforeClass(TestContext context) {
-    TestBase.setUpBeforeClass(context);
+  public static void setUpClass(TestContext context) {
+    TestBase.setUpClass(context);
     createNoteTypes(context);
   }
 
   @AfterClass
-  public static void tearDownAfterClass() {
+  public static void tearDownClass(TestContext context) {
     DBTestUtil.deleteAllNoteTypes(vertx);
-    TestBase.tearDownAfterClass();
+    TestBase.tearDownClass(context);
   }
 
   @Before
@@ -473,7 +476,7 @@ public class NotesTest extends TestBase {
     postNoteWithOk(NOTE_1, USER8);
 
     final String resourcePath = "/notes/11111111-1111-1111-a111-111111111111";
-    putWithOk(resourcePath, UPDATE_NOTE_REQUEST_WITH_LINKS, USER8);
+    putWithNoContent(resourcePath, UPDATE_NOTE_REQUEST_WITH_LINKS, USER8);
 
     final Note note = getWithOk(resourcePath).as(Note.class);
     assertThat(note.getContent(), containsString("with a comment"));
@@ -499,7 +502,7 @@ public class NotesTest extends TestBase {
 
     logger.info("About to PUT note: " + newNote2);
 
-    putWithOk(resourcePath, newNote2, USER9);
+    putWithNoContent(resourcePath, newNote2, USER9);
   }
 
   @Test
@@ -540,7 +543,7 @@ public class NotesTest extends TestBase {
     postNoteWithOk(NOTE_1, USER9);
 
     final String resourcePath = "/notes/11111111-1111-1111-a111-111111111111";
-    deleteWithOk(resourcePath);
+    deleteWithNoContent(resourcePath);
     deleteWithStatus(resourcePath, SC_NOT_FOUND);
 
     final String response = getWithOk(NOTES_PATH).asString();
@@ -590,7 +593,7 @@ public class NotesTest extends TestBase {
   @Test
   public void shouldDeleteNoteByPathReturnedFromPost() {
     final String location = postNoteWithOk(NOTE_3, USER9).headers().get("Location").getValue();
-    deleteWithOk(location);
+    deleteWithNoContent(location);
   }
 
   private void getNoteAndCheckContent(String query, String content) {

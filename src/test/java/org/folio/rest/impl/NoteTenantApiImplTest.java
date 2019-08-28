@@ -3,14 +3,15 @@ package org.folio.rest.impl;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.Matchers.is;
 
-import org.folio.rest.TestBase;
-import org.folio.spring.SpringContextUtil;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
 
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.folio.spring.SpringContextUtil;
+import org.folio.test.util.TestBase;
 
 @RunWith(VertxUnitRunner.class)
 public class NoteTenantApiImplTest extends TestBase {

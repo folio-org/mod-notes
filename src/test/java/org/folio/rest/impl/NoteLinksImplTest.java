@@ -30,9 +30,11 @@ import java.util.stream.Collectors;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
+
 import io.vertx.core.json.Json;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,16 +42,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.folio.rest.TestBase;
+import org.folio.rest.NotesTestBase;
 import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.NoteLinkPut;
 import org.folio.rest.jaxrs.model.NoteLinksPut;
 import org.folio.spring.SpringContextUtil;
+import org.folio.test.util.TestBase;
 
 @RunWith(VertxUnitRunner.class)
-public class NoteLinksImplTest extends TestBase {
+public class NoteLinksImplTest extends NotesTestBase {
 
   private static final int DEFAULT_LINK_INDEX = 0;
   private static final int DEFAULT_LINK_AMOUNT = 1;
@@ -60,15 +63,15 @@ public class NoteLinksImplTest extends TestBase {
   private static final String NON_EXISTING_DOMAIN = "nonExisting";
 
   @BeforeClass
-  public static void setUpBeforeClass(TestContext context) {
-    TestBase.setUpBeforeClass(context);
+  public static void setUpClass(TestContext context) {
+    TestBase.setUpClass(context);
     createNoteTypes(context);
   }
 
   @AfterClass
-  public static void tearDownAfterClass() {
+  public static void tearDownClass(TestContext context) {
     DBTestUtil.deleteAllNoteTypes(vertx);
-    TestBase.tearDownAfterClass();
+    TestBase.tearDownClass(context);
   }
 
   @Before
@@ -662,7 +665,7 @@ public class NoteLinksImplTest extends TestBase {
   }
 
   private void putLinks(NoteLinksPut requestBody) {
-    putWithOk(NOTE_LINKS_PATH, Json.encode(requestBody), USER8);
+    putWithNoContent(NOTE_LINKS_PATH, Json.encode(requestBody), USER8);
   }
 
   private void createLinks(String... ids) {
