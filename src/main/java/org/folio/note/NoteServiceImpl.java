@@ -5,6 +5,16 @@ import static io.vertx.core.Future.failedFuture;
 import java.util.List;
 import java.util.Objects;
 
+import io.vertx.core.Future;
+import io.vertx.core.json.Json;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import org.apache.commons.lang.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import org.folio.common.OkapiParams;
 import org.folio.rest.exceptions.InputValidationException;
 import org.folio.rest.jaxrs.model.Link;
@@ -12,15 +22,6 @@ import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.UserDisplayInfo;
 import org.folio.userlookup.UserLookUpService;
-import org.jsoup.Jsoup;
-import org.jsoup.safety.Whitelist;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import io.vertx.core.Future;
-import io.vertx.core.json.Json;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 @Component
 public class NoteServiceImpl implements NoteService {
@@ -40,7 +41,9 @@ public class NoteServiceImpl implements NoteService {
   @Override
   public Future<Note> addNote(Note note, OkapiParams okapiParams) {
     logger.debug("Removing unsafe tags");
-    note.setContent(sanitizeHtml(note.getContent()));
+    if(StringUtils.isNotBlank(note.getContent())) {
+      note.setContent(sanitizeHtml(note.getContent()));
+    }
     logger.debug("Create note with content: {}", Json.encode(note));
     final List<Link> links = note.getLinks();
     if (Objects.isNull(links) || links.isEmpty()) {
@@ -73,7 +76,9 @@ public class NoteServiceImpl implements NoteService {
   @Override
   public Future<Void> updateNote(String id, Note note, OkapiParams okapiParams) {
     logger.debug("Removing unsafe tags");
-    note.setContent(sanitizeHtml(note.getContent()));
+    if(StringUtils.isNotBlank(note.getContent())) {
+      note.setContent(sanitizeHtml(note.getContent()));
+    }
     logger.debug("PUT note with id:{} and content: {}", id, Json.encode(note));
     if (note.getId() == null) {
       note.setId(id);
