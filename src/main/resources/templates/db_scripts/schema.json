@@ -34,27 +34,27 @@
   "scripts": [
     {
       "run": "after",
-      "snippet": "ALTER TABLE note_data ADD COLUMN IF NOT EXISTS temporary_type_id UUID REFERENCES note_type (id);CREATE OR REPLACE FUNCTION update_type_id()RETURNS TRIGGER AS $$BEGIN  NEW.temporary_type_id = NEW.jsonb->>'typeId';  RETURN NEW;END;$$ language 'plpgsql'; DROP TRIGGER IF EXISTS update_type_id  ON note_data; CREATE TRIGGER update_type_id  BEFORE INSERT OR UPDATE ON note_data  FOR EACH ROW EXECUTE PROCEDURE update_type_id();",
+      "snippetPath": "check_type_id.sql",
       "fromModuleVersion": "1.0"
     },
     {
       "run": "after",
-      "snippet": "CREATE OR REPLACE VIEW note_view AS SELECT note_data.id, jsonb_build_object( 'id', note_data.jsonb->>'id',  'title', note_data.jsonb->>'title', 'domain', note_data.jsonb->>'domain', 'content', note_data.jsonb->>'content',  'creator', note_data.jsonb->'creator',  'updater', note_data.jsonb->'updater',  'links', note_data.jsonb->'links',  'linkTypes',  (SELECT array_agg(DISTINCT type) FROM jsonb_to_recordset(note_data.jsonb->'links') AS x(type text)),  'linkIds',  (SELECT array_agg(DISTINCT id) FROM jsonb_to_recordset(note_data.jsonb->'links') AS x(id text)), 'metadata', note_data.jsonb->'metadata',  'typeId', note_type.jsonb->'id', 'type', note_type.jsonb->'name') AS jsonb FROM note_data LEFT JOIN note_type ON note_data.jsonb->>'typeId' = note_type.jsonb->>'id';",
+      "snippetPath": "create_note_view.sql",
       "fromModuleVersion": "1.0"
     },
     {
       "run": "after",
-      "snippet": "CREATE OR REPLACE FUNCTION set_note_data_md_json()        RETURNS TRIGGER    AS $$     DECLARE        createdDate timestamp WITH TIME ZONE;        createdBy text ;        updatedDate timestamp WITH TIME ZONE;        updatedBy text ;        injectedMetadata text;        createdByUsername text;        updatedByUsername text;     BEGIN       createdBy = OLD.jsonb->'metadata'->>'createdByUserId';       createdDate = OLD.jsonb->'metadata'->>'createdDate';       createdByUsername = OLD.jsonb->'metadata'->>'createdByUsername';       updatedBy = NEW.jsonb->'metadata'->>'updatedByUserId';       updatedDate = NEW.jsonb->'metadata'->>'updatedDate';       updatedByUsername = NEW.jsonb->'metadata'->>'updatedByUsername';       if createdBy ISNULL then     createdBy = 'undefined';   end if;       if updatedBy ISNULL then     updatedBy = 'undefined';   end if;       if createdByUsername ISNULL then     createdByUsername = 'undefined';   end if;       if updatedByUsername ISNULL then     updatedByUsername = 'undefined';   end if;       if createdDate IS NOT NULL           then injectedMetadata = '{\"createdDate\":\"'||to_char(createdDate,'YYYY-MM-DD\"T\"HH24:MI:SS.MS')||'\" , \"createdByUserId\":\"'||createdBy||'\" , \"createdByUsername\":\"'||createdByUsername||'\", \"updatedDate\":\"'||to_char(updatedDate,'YYYY-MM-DD\"T\"HH24:MI:SS.MSOF')||'\" , \"updatedByUserId\":\"'||updatedBy||'\" , \"updatedByUsername\":\"'|| updatedByUsername||'\"}';           NEW.jsonb = jsonb_set(NEW.jsonb, '{metadata}' ,  injectedMetadata::jsonb , false);       else         NEW.jsonb = NEW.jsonb;       end if;     RETURN NEW;     END;    $$    language 'plpgsql';        DROP TRIGGER IF EXISTS set_note_data_md_json_trigger ON note_data CASCADE;        CREATE TRIGGER set_note_data_md_json_trigger BEFORE UPDATE ON note_data   FOR EACH ROW EXECUTE PROCEDURE set_note_data_md_json();        DROP TRIGGER IF EXISTS set_note_data_md_trigger ON note_data CASCADE;        DROP FUNCTION IF EXISTS note_data_set_md();        ALTER TABLE note_data DROP COLUMN IF EXISTS created_by, DROP COLUMN IF EXISTS creation_date;",
+      "snippetPath": "note_data_update_metadata_user_info.sql",
       "fromModuleVersion": "1.0"
     },
     {
       "run": "after",
-      "snippet": "CREATE OR REPLACE FUNCTION set_note_type_md_json()        RETURNS trigger    AS $$      DECLARE        createdDate timestamp WITH TIME ZONE;        createdBy text ;        updatedDate timestamp WITH TIME ZONE;        updatedBy text ;        injectedMetadata text;        createdByUsername text;        updatedByUsername text;      BEGIN        createdBy = OLD.jsonb->'metadata'->>'createdByUserId';        createdDate = OLD.jsonb->'metadata'->>'createdDate';        createdByUsername = OLD.jsonb->'metadata'->>'createdByUsername';        updatedBy = NEW.jsonb->'metadata'->>'updatedByUserId';        updatedDate = NEW.jsonb->'metadata'->>'updatedDate';        updatedByUsername = NEW.jsonb->'metadata'->>'updatedByUsername';        if createdBy ISNULL then     createdBy = 'undefined';   end if;        if updatedBy ISNULL then     updatedBy = 'undefined';   end if;        if createdByUsername ISNULL then     createdByUsername = 'undefined';   end if;        if updatedByUsername ISNULL then     updatedByUsername = 'undefined';   end if;        if createdDate IS NOT NULL            then injectedMetadata = '{\"createdDate\":\"'||to_char(createdDate,'YYYY-MM-DD\"T\"HH24:MI:SS.MS')||'\" , \"createdByUserId\":\"'||createdBy||'\" , \"createdByUsername\":\"'||createdByUsername||'\", \"updatedDate\":\"'||to_char(updatedDate,'YYYY-MM-DD\"T\"HH24:MI:SS.MSOF')||'\" , \"updatedByUserId\":\"'||updatedBy||'\" , \"updatedByUsername\":\"'|| updatedByUsername||'\"}';            NEW.jsonb = jsonb_set(NEW.jsonb, '{metadata}' ,  injectedMetadata::jsonb , false);        else          NEW.jsonb = NEW.jsonb;        end if;     RETURN NEW;     END;    $$    language 'plpgsql';        DROP TRIGGER IF EXISTS set_note_type_md_json_trigger ON note_type CASCADE;        CREATE TRIGGER set_note_type_md_json_trigger BEFORE UPDATE ON note_type   FOR EACH ROW EXECUTE PROCEDURE set_note_type_md_json();        DROP TRIGGER IF EXISTS set_note_type_md_trigger ON note_type CASCADE;        DROP FUNCTION IF EXISTS note_type_set_md();        ALTER TABLE note_type DROP COLUMN IF EXISTS created_by, DROP COLUMN IF EXISTS creation_date;",
+      "snippetPath": "note_type_update_metadata_user_info.sql",
       "fromModuleVersion": "1.0"
     },
     {
       "run": "after",
-      "snippet": "CREATE OR REPLACE VIEW note_type_view AS SELECT note_type.id, jsonb_build_object('id', note_type.jsonb ->> 'id'::text, 'name', note_type.jsonb ->> 'name'::text, 'usage',json_build_object('noteTotal', count(note_data.jsonb ->> 'id'::text)), 'metadata', note_type.jsonb -> 'metadata'::text) AS jsonb FROM note_type LEFT JOIN note_data ON (note_data.jsonb ->> 'typeId')::uuid = (note_type.id) GROUP BY note_type.id;",
+      "snippetPath": "create_note_type_view.sql",
       "fromModuleVersion": "1.0"
     }
   ]
