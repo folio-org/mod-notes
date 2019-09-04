@@ -213,8 +213,8 @@ public class NotesTest extends NotesTestBase {
   @Test
   public void shouldReturn422WhenPostHasInvalidUUID() {
     String bad4 = NOTE_1.replaceAll("-1111-", "-2-");  // make bad UUID
-    final String response = postWithStatus(NOTES_PATH, bad4, SC_BAD_REQUEST, USER9).asString();
-    Assert.assertThat(response, containsString("invalid input syntax for type uuid"));
+    Errors errors = postWithStatus(NOTES_PATH, bad4, SC_UNPROCESSABLE_ENTITY, USER9).as(Errors.class);
+    assertEquals("id", errors.getErrors().get(0).getParameters().get(0).getKey());
   }
 
   @Test
