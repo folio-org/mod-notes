@@ -1,3 +1,12 @@
+## 2.7.0 2019-09-10
+ * MODNOTES-121 - Fix error message on POST /notes
+ * MODNOTES-128 - Update RMB to 27.0.0 to use "snippetPath" schema attribute
+ * MODNOTES-124 - Internal server error during creation of the note
+ * MODNOTES-127 - Update folio-service-tools with newer version
+ * MODNOTES-117 - Remove dangerous html tags from note content
+ * MODNOTES-119 - Fix error message for quering notes
+ * MODNOTES-100 - Fix error message when we try to delete a note type 
+
 ## 2.6.1 2019-07-24
  * MODNOTES-115 - Ability to filter by notes types
  * MODNOTES-113 - Get funky error message after you exceed Note details character limit
