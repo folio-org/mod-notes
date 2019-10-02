@@ -24,7 +24,8 @@
         {
           "methods": ["POST"],
           "pathPattern": "/notes",
-          "permissionsRequired": ["notes.item.post", "notes.domain.all"]
+          "permissionsRequired": ["notes.item.post", "notes.domain.all"],
+          "modulePermissions": ["users.item.get"]
         },
         {
           "methods": ["GET"],
@@ -34,7 +35,8 @@
         {
           "methods": ["PUT"],
           "pathPattern": "/notes/{id}",
-          "permissionsRequired": ["notes.item.put", "notes.domain.all"]
+          "permissionsRequired": ["notes.item.put", "notes.domain.all"],
+          "modulePermissions": ["users.item.get"]
         },
         {
           "methods": ["DELETE"],
