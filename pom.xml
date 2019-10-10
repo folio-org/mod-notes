@@ -15,10 +15,10 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <raml-module-builder.version>27.0.0</raml-module-builder.version>
+    <raml-module-builder.version>27.1.1</raml-module-builder.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <jsonschema_paths>types/**,raml-util/schemas</jsonschema_paths>
-    <vertx-version>3.5.4</vertx-version>
+    <vertx-version>3.8.1</vertx-version>
     <aspectj.version>1.9.1</aspectj.version>
     <folio-service-tools.version>1.2.0</folio-service-tools.version>
     <jackson-databind.version>2.9.9.2</jackson-databind.version>
