@@ -21,7 +21,6 @@
     <vertx-version>3.8.1</vertx-version>
     <aspectj.version>1.9.1</aspectj.version>
     <folio-service-tools.version>1.2.0</folio-service-tools.version>
-    <jackson-databind.version>2.9.9.2</jackson-databind.version>
     <spring.version>5.1.1.RELEASE</spring.version>
   </properties>
 
@@ -62,7 +61,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>2.9.9</version>
+        <version>2.10.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -92,7 +91,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>${jackson-databind.version}</version>
     </dependency>
     <dependency>
       <groupId>org.folio</groupId>
