@@ -40,9 +40,8 @@ public class NotesImpl implements Notes {
   @Autowired @Qualifier("notesExcHandler")
   private PartialFunction<Throwable, Response> excHandler;
 
-  // Get this from the restVerticle, like the rest, when it gets defined there.
-  public NotesImpl(Vertx vertx, String tenantId) {
-    SpringContextUtil.autowireDependencies(this, vertx.getOrCreateContext());
+  public NotesImpl() {
+    SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
   }
 
   @Override
@@ -53,7 +52,7 @@ public class NotesImpl implements Notes {
                        Handler<AsyncResult<Response>> asyncHandler,
                        Context vertxContext) {
     logger.debug("Getting notes. " + offset + "+" + limit + " q=" + query);
-    
+
     ResponseHelper.respond(noteService.getNotes(query, offset, limit, tenantId(okapiHeaders)),
       GetNotesResponse::respond200WithApplicationJson, asyncHandler, excHandler);
   }
@@ -115,5 +114,5 @@ public class NotesImpl implements Notes {
       .compose(o -> futureProducer.call());
     ResponseHelper.respond(future, mapper, asyncHandler, excHandler);
   }
-  
+
 }

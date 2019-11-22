@@ -19,6 +19,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -40,10 +41,10 @@ public class NoteTenantApiImpl extends TenantAPI {
   @Override
   public void postTenant(TenantAttributes entity, Map<String, String> headers, Handler<AsyncResult<Response>> handlers,
                          Context context) {
-    Future<Response> future = Future.future();
-    super.postTenant(entity, headers, future, context);
+    Promise<Response> promise = Promise.promise();
+    super.postTenant(entity, headers, promise, context);
 
-    future.compose(response -> populateDefaultNoteType(headers).map(response))
+    promise.future().compose(response -> populateDefaultNoteType(headers).map(response))
     .setHandler(handlers);
   }
 

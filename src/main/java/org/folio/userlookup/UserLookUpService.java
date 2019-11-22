@@ -17,13 +17,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.json.JsonObject;
 
 @Component
 public class UserLookUpService {
 
-  private static final Logger logger = LoggerFactory.getLogger(UserLookUp.class);
+  private static final Logger logger = LoggerFactory.getLogger(UserLookUpService.class);
   /**
    * Returns the user information for the userid specified in the original
    * request.
@@ -37,11 +38,11 @@ public class UserLookUpService {
 
     final String tenantId = TenantTool.calculateTenantId(headers.get(RestVerticle.OKAPI_HEADER_TENANT));
     final String userId = headers.get(RestVerticle.OKAPI_USERID_HEADER);
-    Future<UserLookUp> future = Future.future();
+    Promise<UserLookUp> promise = Promise.promise();
     if (userId == null) {
       logger.error("No userid header");
-      future.fail(new BadRequestException("Missing user id header, cannot look up user"));
-      return future;
+      promise.fail(new BadRequestException("Missing user id header, cannot look up user"));
+      return promise.future();
     }
 
     String okapiURL = headers.get(XOkapiHeaders.URL);
@@ -67,17 +68,17 @@ public class UserLookUpService {
             httpClient.closeClient();
           }
         })
-        .thenAccept(future::complete)
+        .thenAccept(promise::complete)
         .exceptionally(e -> {
-          future.fail(e.getCause());
+          promise.fail(e.getCause());
           return null;
         });
     } catch (Exception e) {
       logger.error("Cannot get user data: " + e.getMessage(), e);
-      future.fail(e);
+      promise.fail(e);
     }
 
-    return future;
+    return promise.future();
   }
 
   private UserLookUp mapUserInfo(Response response) {
