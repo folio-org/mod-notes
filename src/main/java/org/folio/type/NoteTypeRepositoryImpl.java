@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.ext.sql.ResultSet;
 import io.vertx.ext.sql.UpdateResult;
@@ -45,62 +46,62 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
   @Override
   public Future<Optional<NoteType>> findById(String id, String tenantId) {
-    Future<NoteType> future = Future.future();
+    Promise<NoteType> promise = Promise.promise();
 
-    pgClient(tenantId).getById(NOTE_TYPE_VIEW, id, NoteType.class, future);
+    pgClient(tenantId).getById(NOTE_TYPE_VIEW, id, NoteType.class, promise);
 
-    return future.map(Optional::ofNullable);
+    return promise.future().map(Optional::ofNullable);
   }
 
   @Override
   public Future<List<NoteType>> findByIds(List<String> ids, String tenantId) {
-    Future<Map<String, NoteType>> future = Future.future();
+    Promise<Map<String, NoteType>> promise = Promise.promise();
 
-    pgClient(tenantId).getById(NOTE_TYPE_VIEW, createParams(ids), NoteType.class, future);
+    pgClient(tenantId).getById(NOTE_TYPE_VIEW, createParams(ids), NoteType.class, promise);
 
-    return future.map(resultMap -> new ArrayList<>(resultMap.values()));
+    return promise.future().map(resultMap -> new ArrayList<>(resultMap.values()));
   }
 
   @Override
   public Future<Long> count(String tenantId) {
-    Future<ResultSet> resultSetFuture = Future.future();
+    Promise<ResultSet> promise = Promise.promise();
 
-    pgClient(tenantId).select(SELECT_TOTAL_COUNT, resultSetFuture);
+    pgClient(tenantId).select(SELECT_TOTAL_COUNT, promise);
 
-    return resultSetFuture.map(rs -> rs.getResults().get(0).getLong(0));
+    return promise.future().map(rs -> rs.getResults().get(0).getLong(0));
   }
 
   @Override
   public Future<NoteType> save(NoteType entity, String tenantId) {
-    Future<String> future = Future.future(); // future with id as result
+    Promise<String> promise = Promise.promise(); // promise with id as result
 
     if (StringUtils.isBlank(entity.getId())) {
       entity.setId(UUID.randomUUID().toString());
     }
 
-    pgClient(tenantId).save(NOTE_TYPE_TABLE, entity.getId(), entity, future);
+    pgClient(tenantId).save(NOTE_TYPE_TABLE, entity.getId(), entity, promise);
 
-    return future.map(id -> updateId(entity, id)) // update id only, copy the rest from the original entity
+    return promise.future().map(id -> updateId(entity, id)) // update id only, copy the rest from the original entity
       .recover(excTranslator.translateOrPassBy());
   }
 
   @Override
   public Future<Boolean> update(NoteType entity, String tenantId) {
-    Future<UpdateResult> future = Future.future();
+    Promise<UpdateResult> promise = Promise.promise();
 
-    pgClient(tenantId).update(NOTE_TYPE_TABLE, entity, entity.getId(), future);
+    pgClient(tenantId).update(NOTE_TYPE_TABLE, entity, entity.getId(), promise);
 
-    return future.map(updateResult -> updateResult.getUpdated() == 1)
+    return promise.future().map(updateResult -> updateResult.getUpdated() == 1)
       .recover(excTranslator.translateOrPassBy());
   }
 
   @Override
   public Future<Boolean> delete(String id, String tenantId) {
-    Future<UpdateResult> future = Future.future();
+    Promise<UpdateResult> promise = Promise.promise();
 
-    pgClient(tenantId).delete(NOTE_TYPE_TABLE, id, future);
+    pgClient(tenantId).delete(NOTE_TYPE_TABLE, id, promise);
 
-    return future.map(updateResult -> updateResult.getUpdated() == 1)
+    return promise.future().map(updateResult -> updateResult.getUpdated() == 1)
       .recover(excTranslator.translateOrPassBy());
   }
 

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import javax.ws.rs.NotFoundException;
 
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -29,7 +30,7 @@ public class NoteRepositoryImpl implements NoteRepository {
   private static final String NOTE_VIEW = "note_view";
   private static final String NOTE_TABLE = "note_data";
 
-  private final Logger logger = LoggerFactory.getLogger(NoteServiceImpl.class);
+  private final Logger logger = LoggerFactory.getLogger(NoteRepositoryImpl.class);
 
   @Autowired
   private Vertx vertx;
@@ -50,16 +51,16 @@ public class NoteRepositoryImpl implements NoteRepository {
    */
   @Override
   public Future<Note> save(Note note, String tenantId) {
-    Future<String> future = Future.future();
+    Promise<String> promise = Promise.promise();
 
     if (StringUtils.isBlank(note.getId())) {
       note.setId(UUID.randomUUID().toString());
     }
 
     PostgresClient.getInstance(vertx, tenantId)
-      .save(NOTE_TABLE, note.getId(), note, future);
+      .save(NOTE_TABLE, note.getId(), note, promise);
 
-    return future.map(noteId -> {
+    return promise.future().map(noteId -> {
       note.setId(noteId);
       return note;
     });
@@ -72,11 +73,11 @@ public class NoteRepositoryImpl implements NoteRepository {
    */
   @Override
   public Future<Note> findOne(String id, String tenantId) {
-    Future<NoteView> future = Future.future();
+    Promise<NoteView> promise = Promise.promise();
     PostgresClient.getInstance(vertx, tenantId)
-      .getById(NOTE_VIEW, id, NoteView.class, future);
+      .getById(NOTE_VIEW, id, NoteView.class, promise);
 
-    return future.map(noteView -> {
+    return promise.future().map(noteView -> {
       if(Objects.isNull(noteView)){
         throw new NotFoundException("Note " + id + " not found");
       }
@@ -86,10 +87,10 @@ public class NoteRepositoryImpl implements NoteRepository {
 
   @Override
   public Future<Void> delete(String id, String tenantId) {
-    Future<UpdateResult> future = Future.future();
+    Promise<UpdateResult> promise = Promise.promise();
     PostgresClient.getInstance(vertx, tenantId)
-      .delete(NOTE_TABLE, id, future);
-    return future.map(updateResult -> {
+      .delete(NOTE_TABLE, id, promise);
+    return promise.future().map(updateResult -> {
       if(updateResult.getUpdated() == 0){
         throw new NotFoundException("Note with id " + id + " doesn't exist");
       }
@@ -99,15 +100,16 @@ public class NoteRepositoryImpl implements NoteRepository {
 
   @Override
   public Future<Void> update(String id, Note note, String tenantId) {
-    Future<UpdateResult> future = Future.future();
+    Promise<UpdateResult> promise = Promise.promise();
     if (note.getLinks().isEmpty()) {
       PostgresClient.getInstance(vertx, tenantId)
-        .delete(NOTE_TABLE, id, future);
+        .delete(NOTE_TABLE, id, promise);
     } else {
       PostgresClient.getInstance(vertx, tenantId)
-        .update(NOTE_TABLE, note, id, future);
+        .update(NOTE_TABLE, note, id, promise);
     }
-    return future
+    return promise
+      .future()
       .map(updateResult -> {
         if(updateResult.getUpdated() == 0){
           throw new NotFoundException("Note with id " + id + " doesn't exist");

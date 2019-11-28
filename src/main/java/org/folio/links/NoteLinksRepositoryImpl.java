@@ -26,6 +26,7 @@ import java.util.List;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
@@ -93,10 +94,10 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
     addLimitOffset(parameters, queryBuilder, rowPortion);
 
-    Future<ResultSet> future = Future.future();
-    pgClient(tenantId).select(queryBuilder.toString(), parameters, future);
+    Promise<ResultSet> promise = Promise.promise();
+    pgClient(tenantId).select(queryBuilder.toString(), parameters, promise);
 
-    return future.map(this::mapResultToNoteCollection);
+    return promise.future().map(this::mapResultToNoteCollection);
   }
 
   private void addWhereNoteTypeClause(JsonArray parameters, StringBuilder query, List<String> noteTypes) {
@@ -125,10 +126,10 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     String jsonLink = Json.encode(toLink(link));
     addWhereClause(parameters, queryBuilder, status, jsonLink);
 
-    Future<ResultSet> future = Future.future();
-    pgClient(tenantId).select(queryBuilder.toString(), parameters, future);
+    Promise<ResultSet> promise = Promise.promise();
+    pgClient(tenantId).select(queryBuilder.toString(), parameters, promise);
 
-    return future.map(this::mapCount);
+    return promise.future().map(this::mapCount);
   }
 
   private Future<Void> assignToNotes(List<String> notesIds, Link linkToAssign, PostgresClient postgresClient,
@@ -140,10 +141,10 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     String query = String.format(INSERT_LINKS, getNoteTableName(tenantId), placeholders);
     JsonArray parameters = createAssignParameters(notesIds, linkToAssign);
 
-    Future<UpdateResult> future = Future.future();
-    postgresClient.execute(connection, query, parameters, future);
+    Promise<UpdateResult> promise = Promise.promise();
+    postgresClient.execute(connection, query, parameters, promise);
 
-    return future.map(result -> null);
+    return promise.future().map(result -> null);
   }
 
   private Future<Void> unAssignFromNotes(List<String> notesIds, Link link, PostgresClient postgresClient,
@@ -155,10 +156,10 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     String query = String.format(REMOVE_LINKS, getNoteTableName(tenantId), placeholders);
     JsonArray parameters = createUnAssignParameters(notesIds, link);
 
-    Future<UpdateResult> future = Future.future();
-    postgresClient.execute(connection, query, parameters, future);
+    Promise<UpdateResult> promise = Promise.promise();
+    postgresClient.execute(connection, query, parameters, promise);
 
-    return future.compose(o -> deleteNotesWithoutLinks(notesIds, postgresClient, connection, tenantId))
+    return promise.future().compose(o -> deleteNotesWithoutLinks(notesIds, postgresClient, connection, tenantId))
       .map(result -> null);
   }
 
@@ -172,10 +173,10 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     String query = String.format(DELETE_NOTES_WITHOUT_LINKS, getNoteTableName(tenantId), placeholders);
     JsonArray parameters = DbUtils.createParams(notesIds);
 
-    Future<UpdateResult> future = Future.future();
-    postgresClient.execute(connection, query, parameters, future);
+    Promise<UpdateResult> promise = Promise.promise();
+    postgresClient.execute(connection, query, parameters, promise);
 
-    return future.map(result -> null);
+    return promise.future().map(result -> null);
   }
 
   private NoteCollection mapResultToNoteCollection(ResultSet results) {
@@ -200,31 +201,31 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   private Future<Void> rollbackTransaction(PostgresClient postgresClient,
                                            MutableObject<AsyncResult<SQLConnection>> connection, Throwable e) {
     if (connection.getValue() != null) {
-      Future<Void> future = Future.future();
+      Promise<Void> promise = Promise.promise();
       postgresClient.rollbackTx(connection.getValue(), rollback -> {
         if (rollback.failed()) {
           Throwable rollbackException = rollback.cause();
           rollbackException.addSuppressed(e);
-          future.fail(rollbackException);
+          promise.fail(rollbackException);
         } else {
-          future.fail(e);
+          promise.fail(e);
         }
       });
-      return future;
+      return promise.future();
     }
     return Future.failedFuture(e);
   }
 
   private Future<AsyncResult<SQLConnection>> startTransaction(PostgresClient postgresClient) {
-    Future<AsyncResult<SQLConnection>> future = Future.future();
-    postgresClient.startTx(future::complete);
-    return future;
+    Promise<AsyncResult<SQLConnection>> promise = Promise.promise();
+    postgresClient.startTx(promise::complete);
+    return promise.future();
   }
 
   private Future<Void> endTransaction(PostgresClient postgresClient, AsyncResult<SQLConnection> connection) {
-    Future<Void> future = Future.future();
-    postgresClient.endTx(connection, future);
-    return future;
+    Promise<Void> promise = Promise.promise();
+    postgresClient.endTx(connection, promise);
+    return promise.future();
   }
 
   private Link toLink(EntityLink link) {
