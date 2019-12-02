@@ -2,7 +2,7 @@
   "tables": [
     {
       "tableName": "note_data",
-      "fromModuleVersion": 0.2,
+      "fromModuleVersion": "mod-notes-2.7.0",
       "withMetadata": true,
       "likeIndex": [
         {
@@ -14,7 +14,7 @@
     },
     {
       "tableName": "note_type",
-      "fromModuleVersion": 1.0,
+      "fromModuleVersion": "mod-notes-2.7.0",
       "withMetadata": true,
       "uniqueIndex" : [
         {
@@ -35,27 +35,25 @@
     {
       "run": "after",
       "snippetPath": "check_type_id.sql",
-      "fromModuleVersion": "1.0"
+      "fromModuleVersion": "mod-notes-2.7.0"
     },
     {
       "run": "after",
       "snippetPath": "create_note_view.sql",
-      "fromModuleVersion": "1.0"
+      "fromModuleVersion": "mod-notes-2.7.0"
     },
     {
       "run": "after",
-      "snippetPath": "note_data_update_metadata_user_info.sql",
-      "fromModuleVersion": "1.0"
+      "snippetPath": "note_data_update_metadata_user_info.sql"
     },
     {
       "run": "after",
-      "snippetPath": "note_type_update_metadata_user_info.sql",
-      "fromModuleVersion": "1.0"
+      "snippetPath": "note_type_update_metadata_user_info.sql"
     },
     {
       "run": "after",
       "snippetPath": "create_note_type_view.sql",
-      "fromModuleVersion": "1.0"
+      "fromModuleVersion": "mod-notes-2.7.0"
     }
   ]
 }
