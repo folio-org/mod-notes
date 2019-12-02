@@ -1,3 +1,14 @@
+## 2.8.0 2019-12-02
+ * MODNOTES-137 - Set fromModuleVersion attributes
+ * MODNOTES-136 - Update RMB version to 29.0.1
+ * MODNOTES-132 - Update jackson to 2.10.0 to fix security vulnerabilities
+ * MODNOTES-135 - FOLIO-2358 manage container memory
+ * FOLIO-2321   - Remove old MD metadata
+ * MODNOTES-131 - Upgrade RMB to 27.1.1
+ * MODNOTES-130 - Unable to add notes to Agreements/eholdings apps witho…
+ * FOLIO-2256   - Enable kube-deploy pipeline
+ * FOLIO-2234   - Add LaunchDescriptor settings
+
 ## 2.7.0 2019-09-10
  * MODNOTES-121 - Fix error message on POST /notes
  * MODNOTES-128 - Update RMB to 27.0.0 to use "snippetPath" schema attribute
