@@ -1,6 +1,7 @@
 package org.folio.util;
 
 import static org.folio.test.util.TestUtil.readFile;
+import static org.folio.test.util.TestUtil.readJsonFile;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -9,9 +10,11 @@ import io.restassured.http.Header;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
-import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.jaxrs.model.NoteType;
+import org.folio.test.util.TokenTestUtil;
 
 public class NoteTestData {
+
   private static final Logger logger = LoggerFactory.getLogger(NoteTestData.class);
 
   public static final String PACKAGE_ID = "18-2356521";
@@ -24,9 +27,13 @@ public class NoteTestData {
   public static final String NOTE_TYPE_NAME = "High Priority";
   public static final String NOTE_TYPE2_NAME = "test note";
 
-  public static final Header USER19 = new Header(XOkapiHeaders.USER_ID, "11999999-9999-4999-9999-999999999911");
-  public static final Header USER8 = new Header(XOkapiHeaders.USER_ID, "88888888-8888-4888-8888-888888888888");
-  public static final Header USER9 = new Header(XOkapiHeaders.USER_ID, "99999999-9999-4999-9999-999999999999");
+  public static final String USER19_ID = "11999999-9999-4999-9999-999999999911";
+  public static final String USER8_ID = "88888888-8888-4888-8888-888888888888";
+  public static final String USER9_ID = "99999999-9999-4999-9999-999999999999";
+
+  public static final Header USER19 = TokenTestUtil.createTokenHeader("user19", USER19_ID);
+  public static final Header USER8 = TokenTestUtil.createTokenHeader("user8", USER8_ID);
+  public static final Header USER9 = TokenTestUtil.createTokenHeader("user9", USER9_ID);
 
   public static final String NOTE_1;
   public static final String NOTE_2;
@@ -38,8 +45,8 @@ public class NoteTestData {
   public static final String UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID;
   public static final String NOTE_5_LONG_TITLE;
   public static final String NOTE_6_EMPTY_CONTENT;
-  public static final String NOTE_TYPE;
-  public static final String NOTE_TYPE2;
+  public static final NoteType NOTE_TYPE;
+  public static final NoteType NOTE_TYPE2;
   public static final String UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS;
 
   static {
@@ -54,8 +61,8 @@ public class NoteTestData {
       UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID = readFile("note/updateNote5RequestWithNonExistingTypeId.json");
       NOTE_5_LONG_TITLE = readFile("note/note5LongTitle.json");
       NOTE_6_EMPTY_CONTENT = readFile("note/note6EmptyContent.json");
-      NOTE_TYPE = readFile("notetype/noteType.json");
-      NOTE_TYPE2 = readFile("notetype/noteType2.json");
+      NOTE_TYPE = readJsonFile("notetype/noteType.json", NoteType.class);
+      NOTE_TYPE2 = readJsonFile("notetype/noteType2.json", NoteType.class);
       UPDATE_NOTE_2_REQUEST_WITH_NO_LINKS = readFile("note/updateNoteRequestWithNoId.json");
     } catch (IOException | URISyntaxException e) {
       logger.error("Can't read test files", e);

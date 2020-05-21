@@ -16,9 +16,12 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import static org.folio.test.util.TestUtil.STUB_TENANT;
+import static org.folio.test.util.DBTestUtil.deleteFromTable;
+import static org.folio.test.util.DBTestUtil.getAll;
+import static org.folio.test.util.DBTestUtil.save;
 import static org.folio.test.util.TestUtil.mockGet;
 import static org.folio.test.util.TestUtil.readFile;
+import static org.folio.test.util.TestUtil.readJsonFile;
 import static org.folio.test.util.TestUtil.toJson;
 import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.NOTE_4;
@@ -36,12 +39,10 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.RegexPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-
 import org.apache.http.HttpStatus;
 import org.hamcrest.MatcherAssert;
 import org.jeasy.random.EasyRandom;
@@ -129,6 +130,8 @@ public class NoteTypesImplTest extends NotesTestBase {
         ));
 
     mockGet(CONFIG_NOTE_TYPE_LIMIT_URL_PATTERN, HttpStatus.SC_NOT_FOUND); // default limit will be applied
+
+    deleteFromTable(vertx, NOTE_TYPE_TABLE);
   }
 
   private Randomizer<String> randomUUID() {
@@ -138,56 +141,58 @@ public class NoteTypesImplTest extends NotesTestBase {
   @Test
   public void shouldReturn200WithNoteTypeWhenValidId() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile("post_note_type.json");
+      final NoteType stubNoteType = readJsonFile("post_note_type.json", NoteType.class);
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
+      save(STUB_NOTE_TYPE_ID, stubNoteType, vertx, NOTE_TYPE_TABLE);
 
-      getWithOk(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID).asString();
+      NoteType actual = getWithOk(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID).as(NoteType.class);
+      assertEquals(stubNoteType.getId(), actual.getId());
+      assertEquals(stubNoteType.getName(), actual.getName());
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
   @Test
   public void shouldReturn200WithNoteTypeUsageById() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile("post_note_type.json");
+      final NoteType stubNoteType = readJsonFile("post_note_type.json", NoteType.class);
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
-      postNoteWithOk(NOTE_2,USER8);
-      postNoteWithOk(NOTE_4,USER8);
+      save(STUB_NOTE_TYPE_ID, stubNoteType, vertx, NOTE_TYPE_TABLE);
+      postNoteWithOk(NOTE_2, USER8);
+      postNoteWithOk(NOTE_4, USER8);
 
-      getWithValidateBody(NOTE_TYPES_ENDPOINT +"/" + STUB_NOTE_TYPE_ID,SC_OK)
-        .body("usage.noteTotal",is(2));
+      getWithValidateBody(NOTE_TYPES_ENDPOINT + "/" + STUB_NOTE_TYPE_ID, SC_OK)
+        .body("usage.noteTotal", is(2));
     } finally {
-      DBTestUtil.deleteAllNotes(vertx);
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TABLE);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
   @Test
   public void shouldReturn200WithNoteTypeUsage() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile("post_note_type.json");
+      final NoteType stubNoteType = readJsonFile("post_note_type.json", NoteType.class);
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
-      postNoteWithOk(NOTE_2,USER8);
-      postNoteWithOk(NOTE_4,USER8);
+      save(STUB_NOTE_TYPE_ID, stubNoteType, vertx, NOTE_TYPE_TABLE);
+      postNoteWithOk(NOTE_2, USER8);
+      postNoteWithOk(NOTE_4, USER8);
 
-      getWithValidateBody(NOTE_TYPES_ENDPOINT,SC_OK)
-        .body("noteTypes[0].usage.noteTotal",is(2));
+      getWithValidateBody(NOTE_TYPES_ENDPOINT, SC_OK)
+        .body("noteTypes[0].usage.noteTotal", is(2));
     } finally {
-      DBTestUtil.deleteAllNotes(vertx);
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TABLE);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
   @Test
   public void shouldReturn200WithNoteTypeCollection() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile("post_note_type.json");
+      final NoteType stubNoteType = readJsonFile("post_note_type.json", NoteType.class);
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
+      save(STUB_NOTE_TYPE_ID, stubNoteType, vertx, NOTE_TYPE_TABLE);
 
       Response response = getWithOk(NOTE_TYPES_ENDPOINT).response();
 
@@ -197,7 +202,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals(1, noteTypes.size());
       assertEquals(1, totalRecords);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -208,7 +213,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
+        save(noteType.getId(), noteType, vertx, NOTE_TYPE_TABLE);
       }
 
       Response response = getWithOk(NOTE_TYPES_ENDPOINT + "?limit=" + MAX_LIMIT_AND_OFFSET + "&offset=2").response();
@@ -219,7 +224,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals(1, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -230,7 +235,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
+        save(noteType.getId(), noteType, vertx, NOTE_TYPE_TABLE);
       }
       Response response = getWithOk(NOTE_TYPES_ENDPOINT + "?limit=" + MAX_LIMIT_AND_OFFSET).response();
 
@@ -240,7 +245,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -251,7 +256,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
+        save(noteType.getId(), noteType, vertx, NOTE_TYPE_TABLE);
       }
       Response response = getWithOk(NOTE_TYPES_ENDPOINT + "?offset=" + MAX_LIMIT_AND_OFFSET).response();
 
@@ -261,7 +266,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals(0, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -272,7 +277,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
+        save(noteType.getId(), noteType, vertx, NOTE_TYPE_TABLE);
       }
       Response response = getWithOk(NOTE_TYPES_ENDPOINT + "?offset=" + NULL_LIMIT_AND_OFFSET).response();
 
@@ -282,7 +287,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -293,7 +298,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
+        save(noteType.getId(), noteType, vertx, NOTE_TYPE_TABLE);
       }
       Response response = getWithOk(NOTE_TYPES_ENDPOINT + "?limit=" + NULL_LIMIT_AND_OFFSET).response();
 
@@ -303,7 +308,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals(0, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -312,7 +317,7 @@ public class NoteTypesImplTest extends NotesTestBase {
     try {
       getWithStatus(NOTE_TYPES_ENDPOINT + "&limit=-1", SC_BAD_REQUEST);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -321,7 +326,7 @@ public class NoteTypesImplTest extends NotesTestBase {
     try {
       getWithStatus(NOTE_TYPES_ENDPOINT + "&offset=-1", SC_BAD_REQUEST);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -332,7 +337,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       NoteType[] noteTypes = mapper.readValue(readFile(COLLECTION_NOTE_TYPE_JSON), NoteType[].class);
 
       for (NoteType noteType : noteTypes) {
-        DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, mapper.writeValueAsString(noteType));
+        save(noteType.getId(), noteType, vertx, NOTE_TYPE_TABLE);
       }
       Response response = getWithOk(NOTE_TYPES_ENDPOINT).response();
 
@@ -342,16 +347,16 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals(3, noteTypeList.size());
       assertEquals(3, totalRecords);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
   @Test
   public void shouldReturn200WithNoteTypeCollectionAndIncompleteWay() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile("post_note_type.json");
+      final NoteType stubNoteType = readJsonFile("post_note_type.json", NoteType.class);
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
+      save(STUB_NOTE_TYPE_ID, stubNoteType, vertx, NOTE_TYPE_TABLE);
 
       Response response = getWithOk(NOTE_TYPES_ENDPOINT + "?quer").response();
 
@@ -361,13 +366,13 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals(1, noteTypes.size());
       assertEquals(1, totalRecords);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
   @Test
   public void shouldReturn200WithEmptyNoteTypeCollection() {
-    DBTestUtil.deleteAllNoteTypes(vertx);
+    deleteFromTable(vertx, NOTE_TYPE_TABLE);
     Response response = getWithOk(NOTE_TYPES_ENDPOINT).response();
 
     int totalRecords = response.path(TOTAL_RECORDS);
@@ -380,26 +385,26 @@ public class NoteTypesImplTest extends NotesTestBase {
   @Test
   public void shouldReturn400InvalidRequest() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile("post_note_type.json");
+      final NoteType stubNoteType = readJsonFile("post_note_type.json", NoteType.class);
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
+      save(STUB_NOTE_TYPE_ID, stubNoteType, vertx, NOTE_TYPE_TABLE);
 
       getWithStatus(NOTE_TYPES_ENDPOINT + "?query=", SC_BAD_REQUEST);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
   @Test
   public void shouldReturn400InvalidLimit() throws IOException, URISyntaxException {
     try {
-      final String stubNoteType = readFile("post_note_type.json");
+      final NoteType stubNoteType = readJsonFile("post_note_type.json", NoteType.class);
 
-      DBTestUtil.insertNoteType(vertx, STUB_NOTE_TYPE_ID, STUB_TENANT, stubNoteType);
+      save(STUB_NOTE_TYPE_ID, stubNoteType, vertx, NOTE_TYPE_TABLE);
 
       getWithStatus(NOTE_TYPES_ENDPOINT + "?limit=", SC_BAD_REQUEST);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -435,7 +440,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertEquals("m8", noteTypeMetadata.getUpdatedByUsername());
 
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -452,7 +457,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       NoteType loaded = loadSingleNoteType();
       assertNull(loaded.getUsage());
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -490,7 +495,7 @@ public class NoteTypesImplTest extends NotesTestBase {
       assertTrue(Objects.isNull(noteTypeMetadata.getUpdatedByUsername()));
 
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -503,14 +508,14 @@ public class NoteTypesImplTest extends NotesTestBase {
   public void shouldFailOnPostWith400IfTypeAlreadyExists() {
     try {
       NoteType existing = nextRandomNoteType();
-      DBTestUtil.insertNoteType(vertx, existing.getId(), STUB_TENANT, toJson(existing));
+      save(existing.getId(), existing, vertx, NOTE_TYPE_TABLE);
 
       NoteType creating = new NoteType().withName(existing.getName());
       String error = postWithStatus(NOTE_TYPES_ENDPOINT, toJson(creating), SC_BAD_REQUEST, USER9).asString();
 
       assertThat(error, containsString("already exists"));
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -522,7 +527,7 @@ public class NoteTypesImplTest extends NotesTestBase {
     try {
       for (int i = 0; i < 5; i++) {
         NoteType nt = nextRandomNoteType();
-        DBTestUtil.insertNoteType(vertx, nt.getId(), STUB_TENANT, toJson(nt));
+        save(nt.getId(), nt, vertx, NOTE_TYPE_TABLE);
       }
 
       NoteType creating = nextRandomNoteType();
@@ -530,7 +535,7 @@ public class NoteTypesImplTest extends NotesTestBase {
 
       assertThat(error, containsString("Maximum number of note types allowed"));
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -545,8 +550,8 @@ public class NoteTypesImplTest extends NotesTestBase {
       .post(NOTE_TYPES_ENDPOINT)
       .then()
       .log().ifValidationFails()
-      .statusCode(SC_BAD_REQUEST)
-      .body(containsString("cannot look up user"));
+      .statusCode(SC_UNAUTHORIZED)
+      .body(containsString("Unauthorized"));
   }
 
   @Test
@@ -566,7 +571,7 @@ public class NoteTypesImplTest extends NotesTestBase {
         .log().ifValidationFails()
         .statusCode(SC_UNAUTHORIZED);
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -574,22 +579,23 @@ public class NoteTypesImplTest extends NotesTestBase {
   public void shouldReturn400WhenUserIsRetrievedWithoutNecessaryFields() {
     NoteType input = nextRandomNoteType();
     final Header userWithoutPermission = new Header(XOkapiHeaders.USER_ID, "33999999-9999-4999-9999-999999999933");
-    final String response = postWithStatus(NOTE_TYPES_ENDPOINT,  toJson(input), SC_BAD_REQUEST, userWithoutPermission).asString();
-    MatcherAssert.assertThat(response, containsString("Missing fields"));
+    final String response =
+      postWithStatus(NOTE_TYPES_ENDPOINT, toJson(input), SC_UNAUTHORIZED, userWithoutPermission).asString();
+    MatcherAssert.assertThat(response, containsString("Unauthorized"));
   }
 
   @Test
   public void shouldDeleteExistingNoteTypeById() {
     try {
       NoteType existing = nextRandomNoteType();
-      DBTestUtil.insertNoteType(vertx, existing.getId(), STUB_TENANT, toJson(existing));
+      save(existing.getId(), existing, vertx, NOTE_TYPE_TABLE);
 
       deleteWithNoContent(NOTE_TYPES_ENDPOINT + "/" + existing.getId());
 
-      List<NoteType> noteTypes = DBTestUtil.getAllNoteTypes(vertx);
+      List<NoteType> noteTypes = getAll(NoteType.class, vertx, NOTE_TYPE_TABLE);
       assertEquals(0, noteTypes.size());
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
@@ -602,23 +608,23 @@ public class NoteTypesImplTest extends NotesTestBase {
   public void shouldFailOnDeleteWith400WhenNoteTypeIsUsed() {
     try {
       NoteType noteType = nextRandomNoteType();
-      DBTestUtil.insertNoteType(vertx, noteType.getId(), STUB_TENANT, toJson(noteType));
+      save(noteType.getId(), noteType, vertx, NOTE_TYPE_TABLE);
 
       Note note = nextRandomNote();
       note.setType(noteType.getName());
       note.setTypeId(noteType.getId());
-      DBTestUtil.insertNote(vertx, note.getId(), STUB_TENANT, toJson(note));
+      save(note.getId(), note, vertx, NOTE_TABLE);
 
       String response = deleteWithStatus(NOTE_TYPES_ENDPOINT + "/" + noteType.getId(), SC_BAD_REQUEST).asString();
       assertThat(response, is("Note type is assigned to a note(s) and cannot be deleted"));
     } finally {
-      DBTestUtil.deleteAllNotes(vertx);
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TABLE);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 
   private NoteType loadSingleNoteType() {
-    List<NoteType> noteTypes = DBTestUtil.getAllNoteTypes(vertx);
+    List<NoteType> noteTypes = getAll(NoteType.class, vertx, NOTE_TYPE_TABLE);
 
     assertEquals(1, noteTypes.size());
     return noteTypes.get(0);

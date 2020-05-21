@@ -21,6 +21,7 @@ import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.jaxrs.model.UserDisplayInfo;
+import org.folio.userlookup.UserLookUp;
 import org.folio.userlookup.UserLookUpService;
 
 @Component
@@ -41,7 +42,7 @@ public class NoteServiceImpl implements NoteService {
   @Override
   public Future<Note> addNote(Note note, OkapiParams okapiParams) {
     logger.debug("Removing unsafe tags");
-    if(StringUtils.isNotBlank(note.getContent())) {
+    if (StringUtils.isNotBlank(note.getContent())) {
       note.setContent(sanitizeHtml(note.getContent()));
     }
     logger.debug("Create note with content: {}", Json.encode(note));
@@ -50,9 +51,9 @@ public class NoteServiceImpl implements NoteService {
       return failedFuture(new InputValidationException("links", "links", "At least one link should be present"));
     }
 
-    return userLookUpService.getUserInfo(okapiParams.getHeadersAsMap())
+    return userLookUpService.getUserInfo(okapiParams.getHeaders())
       .compose(creatorUser -> {
-        note.setCreator(getUserDisplayInfo(creatorUser.getFirstName(), creatorUser.getMiddleName(), creatorUser.getLastName()));
+        note.setCreator(getUserDisplayInfo(creatorUser));
         note.getMetadata().setCreatedByUsername(creatorUser.getUserName());
         return repository.save(note, okapiParams.getTenant());
       });
@@ -76,34 +77,28 @@ public class NoteServiceImpl implements NoteService {
   @Override
   public Future<Void> updateNote(String id, Note note, OkapiParams okapiParams) {
     logger.debug("Removing unsafe tags");
-    if(StringUtils.isNotBlank(note.getContent())) {
+    if (StringUtils.isNotBlank(note.getContent())) {
       note.setContent(sanitizeHtml(note.getContent()));
     }
     logger.debug("PUT note with id:{} and content: {}", id, Json.encode(note));
-    if (note.getId() == null) {
-      note.setId(id);
-      logger.debug("No Id in the note, taking the one from the link");
-      // The RMB should handle this. See RMB-94
-    }
-    if (!note.getId().equals(id)) {
+    if (note.getId() != null && !note.getId().equals(id)) {
       return failedFuture(new InputValidationException("id", note.getId(), "Can not change Id"));
     }
 
-
-    return userLookUpService.getUserInfo(okapiParams.getHeadersAsMap())
+    return userLookUpService.getUserInfo(okapiParams.getHeaders())
       .compose(userLookUp -> {
-        final UserDisplayInfo userDisplayInfo = getUserDisplayInfo(userLookUp.getFirstName(), userLookUp.getMiddleName(), userLookUp.getLastName());
+        final UserDisplayInfo userDisplayInfo = getUserDisplayInfo(userLookUp);
         note.setUpdater(userDisplayInfo);
         note.getMetadata().setUpdatedByUsername(userLookUp.getUserName());
         return repository.update(id, note, okapiParams.getTenant());
       });
   }
 
-  private UserDisplayInfo getUserDisplayInfo(String firstName, String middleName, String lastName) {
+  private UserDisplayInfo getUserDisplayInfo(UserLookUp userLookUp) {
     final UserDisplayInfo userDisplayInfo = new UserDisplayInfo();
-    userDisplayInfo.setFirstName(firstName);
-    userDisplayInfo.setMiddleName(middleName);
-    userDisplayInfo.setLastName(lastName);
+    userDisplayInfo.setFirstName(userLookUp.getFirstName());
+    userDisplayInfo.setMiddleName(userLookUp.getMiddleName());
+    userDisplayInfo.setLastName(userLookUp.getLastName());
     return userDisplayInfo;
   }
 

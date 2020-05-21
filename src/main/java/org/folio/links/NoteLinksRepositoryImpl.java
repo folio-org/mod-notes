@@ -22,23 +22,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.SQLConnection;
-import io.vertx.ext.sql.UpdateResult;
+import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.Tuple;
+import io.vertx.sqlclient.impl.ArrayTuple;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.folio.db.DbUtils;
 import org.folio.model.EntityLink;
 import org.folio.model.Order;
 import org.folio.model.OrderBy;
@@ -48,15 +47,16 @@ import org.folio.rest.jaxrs.model.Link;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.SQLConnection;
 
 @Component
 public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
   private static final String SPECIAL_REGEX_SYMBOLS = "!$()*+.:<=>?[]\\^{|}-";
   private static final String ESCAPED_ANY_STRING_WILDCARD = "\\*";
-  private Vertx vertx;
 
-  @Autowired
+  private final Vertx vertx;
+
   public NoteLinksRepositoryImpl(Vertx vertx) {
     this.vertx = vertx;
   }
@@ -78,58 +78,61 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes, Status status,
-                                                                     OrderBy orderBy, Order order, RowPortion rowPortion, String tenantId) {
-    JsonArray parameters = new JsonArray();
+  public Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes,
+                                                                     Status status,
+                                                                     OrderBy orderBy, Order order, RowPortion rowPortion,
+                                                                     String tenantId) {
+    Tuple parameters = Tuple.tuple();
     StringBuilder queryBuilder = new StringBuilder();
 
     addSelectClause(parameters, queryBuilder, link.getDomain(), title, tenantId);
 
     addWhereNoteTypeClause(parameters, queryBuilder, noteTypes);
 
-    String jsonLink = Json.encode(toLink(link));
+    JsonObject jsonLink = JsonObject.mapFrom(toLink(link));
     addWhereClause(parameters, queryBuilder, status, jsonLink);
 
     addOrderByClause(parameters, queryBuilder, order, orderBy, jsonLink);
 
     addLimitOffset(parameters, queryBuilder, rowPortion);
 
-    Promise<ResultSet> promise = Promise.promise();
-    pgClient(tenantId).select(queryBuilder.toString(), parameters, promise);
+    Promise<RowSet<Row>> promise = Promise.promise();
+    String query = prepareQuery(queryBuilder.toString());
+    pgClient(tenantId).select(query, parameters, promise);
 
     return promise.future().map(this::mapResultToNoteCollection);
-  }
-
-  private void addWhereNoteTypeClause(JsonArray parameters, StringBuilder query, List<String> noteTypes) {
-
-    noteTypes.replaceAll(String::trim);
-
-    if(noteTypes.stream().allMatch(StringUtils::isBlank)){
-      return;
-    }
-
-    query.append(String.format(WHERE_CLAUSE_BY_NOTE_TYPE, createIdPlaceholders(noteTypes.size())));
-    noteTypes.forEach(parameters::add);
   }
 
   @Override
   public Future<Integer> countNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes,
                                                                Status status, String tenantId) {
 
-    JsonArray parameters = new JsonArray();
+    Tuple parameters = Tuple.tuple();
     StringBuilder queryBuilder = new StringBuilder();
 
     addSelectCountClause(parameters, queryBuilder, link.getDomain(), title, tenantId);
 
     addWhereNoteTypeClause(parameters, queryBuilder, noteTypes);
 
-    String jsonLink = Json.encode(toLink(link));
+    JsonObject jsonLink = JsonObject.mapFrom(toLink(link));
     addWhereClause(parameters, queryBuilder, status, jsonLink);
 
-    Promise<ResultSet> promise = Promise.promise();
-    pgClient(tenantId).select(queryBuilder.toString(), parameters, promise);
+    Promise<Row> promise = Promise.promise();
+    String query = prepareQuery(queryBuilder.toString());
+    pgClient(tenantId).selectSingle(query, parameters, promise);
 
-    return promise.future().map(this::mapCount);
+    return promise.future().map(result -> result.getInteger("count"));
+  }
+
+  private void addWhereNoteTypeClause(Tuple parameters, StringBuilder query, List<String> noteTypes) {
+    noteTypes.replaceAll(String::trim);
+
+    if (noteTypes.stream().allMatch(StringUtils::isBlank)) {
+      return;
+    }
+
+    query.append(String.format(WHERE_CLAUSE_BY_NOTE_TYPE, createIdPlaceholders(noteTypes.size())));
+    noteTypes.forEach(parameters::addString);
   }
 
   private Future<Void> assignToNotes(List<String> notesIds, Link linkToAssign, PostgresClient postgresClient,
@@ -138,10 +141,10 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
       return succeededFuture(null);
     }
     String placeholders = createIdPlaceholders(notesIds.size());
-    String query = String.format(INSERT_LINKS, getNoteTableName(tenantId), placeholders);
-    JsonArray parameters = createAssignParameters(notesIds, linkToAssign);
+    String query = prepareQuery(String.format(INSERT_LINKS, getNoteTableName(tenantId), placeholders));
+    Tuple parameters = createAssignParameters(notesIds, linkToAssign);
 
-    Promise<UpdateResult> promise = Promise.promise();
+    Promise<RowSet<Row>> promise = Promise.promise();
     postgresClient.execute(connection, query, parameters, promise);
 
     return promise.future().map(result -> null);
@@ -153,10 +156,10 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
       return succeededFuture(null);
     }
     String placeholders = createIdPlaceholders(notesIds.size());
-    String query = String.format(REMOVE_LINKS, getNoteTableName(tenantId), placeholders);
-    JsonArray parameters = createUnAssignParameters(notesIds, link);
+    String query = prepareQuery(String.format(REMOVE_LINKS, getNoteTableName(tenantId), placeholders));
+    Tuple parameters = createUnAssignParameters(notesIds, link);
 
-    Promise<UpdateResult> promise = Promise.promise();
+    Promise<RowSet<Row>> promise = Promise.promise();
     postgresClient.execute(connection, query, parameters, promise);
 
     return promise.future().compose(o -> deleteNotesWithoutLinks(notesIds, postgresClient, connection, tenantId))
@@ -170,22 +173,29 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     }
 
     String placeholders = createIdPlaceholders(notesIds.size());
-    String query = String.format(DELETE_NOTES_WITHOUT_LINKS, getNoteTableName(tenantId), placeholders);
-    JsonArray parameters = DbUtils.createParams(notesIds);
+    String query = prepareQuery(String.format(DELETE_NOTES_WITHOUT_LINKS, getNoteTableName(tenantId), placeholders));
+    Tuple parameters = Tuple.tuple();
+    addUUIDsToParams(notesIds, parameters);
 
-    Promise<UpdateResult> promise = Promise.promise();
+    Promise<RowSet<Row>> promise = Promise.promise();
     postgresClient.execute(connection, query, parameters, promise);
 
     return promise.future().map(result -> null);
   }
 
-  private NoteCollection mapResultToNoteCollection(ResultSet results) {
+  private void addUUIDsToParams(List<String> ids, Tuple parameters) {
+    ids.stream()
+      .map(UUID::fromString)
+      .forEach(parameters::addUUID);
+  }
+
+  private NoteCollection mapResultToNoteCollection(RowSet<Row> results) {
     List<Note> notes = new ArrayList<>();
     ObjectMapper objectMapper = new ObjectMapper();
     NoteCollection noteCollection = new NoteCollection();
-    results.getRows().forEach(object -> {
+    results.forEach(object -> {
       try {
-        notes.add(objectMapper.readValue(object.getString("jsonb"), Note.class));
+        notes.add(objectMapper.readValue(object.getValue("jsonb").toString(), Note.class));
       } catch (IOException e) {
         throw new IllegalStateException(e);
       }
@@ -232,10 +242,6 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     return new Link().withType(link.getType()).withId(link.getId());
   }
 
-  private Integer mapCount(ResultSet resultSet) {
-    return resultSet.getRows().get(0).getInteger("count");
-  }
-
   private PostgresClient pgClient(String tenantId) {
     return PostgresClient.getInstance(vertx, tenantId);
   }
@@ -243,6 +249,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   private String getNoteTableName(String tenantId) {
     return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TABLE;
   }
+
   private String getNoteTypeTableName(String tenantId) {
     return PostgresClient.convertToPsqlStandard(tenantId) + "." + NOTE_TYPE_TABLE;
   }
@@ -251,51 +258,52 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     return StringUtils.join(Collections.nCopies(amountOfIds, "?"), ", ");
   }
 
-  private JsonArray createAssignParameters(List<String> notesIds, Link link) {
-    String jsonLink = Json.encode(link);
-    JsonArray parameters = new JsonArray();
+  private Tuple createAssignParameters(List<String> notesIds, Link link) {
+    JsonObject jsonLink = JsonObject.mapFrom(link);
+    Tuple parameters = new ArrayTuple(notesIds.size() + 2);
     parameters
-      .add(jsonLink)
-      .add(jsonLink);
-    notesIds.forEach(parameters::add);
+      .addValue(jsonLink)
+      .addValue(jsonLink);
+    addUUIDsToParams(notesIds, parameters);
     return parameters;
   }
 
-  private JsonArray createUnAssignParameters(List<String> notesIds, Link link) {
-    String jsonLink = Json.encode(link);
-    JsonArray parameters = new JsonArray();
+  private Tuple createUnAssignParameters(List<String> notesIds, Link link) {
+    JsonObject jsonLink = JsonObject.mapFrom(link);
+    Tuple parameters = new ArrayTuple(notesIds.size() + 2);
     parameters
-      .add(jsonLink);
-    notesIds.forEach(parameters::add);
-    parameters.add(jsonLink);
+      .addValue(jsonLink);
+    addUUIDsToParams(notesIds, parameters);
+    parameters.addValue(jsonLink);
     return parameters;
   }
 
-  private void addLimitOffset(JsonArray parameters, StringBuilder query, RowPortion rowPortion) {
+  private void addLimitOffset(Tuple parameters, StringBuilder query, RowPortion rowPortion) {
     query.append(LIMIT_OFFSET);
     parameters
-      .add(rowPortion.getLimit())
-      .add(rowPortion.getOffset());
+      .addInteger(rowPortion.getLimit())
+      .addInteger(rowPortion.getOffset());
   }
 
-  private void addSelectClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {
-    query.append(String.format(SELECT_NOTES_BY_DOMAIN_AND_TITLE, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
+  private void addSelectClause(Tuple parameters, StringBuilder query, String domain, String title, String tenantId) {
+    query
+      .append(String.format(SELECT_NOTES_BY_DOMAIN_AND_TITLE, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
     parameters
-      .add(domain)
-      .add(getTitleRegexp(title));
+      .addString(domain)
+      .addString(getTitleRegexp(title));
   }
 
-  private void addSelectCountClause(JsonArray parameters, StringBuilder query, String domain, String title, String tenantId) {
+  private void addSelectCountClause(Tuple parameters, StringBuilder query, String domain, String title, String tenantId) {
     query.append(String.format(COUNT_NOTES_BY_DOMAIN_AND_TITLE, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
     parameters
-      .add(domain)
-      .add(getTitleRegexp(title));
+      .addString(domain)
+      .addString(getTitleRegexp(title));
   }
 
-  private void addOrderByClause(JsonArray parameters, StringBuilder query, Order order, OrderBy orderBy, String jsonLink) {
+  private void addOrderByClause(Tuple parameters, StringBuilder query, Order order, OrderBy orderBy, JsonObject jsonLink) {
     if (orderBy == OrderBy.STATUS) {
       query.append(String.format(ORDER_BY_STATUS_CLAUSE, order.toString()));
-      parameters.add(jsonLink);
+      parameters.addValue(jsonLink);
     } else if (orderBy == OrderBy.LINKSNUMBER) {
       query.append(String.format(ORDER_BY_LINKS_NUMBER, order.toString()));
     } else {
@@ -303,17 +311,17 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     }
   }
 
-  private void addWhereClause(JsonArray parameters, StringBuilder query, Status status, String jsonLink) {
+  private void addWhereClause(Tuple parameters, StringBuilder query, Status status, JsonObject jsonLink) {
     switch (status) {
       case ASSIGNED:
         query.append("AND " + HAS_LINK_CONDITION);
-        parameters.add(jsonLink);
+        parameters.addValue(jsonLink);
         break;
       case UNASSIGNED:
         query.append("AND NOT " + HAS_LINK_CONDITION);
-        parameters.add(jsonLink);
+        parameters.addValue(jsonLink);
         break;
-      case ALL: // do nothing
+      default: // do nothing
     }
   }
 
@@ -330,5 +338,15 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   private String escapeRegex(String str) {
     return str
       .replaceAll("[\\Q" + SPECIAL_REGEX_SYMBOLS + "\\E]", "\\\\$0");
+  }
+
+  private String prepareQuery(String query) {
+    StringBuilder sb = new StringBuilder(query);
+    int index = 1;
+    int i = 0;
+    while ((i = sb.indexOf("?", i)) != -1) {
+      sb.replace(i, i + 1, "$" + index++);
+    }
+    return sb.toString();
   }
 }

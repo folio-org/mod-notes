@@ -5,16 +5,6 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
-import org.folio.common.OkapiParams;
-import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.Metadata;
-import org.folio.rest.jaxrs.model.NoteType;
-import org.folio.rest.jaxrs.model.TenantAttributes;
-import org.folio.spring.SpringContextUtil;
-import org.folio.type.NoteTypeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -23,6 +13,16 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
+import org.folio.common.OkapiParams;
+import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.Metadata;
+import org.folio.rest.jaxrs.model.NoteType;
+import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.spring.SpringContextUtil;
+import org.folio.type.NoteTypeRepository;
 
 public class NoteTenantApiImpl extends TenantAPI {
 
@@ -45,7 +45,7 @@ public class NoteTenantApiImpl extends TenantAPI {
     super.postTenant(entity, headers, promise, context);
 
     promise.future().compose(response -> populateDefaultNoteType(headers).map(response))
-    .setHandler(handlers);
+      .onComplete(handlers);
   }
 
   private Future<Object> populateDefaultNoteType(Map<String, String> headers) {
@@ -60,7 +60,7 @@ public class NoteTenantApiImpl extends TenantAPI {
 
         return typeRepository.count(tenant)
           .compose(count -> {
-            if(count == 0){
+            if (count == 0) {
               return typeRepository.save(type, tenant)
                 .map(savedType -> {
                   logger.info("Added default note type '{}'", savedType.getName());

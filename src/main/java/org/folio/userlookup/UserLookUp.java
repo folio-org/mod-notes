@@ -7,10 +7,11 @@ import lombok.Builder;
  */
 @Builder
 public class UserLookUp {
-  private String userName;
-  private String firstName;
-  private String middleName;
-  private String lastName;
+
+  private final String userName;
+  private final String firstName;
+  private final String middleName;
+  private final String lastName;
 
   /**
    * Returns the username.

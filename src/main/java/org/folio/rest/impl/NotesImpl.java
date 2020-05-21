@@ -32,6 +32,7 @@ import org.folio.rest.jaxrs.resource.Notes;
 import org.folio.spring.SpringContextUtil;
 
 public class NotesImpl implements Notes {
+
   private static final String LOCATION_PREFIX = "/notes/";
   private final Logger logger = LoggerFactory.getLogger("mod-notes");
 
@@ -67,7 +68,7 @@ public class NotesImpl implements Notes {
       .otherwise(
         userNotFoundHandler()
           .orElse(excHandler))
-      .setHandler(asyncHandler);
+      .onComplete(asyncHandler);
   }
 
   @Override

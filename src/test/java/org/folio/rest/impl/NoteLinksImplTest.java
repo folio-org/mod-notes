@@ -10,6 +10,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import static org.folio.test.util.DBTestUtil.deleteFromTable;
 import static org.folio.test.util.TestUtil.readFile;
 import static org.folio.util.NoteTestData.NOTE_2;
 import static org.folio.util.NoteTestData.NOTE_TYPE2_ID;
@@ -20,6 +21,7 @@ import static org.folio.util.NoteTestData.PACKAGE_ID;
 import static org.folio.util.NoteTestData.PACKAGE_ID2;
 import static org.folio.util.NoteTestData.PACKAGE_TYPE;
 import static org.folio.util.NoteTestData.USER8;
+import static org.folio.util.NoteTestData.USER8_ID;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,11 +32,9 @@ import java.util.stream.Collectors;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-
 import io.vertx.core.json.Json;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -70,7 +70,7 @@ public class NoteLinksImplTest extends NotesTestBase {
 
   @AfterClass
   public static void tearDownClass(TestContext context) {
-    DBTestUtil.deleteAllNoteTypes(vertx);
+    deleteFromTable(vertx, NOTE_TYPE_TABLE);
     TestBase.tearDownClass(context);
   }
 
@@ -78,7 +78,7 @@ public class NoteLinksImplTest extends NotesTestBase {
   public void setUp() throws Exception {
     SpringContextUtil.autowireDependenciesFromFirstContext(this, vertx);
     stubFor(
-      get(new UrlPathPattern(new EqualToPattern("/users/88888888-8888-4888-8888-888888888888"), false))
+      get(new UrlPathPattern(new EqualToPattern("/users/" + USER8_ID), false))
         .willReturn(new ResponseDefinitionBuilder()
           .withStatus(200)
           .withBody(readFile("users/mock_another_user.json"))
@@ -87,7 +87,7 @@ public class NoteLinksImplTest extends NotesTestBase {
 
   @After
   public void tearDown() {
-    DBTestUtil.deleteAllNotes(vertx);
+    deleteFromTable(vertx, NOTE_TABLE);
   }
 
   @Test
@@ -201,9 +201,9 @@ public class NoteLinksImplTest extends NotesTestBase {
   }
 
   @Test
-  public void shouldReturn400OnInvalidLinkId() {
+  public void shouldReturn422OnInvalidLinkId() {
     String putBody = Json.encode(createPutLinksRequest(NoteLinkPut.Status.ASSIGNED, INVALID_ID));
-    putWithStatus(NOTE_LINKS_PATH, putBody, 400, USER8);
+    putWithStatus(NOTE_LINKS_PATH, putBody, 422, USER8);
   }
 
   @Test
@@ -602,7 +602,8 @@ public class NoteLinksImplTest extends NotesTestBase {
       .getNotes();
 
     assertThat(notes.size(), equalTo(2));
-    assertThat(notes.stream().map(Note::getTypeId).collect(Collectors.toList()), containsInAnyOrder(NOTE_TYPE_ID, NOTE_TYPE2_ID));
+    assertThat(notes.stream().map(Note::getTypeId).collect(Collectors.toList()),
+      containsInAnyOrder(NOTE_TYPE_ID, NOTE_TYPE2_ID));
 
   }
 
@@ -616,7 +617,8 @@ public class NoteLinksImplTest extends NotesTestBase {
 
     List<Note> notes = getWithOk(
       "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID2 +
-        "?title="+ noteTitle + "&noteType=" + NOTE_TYPE2_NAME + " &noteType= " + NOTE_TYPE_NAME + "&order=ASC&orderBy=status")
+        "?title=" + noteTitle + "&noteType=" + NOTE_TYPE2_NAME + " &noteType= " + NOTE_TYPE_NAME
+        + "&order=ASC&orderBy=status")
       .as(NoteCollection.class)
       .getNotes();
 

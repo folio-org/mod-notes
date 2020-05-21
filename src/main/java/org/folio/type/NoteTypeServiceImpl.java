@@ -8,6 +8,14 @@ import java.util.function.Function;
 
 import javax.ws.rs.BadRequestException;
 
+import com.rits.cloning.Cloner;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import org.folio.common.OkapiParams;
 import org.folio.config.Configuration;
 import org.folio.db.exc.DbExcUtils;
@@ -15,15 +23,6 @@ import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.rest.jaxrs.model.NoteTypeCollection;
 import org.folio.service.exc.ServiceExceptions;
 import org.folio.userlookup.UserLookUpService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import com.rits.cloning.Cloner;
-
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
 
 @Component
 public class NoteTypeServiceImpl implements NoteTypeService {
@@ -49,7 +48,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   @Override
   public Future<NoteType> findById(String id, String tenantId) {
     return repository.findById(id, tenantId)
-            .map(noteType -> noteType.orElseThrow(() -> ServiceExceptions.notFound(NoteType.class, id)));
+      .map(noteType -> noteType.orElseThrow(() -> ServiceExceptions.notFound(NoteType.class, id)));
   }
 
   @Override
@@ -83,14 +82,14 @@ public class NoteTypeServiceImpl implements NoteTypeService {
       CompositeFuture.all(
         configuration.getInt(NOTE_TYPES_NUMBER_LIMIT_PROP, defaultNoteTypeLimit, params),
         repository.count(params.getTenant()))
-      .compose(compositeFuture -> {
-        int limit = compositeFuture.resultAt(0);
-        long count = compositeFuture.resultAt(1);
+        .compose(compositeFuture -> {
+          int limit = compositeFuture.resultAt(0);
+          long count = compositeFuture.resultAt(1);
 
-        return (count >= limit)
-          ? failedFuture(new BadRequestException("Maximum number of note types allowed is " + limit))
-          : Future.succeededFuture();
-      });
+          return (count >= limit)
+            ? failedFuture(new BadRequestException("Maximum number of note types allowed is " + limit))
+            : Future.succeededFuture();
+        });
   }
 
   @Override
@@ -105,7 +104,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   }
 
   private Future<NoteType> populateCreator(NoteType entity, OkapiParams params) {
-    return userLookUpService.getUserInfo(params.getHeadersAsMap()).map(user -> {
+    return userLookUpService.getUserInfo(params.getHeaders()).map(user -> {
       if (entity.getMetadata() == null) {
         return entity;
       }
@@ -118,7 +117,7 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   }
 
   private Future<NoteType> populateUpdater(NoteType entity, OkapiParams params) {
-    return userLookUpService.getUserInfo(params.getHeadersAsMap()).map(user -> {
+    return userLookUpService.getUserInfo(params.getHeaders()).map(user -> {
       if (entity.getMetadata() == null) {
         return entity;
       }
@@ -133,8 +132,8 @@ public class NoteTypeServiceImpl implements NoteTypeService {
   @Override
   public Future<Void> delete(String id, String tenantId) {
     return repository.delete(id, tenantId)
-            .compose(deleted -> failIfNotFound(deleted, id))
-            .recover(handleReferencedType());
+      .compose(deleted -> failIfNotFound(deleted, id))
+      .recover(handleReferencedType());
   }
 
   private Function<Throwable, Future<Void>> handleReferencedType() {
