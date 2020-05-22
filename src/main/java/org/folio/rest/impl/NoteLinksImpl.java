@@ -40,11 +40,12 @@ public class NoteLinksImpl implements NoteLinks {
   @Qualifier("noteLinksExcHandler")
   private PartialFunction<Throwable, Response> excHandler;
 
-  
+
   public NoteLinksImpl() {
     SpringContextUtil.autowireDependencies(this, Vertx.currentContext());
   }
 
+  @Validate
   @Override
   public void putNoteLinksTypeIdByTypeAndId(String type, String id, NoteLinksPut entity, Map<String, String> okapiHeaders,
                                             Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
@@ -61,9 +62,11 @@ public class NoteLinksImpl implements NoteLinks {
   @Validate
   @Override
   public void getNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id, String title,
-                                                           List<String> noteTypes, String status, String orderBy, String order,
-                                                           int offset, int limit, Map<String, String> okapiHeaders,
-                                                           Handler<AsyncResult<Response>> asyncHandler, Context vertxContext) {
+                                                           List<String> noteTypes, String status, String orderBy,
+                                                           String order, int offset, int limit,
+                                                           Map<String, String> okapiHeaders,
+                                                           Handler<AsyncResult<Response>> asyncHandler,
+                                                           Context vertxContext) {
 
     Future<Void> validated = Validation.instance()
       .addTest(status, validateEnum(Status.class))
@@ -72,9 +75,9 @@ public class NoteLinksImpl implements NoteLinks {
       .validate();
 
     Future<NoteCollection> notes = validated.compose(
-        v -> noteLinksService.findNotesByTitleAndNoteTypeAndStatus(new EntityLink(domain, type, id), title, noteTypes,
-              Status.enumOf(status), OrderBy.enumOf(orderBy), Order.enumOf(order),
-              new RowPortion(offset, limit), tenantId(okapiHeaders)));
+      v -> noteLinksService.findNotesByTitleAndNoteTypeAndStatus(new EntityLink(domain, type, id), title, noteTypes,
+        Status.enumOf(status), OrderBy.enumOf(orderBy), Order.enumOf(order),
+        new RowPortion(offset, limit), tenantId(okapiHeaders)));
 
     respond(notes, GetNoteLinksDomainTypeIdByDomainAndTypeAndIdResponse::respond200WithApplicationJson,
       asyncHandler, excHandler);

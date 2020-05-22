@@ -12,7 +12,8 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.sql.UpdateResult;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -78,7 +79,7 @@ public class NoteRepositoryImpl implements NoteRepository {
       .getById(NOTE_VIEW, id, NoteView.class, promise);
 
     return promise.future().map(noteView -> {
-      if(Objects.isNull(noteView)){
+      if (Objects.isNull(noteView)) {
         throw new NotFoundException("Note " + id + " not found");
       }
       return mapNoteView(noteView);
@@ -87,11 +88,11 @@ public class NoteRepositoryImpl implements NoteRepository {
 
   @Override
   public Future<Void> delete(String id, String tenantId) {
-    Promise<UpdateResult> promise = Promise.promise();
+    Promise<RowSet<Row>> promise = Promise.promise();
     PostgresClient.getInstance(vertx, tenantId)
       .delete(NOTE_TABLE, id, promise);
     return promise.future().map(updateResult -> {
-      if(updateResult.getUpdated() == 0){
+      if (updateResult.rowCount() == 0) {
         throw new NotFoundException("Note with id " + id + " doesn't exist");
       }
       return null;
@@ -100,7 +101,7 @@ public class NoteRepositoryImpl implements NoteRepository {
 
   @Override
   public Future<Void> update(String id, Note note, String tenantId) {
-    Promise<UpdateResult> promise = Promise.promise();
+    Promise<RowSet<Row>> promise = Promise.promise();
     if (note.getLinks().isEmpty()) {
       PostgresClient.getInstance(vertx, tenantId)
         .delete(NOTE_TABLE, id, promise);
@@ -111,7 +112,7 @@ public class NoteRepositoryImpl implements NoteRepository {
     return promise
       .future()
       .map(updateResult -> {
-        if(updateResult.getUpdated() == 0){
+        if (updateResult.rowCount() == 0) {
           throw new NotFoundException("Note with id " + id + " doesn't exist");
         }
         return null;

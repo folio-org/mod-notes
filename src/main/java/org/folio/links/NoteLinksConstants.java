@@ -37,7 +37,7 @@ class NoteLinksConstants {
   static final String ORDER_BY_STATUS_CLAUSE = "ORDER BY " +
     "(" +
     "CASE WHEN " + HAS_LINK_CONDITION +
-    "THEN 'ASSIGNED'" +
+    "THEN 'ASSIGNED' " +
     "ELSE 'UNASSIGNED' END" +
     ") %s ";
 

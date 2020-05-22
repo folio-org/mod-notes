@@ -11,8 +11,8 @@ import java.util.UUID;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.UpdateResult;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,9 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   public Future<NoteTypeCollection> findByQuery(String query, int offset, int limit, String tenantId) {
     CqlQuery<NoteType> q = new CqlQuery<>(pgClient(tenantId), NOTE_TYPE_VIEW, NoteType.class);
 
-    return q.get(query, offset, limit).map(this::toNoteTypeCollection);
+    return q.get(query, offset, limit)
+      .recover(excTranslator.translateOrPassBy())
+      .map(this::toNoteTypeCollection);
   }
 
   @Override
@@ -50,7 +52,9 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
     pgClient(tenantId).getById(NOTE_TYPE_VIEW, id, NoteType.class, promise);
 
-    return promise.future().map(Optional::ofNullable);
+    return promise.future()
+      .recover(excTranslator.translateOrPassBy())
+      .map(Optional::ofNullable);
   }
 
   @Override
@@ -59,16 +63,19 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
     pgClient(tenantId).getById(NOTE_TYPE_VIEW, createParams(ids), NoteType.class, promise);
 
-    return promise.future().map(resultMap -> new ArrayList<>(resultMap.values()));
+    return promise.future()
+      .recover(excTranslator.translateOrPassBy())
+      .map(resultMap -> new ArrayList<>(resultMap.values()));
   }
 
   @Override
   public Future<Long> count(String tenantId) {
-    Promise<ResultSet> promise = Promise.promise();
+    Promise<Row> promise = Promise.promise();
 
-    pgClient(tenantId).select(SELECT_TOTAL_COUNT, promise);
+    pgClient(tenantId).selectSingle(SELECT_TOTAL_COUNT, promise);
 
-    return promise.future().map(rs -> rs.getResults().get(0).getLong(0));
+    return promise.future().recover(excTranslator.translateOrPassBy())
+      .map(result -> result.getLong(0));
   }
 
   @Override
@@ -81,28 +88,28 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
 
     pgClient(tenantId).save(NOTE_TYPE_TABLE, entity.getId(), entity, promise);
 
-    return promise.future().map(id -> updateId(entity, id)) // update id only, copy the rest from the original entity
-      .recover(excTranslator.translateOrPassBy());
+    return promise.future().recover(excTranslator.translateOrPassBy())
+      .map(id -> updateId(entity, id)); // update id only, copy the rest from the original entity
   }
 
   @Override
   public Future<Boolean> update(NoteType entity, String tenantId) {
-    Promise<UpdateResult> promise = Promise.promise();
+    Promise<RowSet<Row>> promise = Promise.promise();
 
     pgClient(tenantId).update(NOTE_TYPE_TABLE, entity, entity.getId(), promise);
 
-    return promise.future().map(updateResult -> updateResult.getUpdated() == 1)
-      .recover(excTranslator.translateOrPassBy());
+    return promise.future().recover(excTranslator.translateOrPassBy())
+      .map(updateResult -> updateResult.rowCount() == 1);
   }
 
   @Override
   public Future<Boolean> delete(String id, String tenantId) {
-    Promise<UpdateResult> promise = Promise.promise();
+    Promise<RowSet<Row>> promise = Promise.promise();
 
     pgClient(tenantId).delete(NOTE_TYPE_TABLE, id, promise);
 
-    return promise.future().map(updateResult -> updateResult.getUpdated() == 1)
-      .recover(excTranslator.translateOrPassBy());
+    return promise.future().recover(excTranslator.translateOrPassBy())
+      .map(updateResult -> updateResult.rowCount() == 1);
   }
 
   private PostgresClient pgClient(String tenantId) {

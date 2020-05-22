@@ -16,6 +16,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static org.folio.test.util.DBTestUtil.deleteFromTable;
 import static org.folio.test.util.TestUtil.readFile;
 import static org.folio.util.NoteTestData.DOMAIN;
 import static org.folio.util.NoteTestData.NOTE_1;
@@ -34,21 +35,23 @@ import static org.folio.util.NoteTestData.UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTIN
 import static org.folio.util.NoteTestData.UPDATE_NOTE_REQUEST;
 import static org.folio.util.NoteTestData.UPDATE_NOTE_REQUEST_WITH_LINKS;
 import static org.folio.util.NoteTestData.USER19;
+import static org.folio.util.NoteTestData.USER19_ID;
 import static org.folio.util.NoteTestData.USER8;
+import static org.folio.util.NoteTestData.USER8_ID;
+import static org.folio.util.NoteTestData.USER9;
+import static org.folio.util.NoteTestData.USER9_ID;
 
 import java.util.Objects;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
-
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -65,6 +68,7 @@ import org.folio.rest.jaxrs.model.Metadata;
 import org.folio.rest.jaxrs.model.Note;
 import org.folio.rest.jaxrs.model.NoteCollection;
 import org.folio.test.util.TestBase;
+import org.folio.test.util.TokenTestUtil;
 
 /**
  * Interface test for mod-notes. Tests the API with restAssured, directly
@@ -79,8 +83,6 @@ public class NotesTest extends NotesTestBase {
 
   private static final Logger logger = LoggerFactory.getLogger("okapi");
 
-  private static final Header EMPTY_HEADER = new Header("", "");
-  private static final Header USER9 = new Header(XOkapiHeaders.USER_ID, "99999999-9999-4999-9999-999999999999");
   // One that is not found in the mock data
   private static final String NOT_JSON = "This is not json";
   private static final String NOTES_PATH = "/notes";
@@ -93,28 +95,28 @@ public class NotesTest extends NotesTestBase {
 
   @AfterClass
   public static void tearDownClass(TestContext context) {
-    DBTestUtil.deleteAllNoteTypes(vertx);
+    deleteFromTable(vertx, NOTE_TYPE_TABLE);
     TestBase.tearDownClass(context);
   }
 
   @Before
   public void setUp() throws Exception {
     stubFor(
-      get(new UrlPathPattern(new EqualToPattern("/users/99999999-9999-4999-9999-999999999999"), false))
+      get(new UrlPathPattern(new EqualToPattern("/users/" + USER9_ID), false))
         .willReturn(new ResponseDefinitionBuilder()
           .withStatus(200)
           .withBody(readFile("users/mock_user.json"))
         ));
 
     stubFor(
-      get(new UrlPathPattern(new EqualToPattern("/users/88888888-8888-4888-8888-888888888888"), false))
+      get(new UrlPathPattern(new EqualToPattern("/users/" + USER8_ID), false))
         .willReturn(new ResponseDefinitionBuilder()
           .withStatus(200)
           .withBody(readFile("users/mock_another_user.json"))
         ));
 
     stubFor(
-      get(new UrlPathPattern(new EqualToPattern("/users/11999999-9999-4999-9999-999999999911"), false))
+      get(new UrlPathPattern(new EqualToPattern("/users/" + USER19_ID), false))
         .willReturn(new ResponseDefinitionBuilder()
           .withStatus(404))
     );
@@ -136,7 +138,7 @@ public class NotesTest extends NotesTestBase {
 
   @After
   public void tearDown() {
-    DBTestUtil.deleteAllNotes(vertx);
+    deleteFromTable(vertx, NOTE_TABLE);
   }
 
   @Test
@@ -191,7 +193,7 @@ public class NotesTest extends NotesTestBase {
     String badJson = NOTE_1.replaceFirst("typeId", "type")
       .replaceFirst(NOTE_TYPE_ID, "ASSIGNED");
 
-    final Errors errors = postWithStatus(NOTES_PATH, badJson, SC_UNPROCESSABLE_ENTITY, EMPTY_HEADER).as(Errors.class);
+    final Errors errors = postWithStatus(NOTES_PATH, badJson, SC_UNPROCESSABLE_ENTITY, USER9).as(Errors.class);
     final Error error = errors.getErrors().get(0);
     assertThat(error.getMessage(), is("may not be null"));
     assertThat(error.getParameters().get(0).getKey(), is("typeId"));
@@ -200,7 +202,7 @@ public class NotesTest extends NotesTestBase {
   @Test
   public void shouldReturn422WhenRequestHasUnrecognizedField() {
     String badfieldDoc = NOTE_1.replaceFirst("type", "UnknownFieldName");
-    final String response = postWithStatus(NOTES_PATH, badfieldDoc, SC_UNPROCESSABLE_ENTITY, EMPTY_HEADER).asString();
+    final String response = postWithStatus(NOTES_PATH, badfieldDoc, SC_UNPROCESSABLE_ENTITY, USER9).asString();
     assertThat(response, containsString("Unrecognized field"));
   }
 
@@ -392,7 +394,7 @@ public class NotesTest extends NotesTestBase {
       .then()
       .log().ifValidationFails()
       .statusCode(SC_BAD_REQUEST)
-      .body(containsString("cannot look up user"));
+      .body(containsString("Unauthorized"));
   }
 
   @Test
@@ -409,7 +411,7 @@ public class NotesTest extends NotesTestBase {
       .log().ifValidationFails()
       .statusCode(SC_BAD_REQUEST);
 
-    DBTestUtil.deleteAllNotes(vertx);
+    deleteFromTable(vertx, NOTE_TABLE);
   }
 
   @Test
@@ -428,8 +430,8 @@ public class NotesTest extends NotesTestBase {
 
   @Test
   public void shouldReturn400WhenUserIsRetrievedWithoutNecessaryFields() {
-
-    final Header userWithoutPermission = new Header(XOkapiHeaders.USER_ID, "33999999-9999-4999-9999-999999999933");
+    final Header userWithoutPermission =
+      TokenTestUtil.createTokenHeader("name", "33999999-9999-4999-9999-999999999933");
     final String response = postWithStatus(NOTES_PATH, NOTE_2, SC_BAD_REQUEST, userWithoutPermission).asString();
     assertThat(response, containsString("Missing fields"));
   }
@@ -519,7 +521,8 @@ public class NotesTest extends NotesTestBase {
   @Test
   public void shouldReturn422WhenNonExistingTypeIdInPutRequest() {
     postNoteWithOk(NOTE_4, USER8);
-    putWithStatus("/notes/33333333-1111-1111-a333-333333333333", UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID, SC_UNPROCESSABLE_ENTITY, USER8);
+    putWithStatus("/notes/33333333-1111-1111-a333-333333333333", UPDATE_NOTE_5_REQUEST_WITH_NON_EXISTING_TYPE_ID,
+      SC_UNPROCESSABLE_ENTITY, USER8);
   }
 
   @Test

@@ -8,7 +8,8 @@
   "properties": {
     "id": {
       "description": "A UUID identifying a note",
-      "type": "string"
+      "type": "string",
+      "$ref": "../../raml-util/schemas/uuid.schema"
     },
     "status": {
       "description": "New status for link to this note",

@@ -3,8 +3,10 @@ package org.folio.rest.impl;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.Matchers.is;
 
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import static org.folio.rest.NotesTestBase.NOTE_TYPE_TABLE;
+import static org.folio.test.util.DBTestUtil.deleteFromTable;
 
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +33,7 @@ public class NoteTenantApiImplTest extends TestBase {
       getWithValidateBody(NOTE_TYPES_ENDPOINT, SC_OK)
         .body("noteTypes[0].name", is(defaultNoteTypeName));
     } finally {
-      DBTestUtil.deleteAllNoteTypes(vertx);
+      deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
   }
 }
