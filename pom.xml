@@ -14,12 +14,12 @@
   </licenses>
 
   <properties>
-    <raml-module-builder.version>30.0.0</raml-module-builder.version>
-    <folio-service-tools.version>1.4.4-SNAPSHOT</folio-service-tools.version>
-    <folio-di-support.version>1.1.0-SNAPSHOT</folio-di-support.version>
+    <raml-module-builder.version>30.0.2</raml-module-builder.version>
+    <folio-service-tools.version>1.5.0</folio-service-tools.version>
+    <folio-di-support.version>1.1.0</folio-di-support.version>
     <aspectj.version>1.9.1</aspectj.version>
     <spring.version>5.2.6.RELEASE</spring.version>
-    <vertx-version>3.9.0</vertx-version>
+    <vertx-version>3.9.1</vertx-version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <jsonschema_paths>types/**,raml-util/schemas</jsonschema_paths>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

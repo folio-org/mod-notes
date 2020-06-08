@@ -1,3 +1,8 @@
+## 2.9.0 2020-06-08
+ * MODNOTES-150 - Update RMB to v30.0.2
+ * MODNOTES-140 - Fix Maven ${} variable replacement in src/main/resources
+ * MODNOTES-143 - Securing APIs by default
+
 ## 2.8.0 2019-12-02
  * MODNOTES-137 - Set fromModuleVersion attributes
  * MODNOTES-136 - Update RMB version to 29.0.1
