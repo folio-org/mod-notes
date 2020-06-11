@@ -2,7 +2,14 @@ stages:
 - name: Build
   steps:
   - runScriptConfig:
-      image: java:8
-      shellScript: echo "Foobar"
+      image: maven:3-openjdk-8
+      shellScript: mvn package
+- name: Build Docker
+  steps:
+  - publishImageConfig:
+      dockerfilePath: ./Dockerfile
+      buildContext: .
+      tag: mod-notes:rancher-test
+      registry: 127.0.0.1:34159
 timeout: 60
 notification: {}
