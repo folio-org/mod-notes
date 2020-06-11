@@ -8,6 +8,6 @@ stages:
   steps:
   - runScriptConfig:
       image: docker:stable-dind
-      shellScript: 'docker build -t mod-notes:rancher-test . '
+      shellScript: 'docker build -t --network=host mod-notes:rancher-test . '
 timeout: 60
 notification: {}
