@@ -1,0 +1,8 @@
+stages:
+- name: Build
+  steps:
+  - runScriptConfig:
+      image: java:8
+      shellScript: echo "Foobar"
+timeout: 60
+notification: {}
