@@ -6,8 +6,10 @@ stages:
       shellScript: mvn package -DskipTests
 - name: Build Docker with DIND
   steps:
-  - runScriptConfig:
-      image: docker:stable-dind
-      shellScript: 'docker build --network=host -t mod-notes:rancher-test . '
+  - publishImageConfig:
+      dockerfilePath: ./Dockerfile
+      buildContext: .
+      tag: mod-notes:malc-test
+      registry: 127.0.0.1:34159
 timeout: 60
 notification: {}
