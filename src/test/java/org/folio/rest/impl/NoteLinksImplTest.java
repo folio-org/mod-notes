@@ -368,6 +368,57 @@ public class NoteLinksImplTest extends NotesTestBase {
   }
 
   @Test
+  public void shouldReturnListOfNotesSortedByNoteTypeAsc(){
+    Note firstNote = getNote().withTitle("ABC").withTypeId("2af21797-d25b-46dc-8427-1759d1db2057");
+    Note secondNote = getNote().withTitle("XWZ");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?orderBy=noteType&order=asc")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTypeId(), notes.get(0).getTypeId());
+    assertEquals(secondNote.getTypeId(), notes.get(1).getTypeId());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSortedByNoteTypeDesc(){
+    Note firstNote = getNote().withTitle("ABC");
+    Note secondNote = getNote().withTitle("XWZ");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?orderBy=noteType&order=desc")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(secondNote.getTypeId(), notes.get(0).getTypeId());
+    assertEquals(firstNote.getTypeId(), notes.get(1).getTypeId());
+  }
+
+  @Test
+  public void shouldReturn400WhenOrderParameterIsInvalid() {
+    Note firsNoteWithAssignedLink = createNote();
+    createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE  + "/id/" + PACKAGE_ID
+      + "?orderBy=noteype&order=desc", 400)
+      .asString();
+
+    assertThat(response, containsString("OrderBy is incorrect: noteype. Possible values: status, title, linksNumber, noteType"));
+  }
+
+  @Test
   public void shouldReturnListOfNotesSearchedByTitle() {
     Note firstNote = getNote().withTitle("Title ABC");
     Note secondNote = getNote().withTitle("Title ZZZ ABC");
