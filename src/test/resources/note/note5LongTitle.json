@@ -1,7 +1,7 @@
 {
   "id": "33333333-1111-1111-a333-333333333333",
   "typeId": "13f21797-d25b-46dc-8427-1759d1db2057",
-  "title": "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo lig",
+  "title": "This line has more than 255 characters. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque",
   "domain": "eholdings",
   "content": "Test on things",
   "links": [

@@ -29,7 +29,7 @@
     },
     "title": {
       "type": "string",
-      "maxLength": 75,
+      "maxLength": 255,
       "description": "Note title",
       "example": "BU Campus only issues"
     },
