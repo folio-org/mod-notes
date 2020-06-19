@@ -14,6 +14,7 @@ import static org.folio.links.NoteLinksConstants.ORDER_BY_LINKS_NUMBER;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_NOTE_TYPE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_STATUS_CLAUSE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_TITLE_CLAUSE;
+import static org.folio.links.NoteLinksConstants.ORDER_BY_UPDATED_DATE;
 import static org.folio.links.NoteLinksConstants.REMOVE_LINKS;
 import static org.folio.links.NoteLinksConstants.SELECT_NOTES_BY_DOMAIN_AND_TITLE;
 import static org.folio.links.NoteLinksConstants.WHERE_CLAUSE_BY_NOTE_TYPE;
@@ -309,6 +310,8 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
       query.append(String.format(ORDER_BY_LINKS_NUMBER, order.toString()));
     } else if (orderBy == OrderBy.NOTETYPE) {
       query.append(String.format(ORDER_BY_NOTE_TYPE, order.toString()));
+    } else if (orderBy == OrderBy.UPDATEDDATE) {
+      query.append(String.format(ORDER_BY_UPDATED_DATE, order.toString()));
     } else {
       query.append(String.format(ORDER_BY_TITLE_CLAUSE, order.toString()));
     }

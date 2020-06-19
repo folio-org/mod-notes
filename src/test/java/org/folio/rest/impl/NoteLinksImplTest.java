@@ -419,6 +419,57 @@ public class NoteLinksImplTest extends NotesTestBase {
   }
 
   @Test
+  public void shouldReturnListOfNotesSortedByCreatedDateAsc(){
+
+    Note firstNote = getNote().withTitle("ABC").withTypeId("2af21797-d25b-46dc-8427-1759d1db2057");
+    Note secondNote = getNote().withTitle("XWZ");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?orderBy=updatedDate&order=asc")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertTrue(notes.get(0).getMetadata().getUpdatedDate().before(notes.get(1).getMetadata().getUpdatedDate()));
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSortedByCreatedDateDesc(){
+
+    Note firstNote = getNote().withTitle("ABC").withTypeId("2af21797-d25b-46dc-8427-1759d1db2057");
+    Note secondNote = getNote().withTitle("XWZ");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?orderBy=updatedDate&order=desc")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertTrue(notes.get(0).getMetadata().getUpdatedDate().after(notes.get(1).getMetadata().getUpdatedDate()));
+  }
+
+  @Test
+  public void shouldReturn400WhenOrderByUpdatedDateParameterIsInvalid() {
+    Note firsNoteWithAssignedLink = createNote();
+    createNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    final String response = getWithStatus("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE  + "/id/" + PACKAGE_ID+1
+      + "?orderBy=u&order=desc", 400)
+      .asString();
+
+    assertThat(response, containsString("OrderBy is incorrect: u. Possible values: status, title, linksNumber, noteType, updatedDate"));
+  }
+
+  @Test
   public void shouldReturnListOfNotesSearchedByTitle() {
     Note firstNote = getNote().withTitle("Title ABC");
     Note secondNote = getNote().withTitle("Title ZZZ ABC");

@@ -47,6 +47,8 @@ class NoteLinksConstants {
 
   static final String ORDER_BY_NOTE_TYPE = "ORDER BY type.jsonb->>'name' %s ";
 
+  static final String ORDER_BY_UPDATED_DATE = "ORDER BY data.jsonb->'metadata'->>'updatedDate' %s ";
+
   static final String LIMIT_OFFSET = "LIMIT ? OFFSET ? ";
 
   private static final String JOIN_NOTE_TYPE_TABLE = "LEFT JOIN %s as type on (data.jsonb -> 'typeId' = type.jsonb -> 'id') ";

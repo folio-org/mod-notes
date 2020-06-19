@@ -53,71 +53,70 @@ traits:
                 example: "internal server error, contact administrator"
   /domain/{domain}/type/{type}/id/{id}/:
     get:
-        is: [
+      is: [
         validate,
         pageable
-        ]
-        description: Return a list of notes by status
-        queryParameters:
-          title:
-            displayName: Note title
-            type: string
-            description: Search string for note title. Note is returned only if it contains
-              specified word or sequence of words anywhere in the title. Search is case-insensitive.
-            example: important
-            required: false
-          noteType:
-            displayName: Note type
-            type: string[]
-            description: Search string for note type. Note(s) is returned only if it equals to
-              specified word or sequence of words in the titleseparated by com type name. Multiple types should be
-              declared with query parameter sequentially as follows "noteType=a&noteType=b".
-              Search is case sensitive.
-            example: ["General support"]
-            required: false
-          status:
-            displayName: Selection status
-            type: string
-            description: Filtering records by status. Possible values are ASSIGNED, UNASSIGNED, ALL.
-            example: ASSIGNED
-            required: false
-            default: ALL
-          orderBy:
-            displayName: Field to order by
-            type: string
-            description: Field by which notes are ordered. Possible values are status, title, noteType
-            example: status
-            required: false
-            default: status
-          order:
-            displayName: Order of notes
-            type: string
-            description: indicates order of notes. Possible values asc, desc.
-            example: asc
-            required: false
-            default: asc
-        responses:
-           200:
-             description: "Return a list of notes"
-             body:
-               application/json:
-                 type: noteCollection
-                 example:
-                  strict: false
-                  value: !include examples/noteCollection.sample
-           400:
-             description: "Bad request, e.g. malformed request body. Details of the error (e.g. name of the parameter or line/character number with malformed data) provided in the response."
-             body:
-               text/plain:
-                 example: |
-                   "unable to get list -- malformed JSON at 13:4"
-           401:
-             description: "Not authorized to perform requested action"
-             body:
-               text/plain:
-                  example: "unable to list -- unauthorized"
-           500:
-             description: "Internal server error"
-             body:
-                text/plain:
-                 example: "internal server error, contact administrator"
+      ]
+      description: Return a list of notes by status
+      queryParameters:
+        title:
+          displayName: Note title
+          type: string
+          description: Search string for note title. Note is returned only if it contains
+            specified word or sequence of words anywhere in the title. Search is case-insensitive.
+          example: important
+          required: false
+        noteType:
+          displayName: Note type
+          type: string[]
+          description: Search string for note type. Note(s) is returned only if it equals to
+            specified word or sequence of words in the titleseparated by com type name. Multiple types should be
+            declared with query parameter sequentially as follows "noteType=a&noteType=b".
+            Search is case sensitive.
+          example: ["General support"]
+          required: false
+        status:
+          displayName: Selection status
+          type: string
+          description: Filtering records by status. Possible values are ASSIGNED, UNASSIGNED, ALL.
+          example: ASSIGNED
+          required: false
+          default: ALL
+        orderBy:
+          displayName: Field to order by
+          type: string
+          description: Field by which notes are ordered. Possible values are status, title, linksNumber, noteType, updatedDate
+          required: false
+          default: status
+        order:
+          displayName: Order of notes
+          type: string
+          description: indicates order of notes. Possible values asc, desc.
+          example: asc
+          required: false
+          default: asc
+      responses:
+        200:
+          description: "Return a list of notes"
+          body:
+            application/json:
+              type: noteCollection
+              example:
+               strict: false
+               value: !include examples/noteCollection.sample
+        400:
+          description: "Bad request, e.g. malformed request body. Details of the error (e.g. name of the parameter or line/character number with malformed data) provided in the response."
+          body:
+            text/plain:
+              example: |
+                "unable to get list -- malformed JSON at 13:4"
+        401:
+          description: "Not authorized to perform requested action"
+          body:
+            text/plain:
+               example: "unable to list -- unauthorized"
+        500:
+          description: "Internal server error"
+          body:
+             text/plain:
+              example: "internal server error, contact administrator"
