@@ -318,7 +318,7 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   private String getSort(Order value, Order defaultOrder) {
-    return  Order.NONE.equals(value) ? defaultOrder.getValue() : value.getValue();
+    return  Order.DEFAULT.equals(value) ? defaultOrder.getValue() : value.getValue();
   }
 
   private void addWhereClause(Tuple parameters, StringBuilder query, Status status, JsonObject jsonLink) {
