@@ -14,6 +14,7 @@ import static org.folio.links.NoteLinksConstants.ORDER_BY_LINKS_NUMBER;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_NOTE_TYPE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_STATUS_CLAUSE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_TITLE_CLAUSE;
+import static org.folio.links.NoteLinksConstants.ORDER_BY_UPDATED_DATE;
 import static org.folio.links.NoteLinksConstants.REMOVE_LINKS;
 import static org.folio.links.NoteLinksConstants.SELECT_NOTES_BY_DOMAIN_AND_TITLE;
 import static org.folio.links.NoteLinksConstants.WHERE_CLAUSE_BY_NOTE_TYPE;
@@ -303,15 +304,21 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
 
   private void addOrderByClause(Tuple parameters, StringBuilder query, Order order, OrderBy orderBy, JsonObject jsonLink) {
     if (orderBy == OrderBy.STATUS) {
-      query.append(String.format(ORDER_BY_STATUS_CLAUSE, order.toString()));
+      query.append(String.format(ORDER_BY_STATUS_CLAUSE, getSort(order, Order.ASC)));
       parameters.addValue(jsonLink);
     } else if (orderBy == OrderBy.LINKSNUMBER) {
-      query.append(String.format(ORDER_BY_LINKS_NUMBER, order.toString()));
+      query.append(String.format(ORDER_BY_LINKS_NUMBER, getSort(order, Order.ASC)));
     } else if (orderBy == OrderBy.NOTETYPE) {
-      query.append(String.format(ORDER_BY_NOTE_TYPE, order.toString()));
+      query.append(String.format(ORDER_BY_NOTE_TYPE, getSort(order, Order.ASC)));
+    } else if (orderBy == OrderBy.UPDATEDDATE) {
+      query.append(String.format(ORDER_BY_UPDATED_DATE, getSort(order, Order.DESC)));
     } else {
-      query.append(String.format(ORDER_BY_TITLE_CLAUSE, order.toString()));
+      query.append(String.format(ORDER_BY_TITLE_CLAUSE, getSort(order, Order.ASC)));
     }
+  }
+
+  private String getSort(Order value, Order defaultOrder) {
+    return  Order.DEFAULT.equals(value) ? defaultOrder.getValue() : value.getValue();
   }
 
   private void addWhereClause(Tuple parameters, StringBuilder query, Status status, JsonObject jsonLink) {

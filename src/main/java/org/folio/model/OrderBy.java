@@ -6,7 +6,7 @@ import org.apache.commons.lang3.EnumUtils;
 
 public enum OrderBy {
 
-  STATUS("status"), TITLE("title"), LINKSNUMBER("linksNumber"), NOTETYPE("noteType");
+  STATUS("status"), TITLE("title"), LINKSNUMBER("linksNumber"), NOTETYPE("noteType"), UPDATEDDATE("updatedDate");
 
   private String value;
 

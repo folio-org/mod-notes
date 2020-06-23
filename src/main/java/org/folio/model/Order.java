@@ -6,7 +6,7 @@ import org.apache.commons.lang3.EnumUtils;
 
 public enum Order {
 
-  ASC("asc"), DESC("desc");
+  ASC("asc"), DESC("desc"), DEFAULT("default");
 
   private String value;
 
