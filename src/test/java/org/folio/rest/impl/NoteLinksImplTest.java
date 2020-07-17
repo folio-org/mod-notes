@@ -415,7 +415,7 @@ public class NoteLinksImplTest extends NotesTestBase {
       + "?orderBy=noteype&order=desc", 400)
       .asString();
 
-    assertThat(response, containsString("OrderBy is incorrect: noteype. Possible values: status, title, linksNumber, noteType"));
+    assertThat(response, containsString("OrderBy is incorrect"));
   }
 
   @Test
@@ -538,7 +538,7 @@ public class NoteLinksImplTest extends NotesTestBase {
       + "?orderBy=u&order=desc", 400)
       .asString();
 
-    assertThat(response, containsString("OrderBy is incorrect: u. Possible values: status, title, linksNumber, noteType, updatedDate"));
+    assertThat(response, containsString("OrderBy is incorrect"));
   }
 
   @Test
