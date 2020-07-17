@@ -43,6 +43,8 @@ class NoteLinksConstants {
 
   static final String ORDER_BY_TITLE_CLAUSE = "ORDER BY data.jsonb->>'title' %s ";
 
+  static final String ORDER_BY_CONTENT_CLAUSE = "ORDER BY data.jsonb->>'title' || regexp_replace(data.jsonb->>'content', E'<[^>]+>', '', 'gi') %s ";
+
   static final String ORDER_BY_LINKS_NUMBER = "ORDER BY json_array_length((data.jsonb->>'links')::json) %s ";
 
   static final String ORDER_BY_NOTE_TYPE = "ORDER BY type.jsonb->>'name' %s ";

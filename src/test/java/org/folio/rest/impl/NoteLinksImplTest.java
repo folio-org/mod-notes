@@ -419,6 +419,78 @@ public class NoteLinksImplTest extends NotesTestBase {
   }
 
   @Test
+  public void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreDifferent(){
+    Note firstNote = getNote().withTitle("ABC").withContent("<div> <strong>1</strong></div><h1>thing</h1>");
+    Note secondNote = getNote().withTitle("XWZ").withContent("<div> <strong>2</strong></div><h1>thing</h1>");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?orderBy=content")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreDifferent(){
+    Note firstNote = getNote().withTitle("ABC").withContent("<div> <strong>1</strong></div><h1>thing</h1>");
+    Note secondNote = getNote().withTitle("XWZ").withContent("<div> <strong>2</strong></div><h1>thing</h1>");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?orderBy=content&order=desc")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreSimilar(){
+    Note firstNote = getNote().withTitle("ABC").withContent("<div> <strong>1</strong></div><h1>thing</h1>");
+    Note secondNote = getNote().withTitle("ABC").withContent("<div> <strong>2</strong></div><h1>thing</h1>");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?orderBy=content")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  public void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreSimilar(){
+    Note firstNote = getNote().withTitle("ABC").withContent("<div> <strong>1</strong></div><h1>thing</h1>");
+    Note secondNote = getNote().withTitle("ABC").withContent("<div> <strong>2</strong></div><h1>thing</h1>");
+    postNoteWithOk(Json.encode(firstNote), USER8);
+    postNoteWithOk(Json.encode(secondNote), USER8);
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?orderBy=content&order=desc")
+      .as(NoteCollection.class)
+      .getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
   public void shouldReturnListOfNotesSortedByCreatedDateAsc(){
 
     Note firstNote = getNote().withTitle("ABC").withTypeId("2af21797-d25b-46dc-8427-1759d1db2057");
