@@ -7,13 +7,13 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.jeasy.random.FieldPredicates.named;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import static org.folio.test.util.DBTestUtil.deleteFromTable;
@@ -44,7 +44,6 @@ import io.restassured.http.Header;
 import io.restassured.response.Response;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.apache.http.HttpStatus;
-import org.hamcrest.MatcherAssert;
 import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
 import org.jeasy.random.api.Randomizer;
@@ -581,7 +580,7 @@ public class NoteTypesImplTest extends NotesTestBase {
     final Header userWithoutPermission = new Header(XOkapiHeaders.USER_ID, "33999999-9999-4999-9999-999999999933");
     final String response =
       postWithStatus(NOTE_TYPES_ENDPOINT, toJson(input), SC_UNAUTHORIZED, userWithoutPermission).asString();
-    MatcherAssert.assertThat(response, containsString("Unauthorized"));
+    assertThat(response, containsString("Unauthorized"));
   }
 
   @Test

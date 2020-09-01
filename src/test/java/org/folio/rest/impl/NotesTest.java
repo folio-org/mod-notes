@@ -54,7 +54,6 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -157,7 +156,7 @@ public class NotesTest extends NotesTestBase {
   public void shouldReturnEmptyListOfNotesByDefault() {
 
     final String response = getWithOk(NOTES_PATH).asString();
-    Assert.assertThat(response, containsString("\"notes\" : [ ]"));
+    assertThat(response, containsString("\"notes\" : [ ]"));
   }
 
   @Test
@@ -195,7 +194,7 @@ public class NotesTest extends NotesTestBase {
 
     final Errors errors = postWithStatus(NOTES_PATH, badJson, SC_UNPROCESSABLE_ENTITY, USER9).as(Errors.class);
     final Error error = errors.getErrors().get(0);
-    assertThat(error.getMessage(), is("may not be null"));
+    assertThat(error.getMessage(), is("must not be null"));
     assertThat(error.getParameters().get(0).getKey(), is("typeId"));
   }
 
@@ -260,7 +259,7 @@ public class NotesTest extends NotesTestBase {
   public void shouldFindNoteByIdAfterPost() {
     postNoteWithOk(NOTE_1, USER9);
     final String response = getWithOk("/notes/11111111-1111-1111-a111-111111111111").asString();
-    Assert.assertThat(response, containsString("First note"));
+    assertThat(response, containsString("First note"));
   }
 
   @Test
