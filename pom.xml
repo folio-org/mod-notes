@@ -14,22 +14,23 @@
   </licenses>
 
   <properties>
-    <raml-module-builder.version>30.0.2</raml-module-builder.version>
+    <raml-module-builder.version>31.0.2</raml-module-builder.version>
     <folio-service-tools.version>1.5.0</folio-service-tools.version>
     <folio-di-support.version>1.1.0</folio-di-support.version>
-    <aspectj.version>1.9.1</aspectj.version>
-    <spring.version>5.2.6.RELEASE</spring.version>
-    <vertx-version>3.9.1</vertx-version>
+    <aspectj.version>1.9.5</aspectj.version>
+    <spring.version>5.2.8.RELEASE</spring.version>
+    <vertx-version>3.9.2</vertx-version>
+    <jackson.version>2.11.2</jackson.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <jsonschema_paths>types/**,raml-util/schemas</jsonschema_paths>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <cloning.version>1.9.11</cloning.version>
+    <cloning.version>1.9.12</cloning.version>
     <lombok.version>1.18.4</lombok.version>
-    <junit.version>4.12</junit.version>
-    <jsoup.version>1.12.1</jsoup.version>
-    <rest-assured.version>3.3.0</rest-assured.version>
-    <wiremock.version>2.19.0</wiremock.version>
-    <easy-random-core.version>4.0.0.RC1</easy-random-core.version>
+    <junit.version>4.13</junit.version>
+    <jsoup.version>1.13.1</jsoup.version>
+    <rest-assured.version>4.0.0</rest-assured.version>
+    <wiremock.version>2.21.0</wiremock.version>
+    <easy-random-core.version>4.2.0</easy-random-core.version>
   </properties>
 
   <repositories>
@@ -69,7 +70,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>2.10.0</version>
+        <version>${jackson.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -179,12 +180,20 @@
     <plugins>
 
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>versions-maven-plugin</artifactId>
+        <version>2.7</version>
+        <configuration>
+          <generateBackupPoms>false</generateBackupPoms>
+        </configuration>
+      </plugin>
+
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
+        <version>3.8.1</version>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <release>11</release>
           <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
@@ -192,7 +201,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.1</version>
+        <version>3.0.0-M5</version>
         <configuration>
           <useSystemClassLoader>false</useSystemClassLoader>
           <systemPropertyVariables>
@@ -206,7 +215,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.2.0</version>
         <executions>
           <execution>
             <id>add_generated_sources_folder</id>
@@ -226,7 +235,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.6.0</version>
+        <version>3.0.0</version>
         <executions>
          <execution>
             <id>git submodule update</id>
@@ -286,9 +295,9 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
+        <groupId>com.nickwongdev</groupId>
         <artifactId>aspectj-maven-plugin</artifactId>
-        <version>1.11</version>
+        <version>1.12.6</version>
         <configuration>
           <verbose>true</verbose>
           <complianceLevel>1.8</complianceLevel>
@@ -330,7 +339,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.0.1</version>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>copy-resources</id>
@@ -400,7 +409,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.8</version>
+        <version>3.0.0</version>
         <executions>
           <execution>
             <phase>prepare-package</phase>
@@ -424,7 +433,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.2.4</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -451,7 +460,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.5.3</version>
+        <version>3.0.0-M1</version>
         <configuration>
           <preparationGoals>clean verify</preparationGoals>
           <tagNameFormat>v@{project.version}</tagNameFormat>
@@ -467,7 +476,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-report-plugin</artifactId>
-        <version>2.22.1</version>
+        <version>3.0.0-M5</version>
       </plugin>
     </plugins>
   </reporting>
