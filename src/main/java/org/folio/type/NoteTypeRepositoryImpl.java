@@ -1,6 +1,6 @@
 package org.folio.type;
 
-import static org.folio.db.DbUtils.createParams;
+import static org.folio.db.DbUtils.createParamsAsJsonArray;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,7 +61,7 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   public Future<List<NoteType>> findByIds(List<String> ids, String tenantId) {
     Promise<Map<String, NoteType>> promise = Promise.promise();
 
-    pgClient(tenantId).getById(NOTE_TYPE_VIEW, createParams(ids), NoteType.class, promise);
+    pgClient(tenantId).getById(NOTE_TYPE_VIEW, createParamsAsJsonArray(ids), NoteType.class, promise);
 
     return promise.future()
       .recover(excTranslator.translateOrPassBy())
