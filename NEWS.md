@@ -1,3 +1,10 @@
+## 2.10.0 2020-10-06
+ * MODNOTES-144 - Notes Accordion: Make Note type column heading sortable
+ * MODNOTES-141 Extend Note title limit to 255 characters
+ * MODNOTES-146 - Notes Accordion: Make Date column heading sortable
+ * MODNOTES-147 Make Note title and details column sortable
+ * MODNOTES-153 Update to RMB v31.x and JDK 11
+
 ## 2.9.0 2020-06-08
  * MODNOTES-150 - Update RMB to v30.0.2
  * MODNOTES-140 - Fix Maven ${} variable replacement in src/main/resources
