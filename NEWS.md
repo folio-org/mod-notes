@@ -1,3 +1,7 @@
+## 2.10.1 2020-10-23
+ * Fix logging issue
+ * Update RMB to v31.1.2 and Vertx to 3.9.3
+
 ## 2.10.0 2020-10-06
  * MODNOTES-144 - Notes Accordion: Make Note type column heading sortable
  * MODNOTES-141 Extend Note title limit to 255 characters
