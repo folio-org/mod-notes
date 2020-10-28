@@ -1,3 +1,5 @@
+@Library ('folio_jenkins_shared_libs@docker-auth') _
+
 buildMvn {
   publishModDescriptor = true
   mvnDeploy = true
