@@ -12,14 +12,13 @@ import static org.folio.rest.exc.RestExceptionHandlers.logged;
 import static org.folio.rest.exceptions.NoteExceptionHandlers.cqlValidationHandler;
 import static org.folio.rest.exceptions.NoteExceptionHandlers.entityValidationHandler;
 
+import java.util.Map;
+
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
 
-import org.folio.common.pf.PartialFunction;
-import org.folio.config.ModConfiguration;
-import org.folio.db.exc.translation.DBExceptionTranslator;
-import org.folio.db.exc.translation.DBExceptionTranslatorFactory;
-import org.folio.rest.tools.messages.Messages;
+import com.rits.cloning.Cloner;
+import org.jsoup.safety.Whitelist;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -27,14 +26,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 
-import com.rits.cloning.Cloner;
+import org.folio.common.pf.PartialFunction;
+import org.folio.config.ModConfiguration;
+import org.folio.db.exc.translation.DBExceptionTranslator;
+import org.folio.db.exc.translation.DBExceptionTranslatorFactory;
+import org.folio.rest.tools.messages.Messages;
 
 @Configuration
 @ComponentScan(basePackages = {
   "org.folio.type",
   "org.folio.note",
   "org.folio.links",
-  "org.folio.userlookup"})
+  "org.folio.userlookup"
+})
 public class ApplicationConfig {
 
   @Bean
@@ -52,12 +56,12 @@ public class ApplicationConfig {
   @Bean
   public PartialFunction<Throwable, Response> notesExcHandler() {
     return logged(entityValidationHandler()
-                .orElse(cqlValidationHandler())
-                .orElse(baseBadRequestHandler())
-                .orElse(badRequestHandler(instanceOf(NotAuthorizedException.class)))
-                .orElse(baseNotFoundHandler())
-                .orElse(generalHandler())
-                .compose(completionCause())); // extract the cause before applying any handler
+      .orElse(cqlValidationHandler())
+      .orElse(baseBadRequestHandler())
+      .orElse(badRequestHandler(instanceOf(NotAuthorizedException.class)))
+      .orElse(baseNotFoundHandler())
+      .orElse(generalHandler())
+      .compose(completionCause())); // extract the cause before applying any handler
   }
 
   @Bean
@@ -93,5 +97,13 @@ public class ApplicationConfig {
   @Bean
   public Cloner restModelCloner() {
     return new Cloner();
+  }
+
+  @Bean
+  public Whitelist whitelist(@Value("#{${note.content.tags}}") String[] tags,
+                             @Value("#{${note.content.attributes}}") Map<String, String[]> attributes) {
+    Whitelist whitelist = new Whitelist().addTags(tags);
+    attributes.forEach(whitelist::addAttributes);
+    return whitelist;
   }
 }

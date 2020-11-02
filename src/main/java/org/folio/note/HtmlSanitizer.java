@@ -12,11 +12,9 @@ public class HtmlSanitizer implements Sanitizer {
   private final Whitelist whitelist;
   private final Document.OutputSettings defaultOutputSettings;
 
-  public HtmlSanitizer() {
-    whitelist = new Whitelist()
-      .addTags("p", "strong", "em", "a", "u", "ol", "ul", "li", "h1", "h2", "h3", "br")
-      .addAttributes("a", "href", "rel", "target");
-    defaultOutputSettings = new Document.OutputSettings().prettyPrint(false);
+  public HtmlSanitizer(Whitelist whitelist) {
+    this.whitelist = whitelist;
+    this.defaultOutputSettings = new Document.OutputSettings().prettyPrint(false);
   }
 
   @Override
