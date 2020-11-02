@@ -9,9 +9,6 @@ import io.vertx.core.Future;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import org.apache.commons.lang.StringUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.safety.Whitelist;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +30,8 @@ public class NoteServiceImpl implements NoteService {
   private NoteRepository repository;
   @Autowired
   private UserLookUpService userLookUpService;
+  @Autowired
+  private Sanitizer sanitizer;
 
   @Override
   public Future<NoteCollection> getNotes(String cqlQuery, int offset, int limit, String tenantId) {
@@ -42,9 +41,7 @@ public class NoteServiceImpl implements NoteService {
   @Override
   public Future<Note> addNote(Note note, OkapiParams okapiParams) {
     logger.debug("Removing unsafe tags");
-    if (StringUtils.isNotBlank(note.getContent())) {
-      note.setContent(sanitizeHtml(note.getContent()));
-    }
+    note.setContent(sanitizer.sanitize(note.getContent()));
     logger.debug("Create note with content: {}", Json.encode(note));
     final List<Link> links = note.getLinks();
     if (Objects.isNull(links) || links.isEmpty()) {
@@ -77,9 +74,7 @@ public class NoteServiceImpl implements NoteService {
   @Override
   public Future<Void> updateNote(String id, Note note, OkapiParams okapiParams) {
     logger.debug("Removing unsafe tags");
-    if (StringUtils.isNotBlank(note.getContent())) {
-      note.setContent(sanitizeHtml(note.getContent()));
-    }
+    note.setContent(sanitizer.sanitize(note.getContent()));
     logger.debug("PUT note with id:{} and content: {}", id, Json.encode(note));
     if (note.getId() != null && !note.getId().equals(id)) {
       return failedFuture(new InputValidationException("id", note.getId(), "Can not change Id"));
@@ -102,7 +97,4 @@ public class NoteServiceImpl implements NoteService {
     return userDisplayInfo;
   }
 
-  private String sanitizeHtml(String content) {
-    return Jsoup.clean(content, Whitelist.relaxed().removeTags("img"));
-  }
 }
