@@ -1,3 +1,8 @@
+## 2.10.2 2020-11-03
+* MODNOTES-158 Fix note content sanitizing
+* Update copyright year FOLIO-1021
+* Update to RMB v31.1.5 and Vert.x 3.9.4
+
 ## 2.10.1 2020-10-23
  * Fix logging issue
  * Update RMB to v31.1.2 and Vertx to 3.9.3
