@@ -61,7 +61,7 @@ public class NoteLinksImpl implements NoteLinks {
 
   @Validate
   @Override
-  public void getNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id, String title,
+  public void getNoteLinksDomainTypeIdByDomainAndTypeAndId(String domain, String type, String id, String search,
                                                            List<String> noteTypes, String status, String orderBy,
                                                            String order, int offset, int limit,
                                                            Map<String, String> okapiHeaders,
@@ -75,7 +75,7 @@ public class NoteLinksImpl implements NoteLinks {
       .validate();
 
     Future<NoteCollection> notes = validated.compose(
-      v -> noteLinksService.findNotesByTitleAndNoteTypeAndStatus(new EntityLink(domain, type, id), title, noteTypes,
+      v -> noteLinksService.findNotesByTitleAndNoteTypeAndStatus(new EntityLink(domain, type, id), search, noteTypes,
         Status.enumOf(status), OrderBy.enumOf(orderBy), Order.enumOf(order),
         new RowPortion(offset, limit), tenantId(okapiHeaders)));
 
