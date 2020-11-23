@@ -56,7 +56,7 @@ class NoteLinksConstants {
   private static final String JOIN_NOTE_TYPE_TABLE = "LEFT JOIN %s as type on (data.jsonb -> 'typeId' = type.jsonb -> 'id') ";
 
   private static final String WHERE_CLAUSE_BY_DOMAIN_AND_CONTENT =
-    "WHERE (data.jsonb->>'domain' = ?) AND search_content ~* ? ";
+    "WHERE (data.jsonb->>'domain' = ?) AND search_content ~* f_unaccent(?) ";
 
   static final String WHERE_CLAUSE_BY_NOTE_TYPE = " AND (type.jsonb ->> 'name' IN (%s)) ";
 

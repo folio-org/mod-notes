@@ -5,14 +5,14 @@ CREATE INDEX search_content_idx_gin ON note_data USING gin (search_content publi
 CREATE OR REPLACE FUNCTION update_search_content()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.search_content = coalesce(NEW.jsonb->>'title','') || ' '
+  NEW.search_content = f_unaccent(coalesce(NEW.jsonb->>'title','') || ' '
   || regexp_replace(
       regexp_replace(
           coalesce(NEW.jsonb->>'content',''),
           E'<[^>]+>', '', 'gi'
        ),
       '\n+', ' ', 'gi'
-    );
+    ));
   RETURN NEW;
 END;
 $$ language 'plpgsql';
