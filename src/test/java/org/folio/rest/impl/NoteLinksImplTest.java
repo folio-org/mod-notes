@@ -542,21 +542,25 @@ public class NoteLinksImplTest extends NotesTestBase {
   }
 
   @Test
-  public void shouldReturnListOfNotesSearchedByTitle() {
-    Note firstNote = getNote().withTitle("Title ABC");
+  public void shouldReturnListOfNotesSearchedByContent() {
+    Note firstNote = getNote().withTitle("Title ABC").withContent("<p>test content</p><p>zztest</p>");
     Note secondNote = getNote().withTitle("Title ZZZ ABC");
+    Note thirdNote = getNote().withTitle("Title TTT");
     postNoteWithOk(Json.encode(firstNote), USER8);
     postNoteWithOk(Json.encode(secondNote), USER8);
+    postNoteWithOk(Json.encode(thirdNote), USER8);
     createLinks(firstNote.getId());
     createLinks(secondNote.getId());
+    createLinks(thirdNote.getId());
 
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?title=ZZZ ")
+      + "?search=ZZ&orderBy=content")
       .as(NoteCollection.class)
       .getNotes();
 
-    assertEquals(1, notes.size());
-    assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(secondNote.getTitle(), notes.get(1).getTitle());
   }
 
   @Test
@@ -564,7 +568,7 @@ public class NoteLinksImplTest extends NotesTestBase {
     Note firstNote = getNote().withTitle("Title ZZZ ABC");
     postNoteWithOk(Json.encode(firstNote), USER8);
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?title=Z*")
+      + "?search=Z*")
       .as(NoteCollection.class)
       .getNotes();
 
@@ -577,7 +581,7 @@ public class NoteLinksImplTest extends NotesTestBase {
     Note firstNote = getNote().withTitle("a[abc1}{]z");
     postNoteWithOk(Json.encode(firstNote), USER8);
     List<Note> notes = getWithOk("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
-      + "?title=a[abc1}{]z")
+      + "?search=a[abc1}{]z")
       .as(NoteCollection.class)
       .getNotes();
 
@@ -791,7 +795,7 @@ public class NoteLinksImplTest extends NotesTestBase {
 
     List<Note> notes = getWithOk(
       "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID2 +
-        "?title=" + noteTitle + "&noteType=" + NOTE_TYPE2_NAME + " &noteType= " + NOTE_TYPE_NAME
+        "?search=" + noteTitle + "&noteType=" + NOTE_TYPE2_NAME + " &noteType= " + NOTE_TYPE_NAME
         + "&order=ASC&orderBy=status")
       .as(NoteCollection.class)
       .getNotes();

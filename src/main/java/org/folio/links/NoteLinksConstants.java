@@ -43,7 +43,7 @@ class NoteLinksConstants {
 
   static final String ORDER_BY_TITLE_CLAUSE = "ORDER BY data.jsonb->>'title' %s ";
 
-  static final String ORDER_BY_CONTENT_CLAUSE = "ORDER BY data.jsonb->>'title' || regexp_replace(data.jsonb->>'content', E'<[^>]+>', '', 'gi') %s ";
+  static final String ORDER_BY_CONTENT_CLAUSE = "ORDER BY search_content %s ";
 
   static final String ORDER_BY_LINKS_NUMBER = "ORDER BY json_array_length((data.jsonb->>'links')::json) %s ";
 
@@ -55,17 +55,17 @@ class NoteLinksConstants {
 
   private static final String JOIN_NOTE_TYPE_TABLE = "LEFT JOIN %s as type on (data.jsonb -> 'typeId' = type.jsonb -> 'id') ";
 
-  private static final String WHERE_CLAUSE_BY_DOMAIN_AND_TITLE =
-    "WHERE (data.jsonb->>'domain' = ?) AND (f_unaccent(data.jsonb->>'title') ~* f_unaccent(?)) ";
+  private static final String WHERE_CLAUSE_BY_DOMAIN_AND_CONTENT =
+    "WHERE (data.jsonb->>'domain' = ?) AND search_content ~* f_unaccent(?) ";
 
   static final String WHERE_CLAUSE_BY_NOTE_TYPE = " AND (type.jsonb ->> 'name' IN (%s)) ";
 
-  static final String SELECT_NOTES_BY_DOMAIN_AND_TITLE =
-    "SELECT data.id, data.jsonb FROM %s as data " + JOIN_NOTE_TYPE_TABLE + WHERE_CLAUSE_BY_DOMAIN_AND_TITLE;
+  static final String SELECT_NOTES_BY_DOMAIN_AND_CONTENT =
+    "SELECT data.id, data.jsonb FROM %s as data " + JOIN_NOTE_TYPE_TABLE + WHERE_CLAUSE_BY_DOMAIN_AND_CONTENT;
 
-  static final String COUNT_NOTES_BY_DOMAIN_AND_TITLE =
-    "SELECT COUNT(data.id) as count FROM %s as data " + JOIN_NOTE_TYPE_TABLE + WHERE_CLAUSE_BY_DOMAIN_AND_TITLE;
+  static final String COUNT_NOTES_BY_DOMAIN_AND_CONTENT =
+    "SELECT COUNT(data.id) as count FROM %s as data " + JOIN_NOTE_TYPE_TABLE + WHERE_CLAUSE_BY_DOMAIN_AND_CONTENT;
 
   static final String ANY_STRING_PATTERN = ".*";
-  static final String WORD_PATTERN = "\\m%s\\M";
+  static final String WORD_PATTERN = ".*%s.*";
 }

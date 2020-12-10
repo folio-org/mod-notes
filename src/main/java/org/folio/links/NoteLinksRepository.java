@@ -16,10 +16,10 @@ public interface NoteLinksRepository {
 
   Future<Void> update(Link link, List<String> assignNotes, List<String> unAssignNotes, String tenantId);
 
-  Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes,
+  Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String search, List<String> noteTypes,
                                                               Status status, OrderBy orderBy, Order order,
                                                               RowPortion rowPortion, String tenantId);
 
-  Future<Integer> countNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes, Status status,
+  Future<Integer> countNotesByTitleAndNoteTypeAndStatus(EntityLink link, String search, List<String> noteTypes, Status status,
                                                         String tenantId);
 }

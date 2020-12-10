@@ -3,7 +3,7 @@ package org.folio.links;
 import static io.vertx.core.Future.succeededFuture;
 
 import static org.folio.links.NoteLinksConstants.ANY_STRING_PATTERN;
-import static org.folio.links.NoteLinksConstants.COUNT_NOTES_BY_DOMAIN_AND_TITLE;
+import static org.folio.links.NoteLinksConstants.COUNT_NOTES_BY_DOMAIN_AND_CONTENT;
 import static org.folio.links.NoteLinksConstants.DELETE_NOTES_WITHOUT_LINKS;
 import static org.folio.links.NoteLinksConstants.HAS_LINK_CONDITION;
 import static org.folio.links.NoteLinksConstants.INSERT_LINKS;
@@ -17,7 +17,7 @@ import static org.folio.links.NoteLinksConstants.ORDER_BY_STATUS_CLAUSE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_TITLE_CLAUSE;
 import static org.folio.links.NoteLinksConstants.ORDER_BY_UPDATED_DATE;
 import static org.folio.links.NoteLinksConstants.REMOVE_LINKS;
-import static org.folio.links.NoteLinksConstants.SELECT_NOTES_BY_DOMAIN_AND_TITLE;
+import static org.folio.links.NoteLinksConstants.SELECT_NOTES_BY_DOMAIN_AND_CONTENT;
 import static org.folio.links.NoteLinksConstants.WHERE_CLAUSE_BY_NOTE_TYPE;
 import static org.folio.links.NoteLinksConstants.WORD_PATTERN;
 
@@ -81,14 +81,14 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes,
+  public Future<NoteCollection> findNotesByTitleAndNoteTypeAndStatus(EntityLink link, String search, List<String> noteTypes,
                                                                      Status status,
                                                                      OrderBy orderBy, Order order, RowPortion rowPortion,
                                                                      String tenantId) {
     Tuple parameters = Tuple.tuple();
     StringBuilder queryBuilder = new StringBuilder();
 
-    addSelectClause(parameters, queryBuilder, link.getDomain(), title, tenantId);
+    addSelectClause(parameters, queryBuilder, link.getDomain(), search, tenantId);
 
     addWhereNoteTypeClause(parameters, queryBuilder, noteTypes);
 
@@ -107,13 +107,13 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
   }
 
   @Override
-  public Future<Integer> countNotesByTitleAndNoteTypeAndStatus(EntityLink link, String title, List<String> noteTypes,
+  public Future<Integer> countNotesByTitleAndNoteTypeAndStatus(EntityLink link, String search, List<String> noteTypes,
                                                                Status status, String tenantId) {
 
     Tuple parameters = Tuple.tuple();
     StringBuilder queryBuilder = new StringBuilder();
 
-    addSelectCountClause(parameters, queryBuilder, link.getDomain(), title, tenantId);
+    addSelectCountClause(parameters, queryBuilder, link.getDomain(), search, tenantId);
 
     addWhereNoteTypeClause(parameters, queryBuilder, noteTypes);
 
@@ -288,19 +288,19 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
       .addInteger(rowPortion.getOffset());
   }
 
-  private void addSelectClause(Tuple parameters, StringBuilder query, String domain, String title, String tenantId) {
+  private void addSelectClause(Tuple parameters, StringBuilder query, String domain, String search, String tenantId) {
     query
-      .append(String.format(SELECT_NOTES_BY_DOMAIN_AND_TITLE, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
+      .append(String.format(SELECT_NOTES_BY_DOMAIN_AND_CONTENT, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
     parameters
       .addString(domain)
-      .addString(getTitleRegexp(title));
+      .addString(getContentRegexp(search));
   }
 
-  private void addSelectCountClause(Tuple parameters, StringBuilder query, String domain, String title, String tenantId) {
-    query.append(String.format(COUNT_NOTES_BY_DOMAIN_AND_TITLE, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
+  private void addSelectCountClause(Tuple parameters, StringBuilder query, String domain, String search, String tenantId) {
+    query.append(String.format(COUNT_NOTES_BY_DOMAIN_AND_CONTENT, getNoteTableName(tenantId), getNoteTypeTableName(tenantId)));
     parameters
       .addString(domain)
-      .addString(getTitleRegexp(title));
+      .addString(getContentRegexp(search));
   }
 
   private void addOrderByClause(Tuple parameters, StringBuilder query, Order order, OrderBy orderBy, JsonObject jsonLink) {
@@ -338,11 +338,11 @@ public class NoteLinksRepositoryImpl implements NoteLinksRepository {
     }
   }
 
-  private String getTitleRegexp(String title) {
-    if (StringUtils.isEmpty(title)) {
+  private String getContentRegexp(String str) {
+    if (StringUtils.isEmpty(str)) {
       return ANY_STRING_PATTERN;
     } else {
-      String regex = escapeRegex(title)
+      String regex = escapeRegex(str)
         .replace(ESCAPED_ANY_STRING_WILDCARD, ".*");
       return String.format(WORD_PATTERN, regex);
     }

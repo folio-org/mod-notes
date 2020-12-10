@@ -59,11 +59,10 @@ traits:
       ]
       description: Return a list of notes by status
       queryParameters:
-        title:
-          displayName: Note title
+        search:
+          displayName: Search term
           type: string
-          description: Search string for note title. Note is returned only if it contains
-            specified word or sequence of words anywhere in the title. Search is case-insensitive.
+          description: Partial match case-insensitive search term for note title and note details.
           example: important
           required: false
         noteType:
