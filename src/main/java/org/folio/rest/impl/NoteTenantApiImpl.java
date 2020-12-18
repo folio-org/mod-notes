@@ -39,10 +39,13 @@ public class NoteTenantApiImpl extends TenantAPI {
 
   @Validate
   @Override
-  Future<Integer> loadData(TenantAttributes attributes, String tenantId,
-                                     Map<String, String> headers, Context vertxContext) {
-    return super.loadData(attributes, tenantId, headers, vertxContext)
-      .compose(integer -> populateDefaultNoteType(headers).map(integer + 1));
+  public void postTenant(TenantAttributes entity, Map<String, String> headers, Handler<AsyncResult<Response>> handlers,
+                         Context context) {
+    Promise<Response> promise = Promise.promise();
+    super.postTenant(entity, headers, promise, context);
+
+    promise.future().compose(response -> populateDefaultNoteType(headers).map(response))
+      .onComplete(handlers);
   }
 
   private Future<Object> populateDefaultNoteType(Map<String, String> headers) {
