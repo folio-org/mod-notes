@@ -48,10 +48,10 @@ import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -80,7 +80,7 @@ import org.folio.test.util.TokenTestUtil;
 @RunWith(VertxUnitRunner.class)
 public class NotesTest extends NotesTestBase {
 
-  private static final Logger logger = LoggerFactory.getLogger("okapi");
+  private static final Logger logger = LogManager.getLogger("okapi");
 
   // One that is not found in the mock data
   private static final String NOT_JSON = "This is not json";
