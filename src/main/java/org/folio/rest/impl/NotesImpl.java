@@ -16,8 +16,8 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.internal.util.Producer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,7 +34,7 @@ import org.folio.spring.SpringContextUtil;
 public class NotesImpl implements Notes {
 
   private static final String LOCATION_PREFIX = "/notes/";
-  private final Logger logger = LoggerFactory.getLogger("mod-notes");
+  private final Logger logger = LogManager.getLogger("mod-notes");
 
   @Autowired
   private NoteService noteService;
