@@ -15,6 +15,7 @@ import static org.folio.util.NoteTestData.NOTE_6_EMPTY_CONTENT;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +38,8 @@ import org.folio.userlookup.UserLookUpService;
 @ContextConfiguration(classes = TestConfig.class)
 public class NoteServiceImplTest {
 
+  private AutoCloseable mocks;
+
   @Autowired
   @InjectMocks
   NoteServiceImpl noteService;
@@ -45,9 +48,15 @@ public class NoteServiceImplTest {
   @Mock
   UserLookUpService userLookUpService;
 
+
   @Before
-  public void setUp() {
-    MockitoAnnotations.initMocks(this);
+  public void setUp() throws Exception {
+    mocks = MockitoAnnotations.openMocks(this);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    mocks.close();
   }
 
   @Test

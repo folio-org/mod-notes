@@ -7,15 +7,15 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import io.restassured.http.Header;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.folio.rest.jaxrs.model.NoteType;
 import org.folio.test.util.TokenTestUtil;
 
 public class NoteTestData {
 
-  private static final Logger logger = LoggerFactory.getLogger(NoteTestData.class);
+  private static final Logger logger = LogManager.getLogger(NoteTestData.class);
 
   public static final String PACKAGE_ID = "18-2356521";
   public static final String PACKAGE_ID2 = "123-456789";

@@ -10,11 +10,11 @@ import javax.ws.rs.NotFoundException;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +31,7 @@ public class NoteRepositoryImpl implements NoteRepository {
   private static final String NOTE_VIEW = "note_view";
   private static final String NOTE_TABLE = "note_data";
 
-  private final Logger logger = LoggerFactory.getLogger(NoteRepositoryImpl.class);
+  private final Logger logger = LogManager.getLogger(NoteRepositoryImpl.class);
 
   @Autowired
   private Vertx vertx;

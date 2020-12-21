@@ -14,23 +14,23 @@
   </licenses>
 
   <properties>
-    <raml-module-builder.version>31.1.5</raml-module-builder.version>
-    <folio-service-tools.version>1.6.0</folio-service-tools.version>
+    <raml-module-builder.version>32.0.0-SNAPSHOT</raml-module-builder.version>
+    <folio-service-tools.version>1.6.1-SNAPSHOT</folio-service-tools.version>
     <folio-di-support.version>1.2.0</folio-di-support.version>
-    <aspectj.version>1.9.5</aspectj.version>
+    <aspectj.version>1.9.6</aspectj.version>
     <spring.version>5.2.8.RELEASE</spring.version>
-    <vertx-version>3.9.4</vertx-version>
-    <jackson.version>2.11.2</jackson.version>
+    <vertx-version>4.0.0</vertx-version>
+    <jackson.version>2.12.0</jackson.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <jsonschema_paths>types/**,raml-util/schemas</jsonschema_paths>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <cloning.version>1.9.12</cloning.version>
-    <lombok.version>1.18.4</lombok.version>
-    <junit.version>4.13</junit.version>
+    <lombok.version>1.18.16</lombok.version>
+    <junit.version>4.13.1</junit.version>
     <jsoup.version>1.13.1</jsoup.version>
-    <rest-assured.version>4.0.0</rest-assured.version>
-    <wiremock.version>2.21.0</wiremock.version>
-    <easy-random-core.version>4.2.0</easy-random-core.version>
+    <rest-assured.version>4.3.3</rest-assured.version>
+    <wiremock.version>2.27.2</wiremock.version>
+    <easy-random-core.version>5.0.0</easy-random-core.version>
   </properties>
 
   <repositories>
@@ -300,7 +300,7 @@
         <version>1.12.6</version>
         <configuration>
           <verbose>true</verbose>
-          <complianceLevel>1.8</complianceLevel>
+          <complianceLevel>11</complianceLevel>
           <forceAjcCompile>true</forceAjcCompile>
           <includes>
             <include>**/impl/*.java</include>

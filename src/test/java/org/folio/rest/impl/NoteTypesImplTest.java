@@ -98,7 +98,7 @@ public class NoteTypesImplTest extends NotesTestBase {
     params = new EasyRandomParameters()
       .randomize(named("id"), randomUUID())
       .randomize(named("typeId"), randomUUID())
-      .randomize(named("title"), StringRandomizer.aNewStringRandomizer(75))
+      .randomize(named("title"), new StringRandomizer(75))
       .excludeField(named("creator"))
       .excludeField(named("updater"))
       .excludeField(named("metadata"));
