@@ -206,13 +206,6 @@ public class NotesTest extends NotesTestBase {
   }
 
   @Test
-  public void shouldReturn422WhenRequestHasUnrecognizedField() {
-    String badfieldDoc = NOTE_1.replaceFirst("type", "UnknownFieldName");
-    final String response = postWithStatus(NOTES_PATH, badfieldDoc, SC_UNPROCESSABLE_ENTITY, USER9).asString();
-    assertThat(response, containsString("Unrecognized field"));
-  }
-
-  @Test
   public void shouldReturn400WhenUserDoesntExist() {
     // Post by an unknown user 19, lookup fails
     postWithStatus(NOTES_PATH, NOTE_1, SC_BAD_REQUEST, USER19);
