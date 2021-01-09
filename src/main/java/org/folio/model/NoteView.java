@@ -1,10 +1,15 @@
 package org.folio.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -15,7 +20,7 @@ import org.folio.rest.jaxrs.model.UserDisplayInfo;
 /**
  * Database representation of a note
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties({"linkIds", "linkTypes"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NoteView {
 
@@ -42,6 +47,9 @@ public class NoteView {
   private Metadata metadata;
 
   private List<Link> links = new ArrayList<>();
+
+  @JsonIgnore
+  private final Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
   public String getId() {
     return id;
@@ -121,5 +129,20 @@ public class NoteView {
 
   public void setLinks(List<Link> links) {
     this.links = links;
+  }
+
+  @JsonAnyGetter
+  public Map<String, Object> getAdditionalProperties() {
+    return this.additionalProperties;
+  }
+
+  @JsonAnySetter
+  public void setAdditionalProperty(String name, Object value) {
+    this.additionalProperties.put(name, value);
+  }
+
+  public NoteView withAdditionalProperty(String name, Object value) {
+    this.additionalProperties.put(name, value);
+    return this;
   }
 }
