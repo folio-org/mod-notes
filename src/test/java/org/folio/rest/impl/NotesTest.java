@@ -10,6 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -41,8 +42,10 @@ import static org.folio.util.NoteTestData.USER8_ID;
 import static org.folio.util.NoteTestData.USER9;
 import static org.folio.util.NoteTestData.USER9_ID;
 
+import java.io.IOException;
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
 import com.github.tomakehurst.wiremock.matching.UrlPathPattern;
@@ -50,6 +53,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -74,8 +78,6 @@ import org.folio.test.util.TokenTestUtil;
  * against the module - without any Okapi in the picture. Since we run with an
  * embedded postgres, we always start with an empty database, and can safely
  * leave test data in it.
- *
- * @author heikki
  */
 @RunWith(VertxUnitRunner.class)
 public class NotesTest extends NotesTestBase {
@@ -85,6 +87,9 @@ public class NotesTest extends NotesTestBase {
   // One that is not found in the mock data
   private static final String NOT_JSON = "This is not json";
   private static final String NOTES_PATH = "/notes";
+
+  private ObjectMapper mapper;
+
 
   @BeforeClass
   public static void setUpClass(TestContext context) {
@@ -100,6 +105,8 @@ public class NotesTest extends NotesTestBase {
 
   @Before
   public void setUp() throws Exception {
+     mapper = new ObjectMapper();
+
     stubFor(
       get(new UrlPathPattern(new EqualToPattern("/users/" + USER9_ID), false))
         .willReturn(new ResponseDefinitionBuilder()
@@ -196,13 +203,6 @@ public class NotesTest extends NotesTestBase {
     final Error error = errors.getErrors().get(0);
     assertThat(error.getMessage(), is("must not be null"));
     assertThat(error.getParameters().get(0).getKey(), is("typeId"));
-  }
-
-  @Test
-  public void shouldReturn422WhenRequestHasUnrecognizedField() {
-    String badfieldDoc = NOTE_1.replaceFirst("type", "UnknownFieldName");
-    final String response = postWithStatus(NOTES_PATH, badfieldDoc, SC_UNPROCESSABLE_ENTITY, USER9).asString();
-    assertThat(response, containsString("Unrecognized field"));
   }
 
   @Test
@@ -598,8 +598,25 @@ public class NotesTest extends NotesTestBase {
     deleteWithNoContent(location);
   }
 
+  @Test
+  public void shouldSaveNoteWithArbitraryAttribute() throws IOException {
+    Note note = mapper.readValue(NOTE_1, Note.class);
+
+    String name = RandomStringUtils.randomAlphabetic(10);
+    String value = RandomStringUtils.randomAlphanumeric(32);
+    note.setAdditionalProperty(name, value);
+
+    postNoteWithOk(mapper.writeValueAsString(note), USER9);
+
+    final Note saved = getWithOk("/notes/11111111-1111-1111-a111-111111111111").as(Note.class);
+
+    assertThat(saved.getAdditionalProperties().size(), is(1));
+    assertThat(saved.getAdditionalProperties(), hasEntry(name, value));
+  }
+
   private void getNoteAndCheckContent(String query, String content) {
     final String response = getWithOk(NOTES_PATH + query).asString();
     assertThat(response, containsString(content));
   }
+
 }

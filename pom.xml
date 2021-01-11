@@ -14,8 +14,8 @@
   </licenses>
 
   <properties>
-    <raml-module-builder.version>32.0.0-SNAPSHOT</raml-module-builder.version>
-    <folio-service-tools.version>1.6.1-SNAPSHOT</folio-service-tools.version>
+    <raml-module-builder.version>32.1.0</raml-module-builder.version>
+    <folio-service-tools.version>1.6.1</folio-service-tools.version>
     <folio-di-support.version>1.2.0</folio-di-support.version>
     <aspectj.version>1.9.6</aspectj.version>
     <spring.version>5.2.8.RELEASE</spring.version>

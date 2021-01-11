@@ -40,7 +40,7 @@ public class NoteRepositoryImpl implements NoteRepository {
   public Future<NoteCollection> findByQuery(String cqlQuery, int offset, int limit, String tenantId) {
     logger.debug("Getting notes. new query:" + cqlQuery);
 
-    CqlQuery<NoteView> q = new CqlQuery<>(PostgresClient.getInstance(vertx, tenantId), NOTE_VIEW, NoteView.class);
+    CqlQuery<NoteView> q = new CqlQuery<>(pgClient(tenantId), NOTE_VIEW, NoteView.class);
 
     return q.get(cqlQuery, offset, limit).map(this::mapNoteResults);
   }
@@ -58,8 +58,7 @@ public class NoteRepositoryImpl implements NoteRepository {
       note.setId(UUID.randomUUID().toString());
     }
 
-    PostgresClient.getInstance(vertx, tenantId)
-      .save(NOTE_TABLE, note.getId(), note, promise);
+    pgClient(tenantId).save(NOTE_TABLE, note.getId(), note, promise);
 
     return promise.future().map(noteId -> {
       note.setId(noteId);
@@ -75,8 +74,7 @@ public class NoteRepositoryImpl implements NoteRepository {
   @Override
   public Future<Note> findOne(String id, String tenantId) {
     Promise<NoteView> promise = Promise.promise();
-    PostgresClient.getInstance(vertx, tenantId)
-      .getById(NOTE_VIEW, id, NoteView.class, promise);
+    pgClient(tenantId).getById(NOTE_VIEW, id, NoteView.class, promise);
 
     return promise.future().map(noteView -> {
       if (Objects.isNull(noteView)) {
@@ -89,8 +87,7 @@ public class NoteRepositoryImpl implements NoteRepository {
   @Override
   public Future<Void> delete(String id, String tenantId) {
     Promise<RowSet<Row>> promise = Promise.promise();
-    PostgresClient.getInstance(vertx, tenantId)
-      .delete(NOTE_TABLE, id, promise);
+    pgClient(tenantId).delete(NOTE_TABLE, id, promise);
     return promise.future().map(updateResult -> {
       if (updateResult.rowCount() == 0) {
         throw new NotFoundException("Note with id " + id + " doesn't exist");
@@ -103,11 +100,9 @@ public class NoteRepositoryImpl implements NoteRepository {
   public Future<Void> update(String id, Note note, String tenantId) {
     Promise<RowSet<Row>> promise = Promise.promise();
     if (note.getLinks().isEmpty()) {
-      PostgresClient.getInstance(vertx, tenantId)
-        .delete(NOTE_TABLE, id, promise);
+      pgClient(tenantId).delete(NOTE_TABLE, id, promise);
     } else {
-      PostgresClient.getInstance(vertx, tenantId)
-        .update(NOTE_TABLE, note, id, promise);
+      pgClient(tenantId).update(NOTE_TABLE, note, id, promise);
     }
     return promise
       .future()
@@ -117,6 +112,10 @@ public class NoteRepositoryImpl implements NoteRepository {
         }
         return null;
       });
+  }
+
+  private PostgresClient pgClient(String tenantId) {
+    return PostgresClient.getInstance(vertx, tenantId);
   }
 
   private NoteCollection mapNoteResults(Results<NoteView> results) {
@@ -132,16 +131,20 @@ public class NoteRepositoryImpl implements NoteRepository {
   }
 
   private Note mapNoteView(NoteView noteView) {
-    return new Note()
-      .withId(noteView.getId())
-      .withTypeId(noteView.getTypeId())
-      .withType(noteView.getType())
-      .withDomain(noteView.getDomain())
-      .withTitle(noteView.getTitle())
-      .withContent(noteView.getContent())
-      .withCreator(noteView.getCreator())
-      .withUpdater(noteView.getUpdater())
-      .withMetadata(noteView.getMetadata())
-      .withLinks(noteView.getLinks());
+    Note note = new Note()
+        .withId(noteView.getId())
+        .withTypeId(noteView.getTypeId())
+        .withType(noteView.getType())
+        .withDomain(noteView.getDomain())
+        .withTitle(noteView.getTitle())
+        .withContent(noteView.getContent())
+        .withCreator(noteView.getCreator())
+        .withUpdater(noteView.getUpdater())
+        .withMetadata(noteView.getMetadata())
+        .withLinks(noteView.getLinks());
+
+    noteView.getAdditionalProperties().forEach(note::setAdditionalProperty);
+
+    return note;
   }
 }
