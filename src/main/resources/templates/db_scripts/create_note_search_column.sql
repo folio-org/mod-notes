@@ -1,6 +1,6 @@
 ALTER TABLE note_data ADD COLUMN IF NOT EXISTS search_content text;
 
-CREATE INDEX search_content_idx_gin ON note_data USING gin (search_content public.gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS search_content_idx_gin ON note_data USING gin (search_content public.gin_trgm_ops);
 
 CREATE OR REPLACE FUNCTION update_search_content()
 RETURNS TRIGGER AS $$
