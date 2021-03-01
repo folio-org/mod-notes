@@ -1,3 +1,10 @@
+## 2.11.0 2021-03-01
+* MODNOTES-163 Support search by title and content
+* Use new api-lint FOLIO-2893
+* MODNOTES-167 Upgrade to RMB 32.x and Vert.x 4.0
+* MODNOTES-165 Extend note schema to add additional properties
+* MODNOTES-171 Add personal data disclosure form
+
 ## 2.10.2 2020-11-03
 * MODNOTES-158 Fix note content sanitizing
 * Update copyright year FOLIO-1021
