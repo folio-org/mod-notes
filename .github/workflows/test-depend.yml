@@ -1,6 +1,6 @@
 name: test-depend
 
-# STATUS: testing FOLIO-2913
+# STATUS: Testing FOLIO-2913
 
 on:
   workflow_run:
