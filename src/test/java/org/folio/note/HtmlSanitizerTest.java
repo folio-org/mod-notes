@@ -19,7 +19,7 @@ public class HtmlSanitizerTest {
 
   @Test
   public void shouldNotSanitizeSupportedTags() {
-    String content = "<h1>a</h1><h2>b</h2><h3>c</h3><p>d</p><p><strong>e</strong></p><p><em>f</em></p><p><u>g</u></p><p><a href=\"https://examle.com\" rel=\"noopener noreferrer\" target=\"_blank\">h</a></p><ol><li>i</li></ol><ul><li>j</li></ul>";
+    String content = "<h1 class=\"A\">a</h1><h2>b</h2><h3>c</h3><p class=\"B\">d</p><p><strong>e</strong></p><p><em>f</em></p><p><u>g</u></p><p><a href=\"https://examle.com\" rel=\"noopener noreferrer\" target=\"_blank\">h</a></p><ol><li>i</li></ol><ul><li>j</li></ul>";
     String actual = sanitizer.sanitize(content);
 
     assertEquals(content, actual);
