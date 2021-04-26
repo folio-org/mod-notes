@@ -103,7 +103,13 @@ public class ApplicationConfig {
   public Whitelist whitelist(@Value("#{${note.content.tags}}") String[] tags,
                              @Value("#{${note.content.attributes}}") Map<String, String[]> attributes) {
     Whitelist whitelist = new Whitelist().addTags(tags);
-    attributes.forEach(whitelist::addAttributes);
+    attributes.forEach((tag, attrs) -> {
+      // To make an attribute valid for all tags, use the pseudo tag :all, e.g. addAttributes(":all", "class").
+      if (tag.equals("all")) {
+        tag = ":" + tag;
+      }
+      whitelist.addAttributes(tag, attrs);
+    });
     return whitelist;
   }
 }
