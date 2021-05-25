@@ -314,7 +314,7 @@ public class NoteTypesImplTest extends NotesTestBase {
   @Test
   public void shouldReturn400WhenLimitInvalid() {
     try {
-      getWithStatus(NOTE_TYPES_ENDPOINT + "&limit=-1", SC_BAD_REQUEST);
+      getWithStatus(NOTE_TYPES_ENDPOINT + "?limit=-1", SC_BAD_REQUEST);
     } finally {
       deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }
@@ -323,7 +323,7 @@ public class NoteTypesImplTest extends NotesTestBase {
   @Test
   public void shouldReturn400WhenOffsetInvalid() {
     try {
-      getWithStatus(NOTE_TYPES_ENDPOINT + "&offset=-1", SC_BAD_REQUEST);
+      getWithStatus(NOTE_TYPES_ENDPOINT + "?offset=-1", SC_BAD_REQUEST);
     } finally {
       deleteFromTable(vertx, NOTE_TYPE_TABLE);
     }

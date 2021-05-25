@@ -85,6 +85,7 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
     if (StringUtils.isBlank(entity.getId())) {
       entity.setId(UUID.randomUUID().toString());
     }
+    entity.setUsage(null);
 
     pgClient(tenantId).save(NOTE_TYPE_TABLE, entity.getId(), entity, promise);
 
@@ -95,6 +96,7 @@ public class NoteTypeRepositoryImpl implements NoteTypeRepository {
   @Override
   public Future<Boolean> update(NoteType entity, String tenantId) {
     Promise<RowSet<Row>> promise = Promise.promise();
+    entity.setUsage(null);
 
     pgClient(tenantId).update(NOTE_TYPE_TABLE, entity, entity.getId(), promise);
 
