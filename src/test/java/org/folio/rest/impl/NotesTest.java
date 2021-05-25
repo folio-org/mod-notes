@@ -191,7 +191,7 @@ public class NotesTest extends NotesTestBase {
       .then()
       .log().ifValidationFails()
       .statusCode(SC_BAD_REQUEST)
-      .body(containsString("Json content error"));
+      .body(containsString("Unrecognized token"));
   }
 
   @Test
