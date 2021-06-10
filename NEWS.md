@@ -1,3 +1,7 @@
+## 2.12.0 2021-06-09
+MODNOTES-174 Add `class` attribute to whitelist
+MODNOTES-176 Upgrade to RMB 33 and Vert.x 4.1.0.CR1
+
 ## 2.11.0 2021-03-01
 * MODNOTES-163 Support search by title and content
 * Use new api-lint FOLIO-2893
