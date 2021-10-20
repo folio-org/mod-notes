@@ -1,5 +1,5 @@
 {
-  "id": "${artifactId}-${version}",
+  "id": "@artifactId@-@version@",
   "name": "Notes",
   "requires": [
     {
@@ -17,102 +17,144 @@
       "version": "2.0",
       "handlers": [
         {
-          "methods": ["GET"],
+          "methods": [
+            "GET"
+          ],
           "pathPattern": "/notes",
-          "permissionsRequired": ["notes.collection.get", "notes.domain.all"]
+          "permissionsRequired": [
+            "notes.collection.get",
+            "notes.domain.all"
+          ]
         },
         {
-          "methods": ["POST"],
+          "methods": [
+            "POST"
+          ],
           "pathPattern": "/notes",
-          "permissionsRequired": ["notes.item.post", "notes.domain.all"],
-          "modulePermissions": ["users.item.get"]
+          "permissionsRequired": [
+            "notes.item.post",
+            "notes.domain.all"
+          ],
+          "modulePermissions": [
+            "users.item.get"
+          ]
         },
         {
-          "methods": ["GET"],
+          "methods": [
+            "GET"
+          ],
           "pathPattern": "/notes/{id}",
-          "permissionsRequired": ["notes.item.get","notes.domain.all"]
+          "permissionsRequired": [
+            "notes.item.get",
+            "notes.domain.all"
+          ]
         },
         {
-          "methods": ["PUT"],
+          "methods": [
+            "PUT"
+          ],
           "pathPattern": "/notes/{id}",
-          "permissionsRequired": ["notes.item.put", "notes.domain.all"],
-          "modulePermissions": ["users.item.get"]
+          "permissionsRequired": [
+            "notes.item.put",
+            "notes.domain.all"
+          ],
+          "modulePermissions": [
+            "users.item.get"
+          ]
         },
         {
-          "methods": ["DELETE"],
+          "methods": [
+            "DELETE"
+          ],
           "pathPattern": "/notes/{id}",
-          "permissionsRequired": ["notes.item.delete", "notes.domain.all"]
+          "permissionsRequired": [
+            "notes.item.delete",
+            "notes.domain.all"
+          ]
         },
         {
-          "methods": ["GET"],
+          "methods": [
+            "GET"
+          ],
           "pathPattern": "/note-types",
-          "permissionsRequired": ["note.types.collection.get"]
+          "permissionsRequired": [
+            "note.types.collection.get"
+          ]
         },
         {
-          "methods": ["GET"],
+          "methods": [
+            "GET"
+          ],
           "pathPattern": "/note-types/{typeId}",
-          "permissionsRequired": ["note.types.item.get"]
+          "permissionsRequired": [
+            "note.types.item.get"
+          ]
         },
         {
-          "methods": ["POST"],
+          "methods": [
+            "POST"
+          ],
           "pathPattern": "/note-types",
-          "permissionsRequired": ["note.types.item.post"]
+          "permissionsRequired": [
+            "note.types.item.post"
+          ]
         },
         {
-          "methods": ["PUT"],
+          "methods": [
+            "PUT"
+          ],
           "pathPattern": "/note-types/{id}",
-          "permissionsRequired": ["note.types.item.put"]
+          "permissionsRequired": [
+            "note.types.item.put"
+          ]
         },
         {
-          "methods": ["DELETE"],
+          "methods": [
+            "DELETE"
+          ],
           "pathPattern": "/note-types/{id}",
-          "permissionsRequired": ["note.types.item.delete"]
+          "permissionsRequired": [
+            "note.types.item.delete"
+          ]
         },
         {
-          "methods": ["PUT"],
+          "methods": [
+            "PUT"
+          ],
           "pathPattern": "/note-links/type/{type}/id/{id}",
-          "permissionsRequired": ["note.links.collection.put"]
+          "permissionsRequired": [
+            "note.links.collection.put"
+          ]
         },
         {
-          "methods": ["GET"],
+          "methods": [
+            "GET"
+          ],
           "pathPattern": "/note-links/domain/{domain}/type/{type}/id/{id}",
-          "permissionsRequired": ["notes.collection.get.by.status"]
+          "permissionsRequired": [
+            "notes.collection.get.by.status"
+          ]
         }
       ]
     },
     {
-      "id": "_jsonSchemas",
-      "version": "1.0",
-      "interfaceType" : "multiple",
-      "handlers" : [
+      "id": "_tenant",
+      "version": "2.0",
+      "interfaceType": "system",
+      "handlers": [
         {
-          "methods" : [ "GET" ],
-          "pathPattern" : "/_/jsonSchemas",
-          "permissionsRequired" : [ ]
-        }
-      ]
-    }, {
-      "id": "_ramls",
-      "version": "1.0",
-      "interfaceType" : "multiple",
-      "handlers" : [
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/_/tenant"
+        },
         {
-          "methods" : [ "GET" ],
-          "pathPattern" : "/_/ramls",
-          "permissionsRequired" : [ ]
+          "methods": [
+            "GET",
+            "DELETE"
+          ],
+          "pathPattern": "/_/tenant/{id}"
         }
-      ]
-    }, {
-      "id" : "_tenant",
-      "version" : "2.0",
-      "interfaceType" : "system",
-      "handlers" : [ {
-        "methods" : [ "POST" ],
-        "pathPattern" : "/_/tenant"
-      }, {
-        "methods" : [ "GET", "DELETE" ],
-        "pathPattern" : "/_/tenant/{id}"
-      }
       ]
     }
   ],
@@ -218,25 +260,57 @@
     }
   ],
   "launchDescriptor": {
-    "dockerImage": "${artifactId}:${version}",
+    "dockerImage": "@artifactId@:@version@",
     "dockerPull": false,
     "dockerArgs": {
       "HostConfig": {
-        "Memory": 357913941,
-        "PortBindings": { "8081/tcp": [ { "HostPort": "%p" } ] }
+        "Memory": 542293850,
+        "PortBindings": {
+          "8081/tcp": [
+            {
+              "HostPort": "%p"
+            }
+          ]
+        }
       }
     },
     "env": [
-      { "name": "JAVA_OPTIONS",
-        "value": "-XX:MaxRAMPercentage=66.0" },
-      { "name": "DB_HOST", "value": "postgres" },
-      { "name": "DB_PORT", "value": "5432" },
-      { "name": "DB_USERNAME", "value": "folio_admin" },
-      { "name": "DB_PASSWORD", "value": "folio_admin" },
-      { "name": "DB_DATABASE", "value": "okapi_modules" },
-      { "name": "DB_QUERYTIMEOUT", "value": "60000" },
-      { "name": "DB_CHARSET", "value": "UTF-8" },
-      { "name": "DB_MAXPOOLSIZE", "value": "5" }
+      {
+        "name": "JAVA_OPTIONS",
+        "value": "-XX:MaxRAMPercentage=66.0"
+      },
+      {
+        "name": "DB_HOST",
+        "value": "postgres"
+      },
+      {
+        "name": "DB_PORT",
+        "value": "5432"
+      },
+      {
+        "name": "DB_USERNAME",
+        "value": "folio_admin"
+      },
+      {
+        "name": "DB_PASSWORD",
+        "value": "folio_admin"
+      },
+      {
+        "name": "DB_DATABASE",
+        "value": "okapi_modules"
+      },
+      {
+        "name": "DB_QUERYTIMEOUT",
+        "value": "60000"
+      },
+      {
+        "name": "DB_CHARSET",
+        "value": "UTF-8"
+      },
+      {
+        "name": "DB_MAXPOOLSIZE",
+        "value": "5"
+      }
     ]
   }
 }

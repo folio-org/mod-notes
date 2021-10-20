@@ -1,12 +1,11 @@
 FROM folioci/alpine-jre-openjdk11:latest
 
-ENV VERTICLE_FILE mod-notes-fat.jar
-
-# Set the location of the verticles
-ENV VERTICLE_HOME /usr/verticles
-
 # Copy your fat jar to the container
-COPY target/${VERTICLE_FILE} ${VERTICLE_HOME}/${VERTICLE_FILE}
+ENV APP_FILE mod-tags-fat.jar
+# - should be a single jar file
+ARG JAR_FILE=./target/*.jar
+# - copy
+COPY ${JAR_FILE} ${JAVA_APP_DIR}/${APP_FILE}
 
 # Expose this port locally in the container.
 EXPOSE 8081
