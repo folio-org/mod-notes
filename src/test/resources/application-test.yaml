@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: mod-notes
+  liquibase:
+    changeLog: classpath:db/changelog/changelog-master.xml
+    enabled: true
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration

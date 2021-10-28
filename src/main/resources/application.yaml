@@ -18,8 +18,6 @@ folio:
       number:
         limit:
           default: 25
-        name:
-          default: General note
     content:
       allowed:
         tags: 'p,strong,em,a,u,ol,ul,li,h1,h2,h3,br'

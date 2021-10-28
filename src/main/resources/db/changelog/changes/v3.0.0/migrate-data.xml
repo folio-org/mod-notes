@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+  <changeSet id="MODNOTES-182@@migrate-note-types" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="note_type"/>
+    </preConditions>
+    <sqlFile path="sql/migrate-types.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@migrate-links" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="note_data"/>
+    </preConditions>
+    <sqlFile path="sql/migrate-links.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@migrate-notes" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="note_data"/>
+    </preConditions>
+    <sqlFile path="sql/migrate-notes.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@migrate-note-links" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="note_data"/>
+    </preConditions>
+    <sqlFile path="sql/migrate-note-links.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@drop-note-data-table" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="note_data"/>
+    </preConditions>
+    <dropTable tableName="note_data" cascadeConstraints="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@drop-note-type-table" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <tableExists tableName="note_type"/>
+    </preConditions>
+    <dropTable tableName="note_type" cascadeConstraints="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@drop-note-view" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <viewExists viewName="note_view"/>
+    </preConditions>
+    <dropView viewName="note_view"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@drop-note-type-view" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <viewExists viewName="note_type_view"/>
+    </preConditions>
+    <dropView viewName="note_type_view"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@drop-update-type-id-function" author="Pavlo_Smahin">
+    <sqlFile path="sql/drop-update-type-id-function.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@drop-update-search-content-function" author="Pavlo_Smahin">
+    <sqlFile path="sql/drop-update-search-content-function.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+</databaseChangeLog>

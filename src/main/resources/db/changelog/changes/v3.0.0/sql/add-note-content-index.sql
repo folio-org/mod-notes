@@ -1,0 +1,1 @@
+CREATE INDEX idx_note_content ON note USING gin (indexed_content gin_trgm_ops);
