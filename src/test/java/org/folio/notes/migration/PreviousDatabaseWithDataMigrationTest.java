@@ -6,7 +6,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
 
-public class PreviousDatabaseWithDataMigrationTest extends MigrationTestBase {
+class PreviousDatabaseWithDataMigrationTest extends MigrationTestBase {
 
   @Sql(
     executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD,

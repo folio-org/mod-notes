@@ -8,7 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
 @SpringBootTest
-public class ModNotesApplicationTest {
+class ModNotesApplicationTest {
 
   @Autowired
   private ApplicationContext applicationContext;

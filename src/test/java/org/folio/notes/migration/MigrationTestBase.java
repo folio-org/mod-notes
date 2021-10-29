@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import org.folio.notes.TestBase;
 
-public abstract class MigrationTestBase extends TestBase {
+abstract class MigrationTestBase extends TestBase {
 
   @BeforeAll
   static void beforeAll() {
