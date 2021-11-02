@@ -1,0 +1,1 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA public;
