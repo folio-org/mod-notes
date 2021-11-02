@@ -1,0 +1,46 @@
+link:
+  type: object
+  title: Note link
+  description: Link to object associated with a note
+  properties:
+    id:
+      type: string
+      description: Id of object linked to note
+    type:
+      type: string
+      description: Type of object linked to note
+  required:
+    - id
+    - type
+  example:
+    id: 1234-5678
+    type: package
+
+linkStatusChange:
+  type: string
+  enum: [ ASSIGNED, UNASSIGNED ]
+
+noteLinkUpdate:
+  type: object
+  description: A note link
+  properties:
+    id:
+      description: A UUID identifying a note
+      $ref: 'common.yaml#/uuid'
+    status:
+      description: New status for link to this note
+      $ref: '#/linkStatusChange'
+  required:
+    - id
+    - status
+
+noteLinkUpdateCollection:
+  type: object
+  description: Collection of note links
+  properties:
+    notes:
+      type: array
+      items:
+        $ref: '#/noteLinkUpdate'
+  required:
+    - notes

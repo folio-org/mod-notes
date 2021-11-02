@@ -2,7 +2,7 @@
 folio:
   tenant:
     validation:
-      enabled: true
+      enabled: false
   logging:
     request:
       enabled: true
