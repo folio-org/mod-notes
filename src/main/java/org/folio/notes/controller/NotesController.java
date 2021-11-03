@@ -7,15 +7,16 @@ import org.springframework.http.ResponseEntity;
 
 import org.folio.notes.domain.dto.Note;
 import org.folio.notes.domain.dto.NoteCollection;
-import org.folio.notes.domain.dto.NoteLinkCollection;
+import org.folio.notes.domain.dto.NoteLinkUpdateCollection;
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.rest.resource.NotesApi;
 
 public class NotesController implements NotesApi {
 
   @Override
-  public ResponseEntity<Void> assignLinkToNotes(String objectType, String objectId, NoteLinkCollection noteLinkCollection) {
-    return NotesApi.super.assignLinkToNotes(objectType, objectId, noteLinkCollection);
+  public ResponseEntity<Void> assignLinkToNotes(String objectType, String objectId,
+                                                NoteLinkUpdateCollection noteLinkUpdateCollection) {
+    return NotesApi.super.assignLinkToNotes(objectType, objectId, noteLinkUpdateCollection);
   }
 
   @Override
