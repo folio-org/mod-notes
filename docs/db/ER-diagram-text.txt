@@ -1,0 +1,42 @@
+Table "link" {
+  "id" uuid [pk, not null]
+  "object_id" "character varying(255)" [not null]
+  "object_type" "character varying(255)" [not null]
+}
+
+Table "note" {
+  "id" uuid [pk, not null]
+  "title" "character varying(255)" [not null]
+  "content" "text"
+  "indexed_content" "text"
+  "domain" "character varying(255)" [not null]
+  "type_id" uuid [not null]
+  "created_by" uuid
+  "created_date" timestamp [not null]
+  "updated_by" uuid
+  "updated_date" timestamp
+}
+
+Table "note_link" {
+  "note_id" uuid [not null]
+  "link_id" uuid [not null]
+
+Indexes {
+  (note_id, link_id) [pk]
+}
+}
+
+Table "type" {
+  "id" uuid [pk, not null]
+  "name" "character varying(255)" [not null]
+  "created_by" uuid
+  "created_date" timestamp [not null]
+  "updated_by" uuid
+  "updated_date" timestamp
+}
+
+Ref:"type"."id" < "note"."type_id"
+
+Ref:"link"."id" < "note_link"."link_id"
+
+Ref:"note"."id" < "note_link"."note_id"

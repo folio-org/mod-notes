@@ -1,0 +1,53 @@
+note:
+  type: object
+  description: Notes about all kind of objects
+  properties:
+    id:
+      $ref: 'common.yaml#/uuid'
+      description: Unique generated identifier for the note
+    typeId:
+      $ref: 'common.yaml#/uuid'
+      description: Type id of note
+    type:
+      type: string
+      description: Type of note (configured in settings)
+    title:
+      type: string
+      description: Note title
+    domain:
+      type: string
+      description: Domain associated with this note
+    content:
+      type: string
+      description: Content of the note
+    links:
+      type: array
+      description: Collection of links to associated objects
+      items:
+        $ref: 'link.yaml#/link'
+    creator:
+      $ref: 'common.yaml#/uuid'
+    updater:
+      $ref: 'common.yaml#/uuid'
+    metadata:
+      $ref: 'common.yaml#/metadata'
+  required:
+    - typeId
+    - domain
+    - title
+
+noteCollection:
+  type: object
+  title: Collection of notes
+  description: Collection of notes
+  properties:
+    notes:
+      type: array
+      items:
+        $ref: '#/note'
+    totalRecords:
+      type: integer
+      readOnly: true
+      description: Total amount of notes
+  required:
+    - notes
