@@ -1,3 +1,6 @@
+## 2.13.1 2021-11-12
+* MODNOTES-190 Fix permissions for note-types
+
 ## 2.13.0 2021-10-04
 * MODNOTES-172 Add script to update function update_search_content()
 
