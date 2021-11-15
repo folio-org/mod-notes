@@ -30,7 +30,7 @@ public class TypeServiceImpl implements TypeService {
   private String defaultNoteTypeName;
 
   @Value("${folio.notes.types.number.limit.default}")
-  private final int noteTypesNumberLimit;
+  private Integer noteTypesNumberLimit;
 
   private final TypeRepository repository;
   private final TypeMapper mapper;
