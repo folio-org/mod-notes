@@ -1,25 +1,33 @@
-package org.folio.notes.sevice.impl;
+package org.folio.notes.service.impl;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.persistence.EntityNotFoundException;
-import javax.ws.rs.BadRequestException;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import org.folio.notes.domain.dto.Metadata;
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.NoteTypeCollection;
+import org.folio.notes.domain.entity.TypeEntity;
 import org.folio.notes.domain.repository.TypeRepository;
+import org.folio.notes.exception.TypesLimitReached;
 import org.folio.notes.mapper.TypeMapper;
-import org.folio.notes.sevice.TypeService;
+import org.folio.notes.service.TypeService;
 import org.folio.spring.data.OffsetRequest;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TypeServiceImpl implements TypeService {
+
+  @Value("${folio.notes.types.default.name}")
+  private String defaultNoteTypeName;
 
   @Value("${folio.notes.types.number.limit.default}")
   private final int noteTypesNumberLimit;
@@ -65,6 +73,20 @@ public class TypeServiceImpl implements TypeService {
       .ifPresentOrElse(repository::delete, throwNotFoundById(id));
   }
 
+  @Override
+  public void populateDefaultType() {
+    if (repository.count() == 0) {
+      NoteType type = new NoteType()
+        .name(defaultNoteTypeName)
+        .metadata(new Metadata()
+          .createdDate(OffsetDateTime.now())
+          .updatedDate(OffsetDateTime.now()));
+
+      TypeEntity savedType = repository.save(mapper.toEntity(type));
+      log.info("Added default note type '{}'", savedType.getName());
+    }
+  }
+
   private Runnable throwNotFoundById(UUID id) {
     return () -> {
       throw notFound(id);
@@ -77,7 +99,7 @@ public class TypeServiceImpl implements TypeService {
 
   private void validateNoteTypeLimit() {
     if (repository.count() >= noteTypesNumberLimit) {
-      throw new BadRequestException("Maximum number of note types allowed is " + noteTypesNumberLimit);
+      throw new TypesLimitReached(noteTypesNumberLimit);
     }
   }
 }

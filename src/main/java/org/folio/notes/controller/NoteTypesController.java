@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.NoteTypeCollection;
 import org.folio.notes.rest.resource.NoteTypesApi;
-import org.folio.notes.sevice.TypeService;
+import org.folio.notes.service.TypeService;
 
 @RestController
 @RequiredArgsConstructor
