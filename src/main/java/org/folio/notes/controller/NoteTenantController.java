@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.folio.notes.service.TypeService;
+import org.folio.notes.service.NoteTypesService;
 import org.folio.spring.controller.TenantController;
 import org.folio.spring.service.TenantService;
 import org.folio.tenant.domain.dto.TenantAttributes;
@@ -16,18 +16,18 @@ import org.folio.tenant.domain.dto.TenantAttributes;
 @RequestMapping(value = "/_/")
 public class NoteTenantController extends TenantController {
 
-  private final TypeService typeService;
+  private final NoteTypesService noteTypesService;
 
-  public NoteTenantController(TenantService tenantService, TypeService typeService) {
+  public NoteTenantController(TenantService tenantService, NoteTypesService noteTypesService) {
     super(tenantService);
-    this.typeService = typeService;
+    this.noteTypesService = noteTypesService;
   }
 
   @Override
   public ResponseEntity<String> postTenant(@Valid TenantAttributes tenantAttributes) {
     ResponseEntity<String> responseEntity = super.postTenant(tenantAttributes);
     if (responseEntity.getStatusCode().value() == HttpStatus.SC_OK) {
-      typeService.populateDefaultType();
+      noteTypesService.populateDefaultType();
     }
     return responseEntity;
   }

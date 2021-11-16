@@ -43,7 +43,7 @@ public class NoteEntity extends AuditableEntity {
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "type_id", nullable = false)
-  private TypeEntity type;
+  private NoteTypeEntity type;
 
   @JoinTable(name = "note_link",
     joinColumns = @JoinColumn(name = "note_id", referencedColumnName = "id"),

@@ -10,39 +10,39 @@ import org.springframework.web.bind.annotation.RestController;
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.NoteTypeCollection;
 import org.folio.notes.rest.resource.NoteTypesApi;
-import org.folio.notes.service.TypeService;
+import org.folio.notes.service.NoteTypesService;
 
 @RestController
 @RequiredArgsConstructor
 public class NoteTypesController implements NoteTypesApi {
 
-  private final TypeService typeService;
+  private final NoteTypesService noteTypesService;
 
   @Override
   public ResponseEntity<NoteType> createNoteType(NoteType noteType) {
-    NoteType newType = typeService.createType(noteType);
+    NoteType newType = noteTypesService.createNoteType(noteType);
     return ResponseEntity.created(URI.create("/note-types/" + newType.getId())).body(newType);
   }
 
   @Override
   public ResponseEntity<Void> deleteNoteType(UUID id) {
-    typeService.removeTypeById(id);
+    noteTypesService.removeNoteTypeById(id);
     return ResponseEntity.noContent().build();
   }
 
   @Override
   public ResponseEntity<NoteType> getNoteType(UUID id) {
-    return ResponseEntity.ok(typeService.fetchById(id));
+    return ResponseEntity.ok(noteTypesService.getById(id));
   }
 
   @Override
   public ResponseEntity<NoteTypeCollection> getNoteTypeCollection(String query, Integer offset, Integer limit) {
-    return ResponseEntity.ok(typeService.fetchTypeCollection(query, offset, limit));
+    return ResponseEntity.ok(noteTypesService.getNoteTypesCollection(query, offset, limit));
   }
 
   @Override
   public ResponseEntity<Void> updateNoteType(UUID id, NoteType noteType) {
-    typeService.updateType(id, noteType);
+    noteTypesService.updateNoteType(id, noteType);
     return ResponseEntity.noContent().build();
   }
 }

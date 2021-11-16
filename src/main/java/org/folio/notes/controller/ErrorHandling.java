@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import org.folio.notes.exception.TypesLimitReached;
+import org.folio.notes.exception.NoteTypesLimitReached;
 import org.folio.tenant.domain.dto.Errors;
 
 @RestControllerAdvice
@@ -25,7 +25,7 @@ public class ErrorHandling {
   }
 
   @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-  @ExceptionHandler(TypesLimitReached.class)
+  @ExceptionHandler(NoteTypesLimitReached.class)
   public Errors handleConstraintViolationException(ConstraintViolationException e) {
     return createInternalError(e.getMessage(), VALIDATION_ERROR);
   }
