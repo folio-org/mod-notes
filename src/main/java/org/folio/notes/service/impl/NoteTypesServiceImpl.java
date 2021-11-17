@@ -1,6 +1,5 @@
 package org.folio.notes.service.impl;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 import javax.persistence.EntityNotFoundException;
 
@@ -9,13 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import org.folio.notes.domain.dto.Metadata;
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.NoteTypeCollection;
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.domain.repository.NoteTypesRepository;
 import org.folio.notes.exception.NoteTypesLimitReached;
 import org.folio.notes.mapper.NoteTypesMapper;
+import org.folio.notes.service.ConfigurationService;
 import org.folio.notes.service.NoteTypesService;
 import org.folio.spring.data.OffsetRequest;
 
@@ -27,9 +26,12 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   @Value("${folio.notes.types.default.name}")
   private String defaultNoteTypeName;
 
-  @Value("${folio.notes.types.number.limit.default}")
-  private Integer noteTypesNumberLimit;
+  @Value("${folio.notes.types.default.limit}")
+  private String defaultNoteTypeLimit;
 
+  private static final String NOTE_TYPE_LIMIT_CONFIG = "note-type-limit";
+
+  private final ConfigurationService configurationService;
   private final NoteTypesRepository repository;
   private final NoteTypesMapper mapper;
 
@@ -67,13 +69,10 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   @Override
   public void populateDefaultType() {
     if (repository.count() == 0) {
-      NoteType type = new NoteType()
-        .name(defaultNoteTypeName)
-        .metadata(new Metadata()
-          .createdDate(OffsetDateTime.now())
-          .updatedDate(OffsetDateTime.now()));
+      NoteTypeEntity noteType = new NoteTypeEntity();
+      noteType.setName(defaultNoteTypeName);
 
-      NoteTypeEntity savedType = repository.save(mapper.toEntity(type));
+      NoteTypeEntity savedType = repository.save(noteType);
       log.info("Added default note type '{}'", savedType.getName());
     }
   }
@@ -89,8 +88,10 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   }
 
   private void validateNoteTypeLimit() {
-    if (repository.count() >= noteTypesNumberLimit) {
-      throw new NoteTypesLimitReached(noteTypesNumberLimit);
+    int limit = Integer.parseInt(configurationService.getConfigValue(NOTE_TYPE_LIMIT_CONFIG, defaultNoteTypeLimit));
+
+    if (repository.count() >= limit) {
+      throw new NoteTypesLimitReached(limit);
     }
   }
 }

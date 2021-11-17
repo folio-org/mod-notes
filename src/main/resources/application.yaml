@@ -17,9 +17,7 @@ folio:
     types:
       default:
         name: General note
-      number:
-        limit:
-          default: 25
+        limit: 25
     content:
       allowed:
         tags: 'p,strong,em,a,u,ol,ul,li,h1,h2,h3,br'
