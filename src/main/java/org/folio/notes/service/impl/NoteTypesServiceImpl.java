@@ -23,25 +23,25 @@ import org.folio.spring.data.OffsetRequest;
 @RequiredArgsConstructor
 public class NoteTypesServiceImpl implements NoteTypesService {
 
-  @Value("${folio.notes.types.default.name}")
-  private String defaultNoteTypeName;
-
-  @Value("${folio.notes.types.default.limit}")
-  private String defaultNoteTypeLimit;
-
   private static final String NOTE_TYPE_LIMIT_CONFIG = "note-type-limit";
 
   private final ConfigurationService configurationService;
   private final NoteTypesRepository repository;
   private final NoteTypesMapper mapper;
 
+  @Value("${folio.notes.types.default.name}")
+  private String defaultNoteTypeName;
+
+  @Value("${folio.notes.types.default.limit}")
+  private String defaultNoteTypeLimit;
+
   @Override
-  public NoteTypeCollection getNoteTypesCollection(String query, Integer offset, Integer limit) {
+  public NoteTypeCollection getNoteTypeCollection(String query, Integer offset, Integer limit) {
     return mapper.toDtoCollection(repository.findByCQL(query, OffsetRequest.of(offset, limit)));
   }
 
   @Override
-  public NoteType getById(UUID id) {
+  public NoteType getNoteType(UUID id) {
     return repository.findById(id)
       .map(mapper::toDto)
       .orElseThrow(() -> notFound(id));
@@ -61,7 +61,7 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   }
 
   @Override
-  public void removeNoteTypeById(UUID id) {
+  public void removeNoteType(UUID id) {
     repository.findById(id)
       .ifPresentOrElse(repository::delete, throwNotFoundById(id));
   }

@@ -26,18 +26,18 @@ public class NoteTypesController implements NoteTypesApi {
 
   @Override
   public ResponseEntity<Void> deleteNoteType(UUID id) {
-    noteTypesService.removeNoteTypeById(id);
+    noteTypesService.removeNoteType(id);
     return ResponseEntity.noContent().build();
   }
 
   @Override
   public ResponseEntity<NoteType> getNoteType(UUID id) {
-    return ResponseEntity.ok(noteTypesService.getById(id));
+    return ResponseEntity.ok(noteTypesService.getNoteType(id));
   }
 
   @Override
   public ResponseEntity<NoteTypeCollection> getNoteTypeCollection(String query, Integer offset, Integer limit) {
-    return ResponseEntity.ok(noteTypesService.getNoteTypesCollection(query, offset, limit));
+    return ResponseEntity.ok(noteTypesService.getNoteTypeCollection(query, offset, limit));
   }
 
   @Override
