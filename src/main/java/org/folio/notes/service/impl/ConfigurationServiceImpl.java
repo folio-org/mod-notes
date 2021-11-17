@@ -26,7 +26,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
     if (configurations.getTotalRecords() == 0) {
       return defaultValue;
     } else {
-      Configuration configuration = configurations.getConfigurations().get(0);
+      Configuration configuration = configurations.getConfigs().get(0);
       return configuration.getValue();
     }
   }

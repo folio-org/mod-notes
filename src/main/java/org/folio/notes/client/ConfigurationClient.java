@@ -34,7 +34,7 @@ public interface ConfigurationClient {
 
   @Value
   class ConfigurationCollection {
-    List<Configuration> configurations;
+    List<Configuration> configs;
     Integer totalRecords;
   }
 }

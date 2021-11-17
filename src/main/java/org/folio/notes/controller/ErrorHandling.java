@@ -5,7 +5,6 @@ import static org.folio.notes.util.ErrorsHelper.ErrorCode.VALIDATION_ERROR;
 import static org.folio.notes.util.ErrorsHelper.createInternalError;
 
 import javax.persistence.EntityNotFoundException;
-import javax.validation.ConstraintViolationException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,7 +25,7 @@ public class ErrorHandling {
 
   @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
   @ExceptionHandler(NoteTypesLimitReached.class)
-  public Errors handleConstraintViolationException(ConstraintViolationException e) {
+  public Errors handleConstraintViolationException(NoteTypesLimitReached e) {
     return createInternalError(e.getMessage(), VALIDATION_ERROR);
   }
 
