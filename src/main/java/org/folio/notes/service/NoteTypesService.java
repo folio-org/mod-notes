@@ -18,4 +18,5 @@ public interface NoteTypesService {
   void removeNoteType(UUID id);
 
   void populateDefaultType();
+  
 }
