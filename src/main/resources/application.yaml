@@ -15,9 +15,9 @@ folio:
       module:
         name: NOTES
     types:
-      number:
-        limit:
-          default: 25
+      default:
+        name: General note
+        limit: 25
     content:
       allowed:
         tags: 'p,strong,em,a,u,ol,ul,li,h1,h2,h3,br'

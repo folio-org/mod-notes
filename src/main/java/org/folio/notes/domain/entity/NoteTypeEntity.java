@@ -15,7 +15,7 @@ import lombok.ToString;
   @UniqueConstraint(name = "uc_type_name", columnNames = {"name"})
 })
 @Getter @Setter @ToString(onlyExplicitlyIncluded = true)
-public class TypeEntity extends AuditableEntity {
+public class NoteTypeEntity extends AuditableEntity {
 
   @NotBlank
   @ToString.Include
