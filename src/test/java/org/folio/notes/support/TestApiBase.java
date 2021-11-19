@@ -44,7 +44,7 @@ import org.folio.tenant.domain.dto.TenantAttributes;
 @ContextConfiguration
 @AutoConfigureMockMvc
 @SpringBootTest
-public abstract class TestBase {
+public abstract class TestApiBase {
 
   protected static final String TOKEN =
     "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkaWt1X2FkbWluIiwidXNlcl9pZCI6IjFkM2I1OGNiLTA3YjUtNWZjZC04YTJhLTNjZTA2YTBlYjkwZiIsImlhdCI6MTYxNjQyMDM5MywidGVuYW50IjoiZGlrdSJ9.2nvEYQBbJP1PewEgxixBWLHSX_eELiBEBpjufWiJZRs";

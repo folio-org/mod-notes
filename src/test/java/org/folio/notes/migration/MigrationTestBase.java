@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
-import org.folio.notes.support.TestBase;
+import org.folio.notes.TestBase;
 
 abstract class MigrationTestBase extends TestBase {
 

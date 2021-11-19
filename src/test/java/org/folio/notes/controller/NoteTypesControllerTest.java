@@ -33,10 +33,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.exception.NoteTypesLimitReached;
-import org.folio.notes.support.TestBase;
+import org.folio.notes.support.TestApiBase;
 import org.folio.spring.cql.CqlQueryValidationException;
 
-class NoteTypesControllerTest extends TestBase {
+class NoteTypesControllerTest extends TestApiBase {
 
   private static final String BASE_URL = "/note-types";
 
