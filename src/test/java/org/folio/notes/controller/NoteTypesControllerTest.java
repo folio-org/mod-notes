@@ -5,12 +5,14 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -159,12 +162,17 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(status().isCreated())
       .andExpect(jsonPath("$.name", is(name)))
       .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
-      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty())
+      .andExpect(header().string(HttpHeaders.LOCATION,
+        matchesRegex(BASE_URL + "/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")));
+
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    assertEquals(1, rowsInTable);
   }
 
   @Test
   @DisplayName("Create new note-type with use default limit if config doesn't exist")
-  void createNewNoteTypeWithUsedDefaultLimit() throws Exception {
+  void createNewNoteTypeWithUseDefaultLimit() throws Exception {
     setUpConfigurationLimit(" ");
 
     String name = "First";
@@ -176,6 +184,9 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.name", is(name)))
       .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    assertEquals(1, rowsInTable);
   }
 
   @Test
@@ -205,6 +216,9 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(NoteTypesLimitReached.class))
       .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is " + limit)));
+
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    assertEquals(0, rowsInTable);
   }
 
 

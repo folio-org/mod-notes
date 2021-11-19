@@ -43,8 +43,6 @@ import org.folio.tenant.domain.dto.TenantAttributes;
 @SpringBootTest
 public abstract class TestApiBase extends TestBase {
 
-  protected static final String TOKEN =
-    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkaWt1X2FkbWluIiwidXNlcl9pZCI6IjFkM2I1OGNiLTA3YjUtNWZjZC04YTJhLTNjZTA2YTBlYjkwZiIsImlhdCI6MTYxNjQyMDM5MywidGVuYW50IjoiZGlrdSJ9.2nvEYQBbJP1PewEgxixBWLHSX_eELiBEBpjufWiJZRs";
   protected static final String TENANT = "test";
   protected static final String USER_ID = "77777777-7777-7777-7777-777777777777";
 
@@ -92,7 +90,6 @@ public abstract class TestApiBase extends TestBase {
 
     httpHeaders.setContentType(APPLICATION_JSON);
     httpHeaders.add(XOkapiHeaders.TENANT, TENANT);
-    httpHeaders.add(XOkapiHeaders.TOKEN, TOKEN);
     httpHeaders.add(XOkapiHeaders.USER_ID, USER_ID);
 
     return httpHeaders;
