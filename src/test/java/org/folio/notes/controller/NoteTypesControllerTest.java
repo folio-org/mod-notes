@@ -65,8 +65,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @Test
   @DisplayName("Find all note-types")
   void returnCollection() throws Exception {
-    List<NoteTypeEntity> noteTypes = getNoteTypeList();
-    databaseHelper.saveNoteTypes(noteTypes, TENANT);
+    List<NoteTypeEntity> noteTypes = createListOfNoteTypes();
 
     mockMvc.perform(get(BASE_URL).headers(defaultHeaders()))
       .andExpect(status().isOk())
@@ -80,8 +79,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @Test
   @DisplayName("Find all note-types with sort by label and limited with offset")
   void returnCollectionSortedByLabelAndLimitedWithOffset() throws Exception {
-    List<NoteTypeEntity> noteTypes = getNoteTypeList();
-    databaseHelper.saveNoteTypes(noteTypes, TENANT);
+    List<NoteTypeEntity> noteTypes = createListOfNoteTypes();
 
     var cqlQuery = "(cql.allRecords=1)sortby name/sort.descending";
     var limit = "1";
@@ -97,8 +95,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @Test
   @DisplayName("Find all note-types by name")
   void returnCollectionByName() throws Exception {
-    List<NoteTypeEntity> noteTypes = getNoteTypeList();
-    databaseHelper.saveNoteTypes(noteTypes, TENANT);
+    List<NoteTypeEntity> noteTypes = createListOfNoteTypes();
 
     var cqlQuery = "name=third";
     mockMvc.perform(get(BASE_URL + "?query={cql}", cqlQuery).headers(defaultHeaders()))
@@ -207,7 +204,7 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is " + limit)));
 
     int rowsInTable = databaseHelper.countRowsInTable(TENANT);
-    assertEquals(0, rowsInTable);
+    assertEquals(Integer.parseInt(limit), rowsInTable);
   }
 
 
@@ -318,12 +315,14 @@ class NoteTypesControllerTest extends TestApiBase {
     return noteType;
   }
 
-  private List<NoteTypeEntity> getNoteTypeList() {
-    return List.of(
+  private List<NoteTypeEntity> createListOfNoteTypes() {
+    List<NoteTypeEntity> noteTypes = List.of(
       NoteTypeEntity.builder().name("first").build(),
       NoteTypeEntity.builder().name("second").build(),
       NoteTypeEntity.builder().name("third").build()
     );
+    databaseHelper.saveNoteTypes(noteTypes, TENANT);
+    return noteTypes;
   }
 
   private MockHttpServletRequestBuilder postNoteType(NoteType noteType) {
