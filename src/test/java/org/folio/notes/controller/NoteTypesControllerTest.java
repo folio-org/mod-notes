@@ -65,10 +65,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @Test
   @DisplayName("Find all note-types")
   void returnCollection() throws Exception {
-    List<NoteTypeEntity> noteTypes = List.of(
-      NoteTypeEntity.builder().name("first").build(),
-      NoteTypeEntity.builder().name("second").build()
-    );
+    List<NoteTypeEntity> noteTypes = getNoteTypeList();
     databaseHelper.saveNoteTypes(noteTypes, TENANT);
 
     mockMvc.perform(get(BASE_URL).headers(defaultHeaders()))
@@ -77,17 +74,13 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.noteTypes.[1]", not(emptyOrNullString())))
       .andExpect(jsonPath("$.noteTypes.[0].name", is(noteTypes.get(0).getName())))
       .andExpect(jsonPath("$.noteTypes.[1].name", is(noteTypes.get(1).getName())))
-      .andExpect(jsonPath("$.totalRecords").value(2));
+      .andExpect(jsonPath("$.totalRecords").value(noteTypes.size()));
   }
 
   @Test
   @DisplayName("Find all note-types with sort by label and limited with offset")
   void returnCollectionSortedByLabelAndLimitedWithOffset() throws Exception {
-    List<NoteTypeEntity> noteTypes = List.of(
-      NoteTypeEntity.builder().name("first").build(),
-      NoteTypeEntity.builder().name("second").build(),
-      NoteTypeEntity.builder().name("third").build()
-    );
+    List<NoteTypeEntity> noteTypes = getNoteTypeList();
     databaseHelper.saveNoteTypes(noteTypes, TENANT);
 
     var cqlQuery = "(cql.allRecords=1)sortby name/sort.descending";
@@ -104,11 +97,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @Test
   @DisplayName("Find all note-types by name")
   void returnCollectionByName() throws Exception {
-    List<NoteTypeEntity> noteTypes = List.of(
-      NoteTypeEntity.builder().name("first").build(),
-      NoteTypeEntity.builder().name("second").build(),
-      NoteTypeEntity.builder().name("third").build()
-    );
+    List<NoteTypeEntity> noteTypes = getNoteTypeList();
     databaseHelper.saveNoteTypes(noteTypes, TENANT);
 
     var cqlQuery = "name=third";
@@ -327,6 +316,14 @@ class NoteTypesControllerTest extends TestApiBase {
 
     databaseHelper.saveNoteType(noteType, TENANT);
     return noteType;
+  }
+
+  private List<NoteTypeEntity> getNoteTypeList() {
+    return List.of(
+      NoteTypeEntity.builder().name("first").build(),
+      NoteTypeEntity.builder().name("second").build(),
+      NoteTypeEntity.builder().name("third").build()
+    );
   }
 
   private MockHttpServletRequestBuilder postNoteType(NoteType noteType) {
