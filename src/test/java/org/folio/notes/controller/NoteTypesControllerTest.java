@@ -154,7 +154,6 @@ class NoteTypesControllerTest extends TestApiBase {
   void createNewNoteType() throws Exception {
     String name = "First";
     NoteType noteType = new NoteType().name(name);
-    noteType.setId(UUID.randomUUID());
 
     mockMvc.perform(postNoteType(noteType))
       .andExpect(status().isCreated())
@@ -185,7 +184,7 @@ class NoteTypesControllerTest extends TestApiBase {
     NoteTypeEntity existNoteType = createNoteType("DuplicateName");
 
     NoteType duplicateNoteType = new NoteType().name(existNoteType.getName());
-    duplicateNoteType.setId(UUID.randomUUID());
+
     mockMvc.perform(postNoteType(duplicateNoteType))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(DataIntegrityViolationException.class))
@@ -201,7 +200,6 @@ class NoteTypesControllerTest extends TestApiBase {
     NoteTypeEntity existNoteType = createNoteType("LimitReached");
 
     NoteType duplicateNoteType = new NoteType().name(existNoteType.getName());
-    duplicateNoteType.setId(UUID.randomUUID());
 
     mockMvc.perform(postNoteType(duplicateNoteType))
       .andExpect(status().isUnprocessableEntity())
