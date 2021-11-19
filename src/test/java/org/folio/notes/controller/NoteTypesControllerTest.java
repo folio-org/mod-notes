@@ -163,7 +163,6 @@ class NoteTypesControllerTest extends TestApiBase {
 
     String name = "First";
     NoteType noteType = new NoteType().name(name);
-    noteType.setId(UUID.randomUUID());
 
     mockMvc.perform(postNoteType(noteType))
       .andExpect(status().isCreated())
