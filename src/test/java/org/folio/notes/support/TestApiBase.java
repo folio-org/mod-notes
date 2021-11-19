@@ -4,8 +4,9 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import static org.folio.notes.client.ConfigurationClient.*;
+import static org.folio.notes.client.ConfigurationClient.ConfigurationCollection;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -25,18 +26,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.folio.notes.TestBase;
 import org.folio.notes.client.ConfigurationClient;
 import org.folio.notes.client.ConfigurationClient.Configuration;
 import org.folio.spring.FolioModuleMetadata;
 import org.folio.spring.integration.XOkapiHeaders;
-import org.folio.spring.liquibase.FolioSpringLiquibase;
 import org.folio.tenant.domain.dto.TenantAttributes;
 
 @Testcontainers
@@ -44,7 +41,7 @@ import org.folio.tenant.domain.dto.TenantAttributes;
 @ContextConfiguration
 @AutoConfigureMockMvc
 @SpringBootTest
-public abstract class TestApiBase {
+public abstract class TestApiBase extends TestBase {
 
   protected static final String TOKEN =
     "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkaWt1X2FkbWluIiwidXNlcl9pZCI6IjFkM2I1OGNiLTA3YjUtNWZjZC04YTJhLTNjZTA2YTBlYjkwZiIsImlhdCI6MTYxNjQyMDM5MywidGVuYW50IjoiZGlrdSJ9.2nvEYQBbJP1PewEgxixBWLHSX_eELiBEBpjufWiJZRs";
@@ -53,9 +50,6 @@ public abstract class TestApiBase {
 
   private static final ObjectMapper OBJECT_MAPPER;
 
-  @Container
-  protected static PostgreSQLContainer<?> postgreDBContainer = new PostgreSQLContainer<>("postgres:12-alpine");
-
   static {
     postgreDBContainer.start();
     OBJECT_MAPPER = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL)
@@ -63,10 +57,6 @@ public abstract class TestApiBase {
       .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
   }
 
-  @Autowired
-  protected FolioSpringLiquibase liquibase;
-  @Autowired
-  protected JdbcTemplate jdbc;
   @Autowired
   protected MockMvc mockMvc;
   @Autowired
@@ -108,16 +98,13 @@ public abstract class TestApiBase {
     return httpHeaders;
   }
 
-  @DynamicPropertySource
-  static void postgresProperties(DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", postgreDBContainer::getJdbcUrl);
-    registry.add("spring.datasource.username", postgreDBContainer::getUsername);
-    registry.add("spring.datasource.password", postgreDBContainer::getPassword);
-  }
-
-  protected void setUpLimitConfigurationClient(String limit) {
-    Configuration configuration = new Configuration("1", "mod-notes", "note-type-limit", limit);
-    ConfigurationCollection configs = new ConfigurationCollection(List.of(configuration), 1);
+  protected void setUpConfigurationLimit(String limit) {
+    List<Configuration> configurations = new ArrayList<>();
+    if(!limit.isBlank()){
+      Configuration configuration = new Configuration("1", "mod-notes", "note-type-limit", limit);
+      configurations.add(configuration);
+    }
+    ConfigurationCollection configs = new ConfigurationCollection(configurations, configurations.size());
 
     Mockito.doReturn(configs).when(configurationClient).getConfiguration("module==mod-notes and configName==note-type-limit");
   }

@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.ResultMatcher.matchAll;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,7 +44,7 @@ class NoteTypesControllerTest extends TestApiBase {
 
   @BeforeEach
   void setUp() {
-    setUpLimitConfigurationClient(defaultNoteTypeLimit);
+    setUpConfigurationLimit(defaultNoteTypeLimit);
     databaseHelper.clearTable(TENANT);
   }
 
@@ -70,14 +69,12 @@ class NoteTypesControllerTest extends TestApiBase {
     databaseHelper.saveNoteTypes(noteTypes, TENANT);
 
     mockMvc.perform(get(BASE_URL).headers(defaultHeaders()))
-      .andExpect(matchAll(
-        status().isOk(),
-        jsonPath("$.noteTypes.[0]", not(emptyOrNullString())),
-        jsonPath("$.noteTypes.[1]", not(emptyOrNullString())),
-        jsonPath("$.noteTypes.[0].name", is(noteTypes.get(0).getName())),
-        jsonPath("$.noteTypes.[1].name", is(noteTypes.get(1).getName())),
-        jsonPath("$.totalRecords").value(2)
-      ));
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.noteTypes.[0]", not(emptyOrNullString())))
+      .andExpect(jsonPath("$.noteTypes.[1]", not(emptyOrNullString())))
+      .andExpect(jsonPath("$.noteTypes.[0].name", is(noteTypes.get(0).getName())))
+      .andExpect(jsonPath("$.noteTypes.[1].name", is(noteTypes.get(1).getName())))
+      .andExpect(jsonPath("$.totalRecords").value(2));
   }
 
   @Test
@@ -95,12 +92,10 @@ class NoteTypesControllerTest extends TestApiBase {
     var offset = "1";
     mockMvc.perform(get(BASE_URL + "?limit={l}&offset={o}&query={cql}", limit, offset, cqlQuery)
         .headers(defaultHeaders()))
-      .andExpect(matchAll(
-        status().isOk(),
-        jsonPath("$.noteTypes.[0].name", is(noteTypes.get(1).getName())),
-        jsonPath("$.noteTypes.[1]").doesNotExist(),
-        jsonPath("$.totalRecords").value(3)
-      ));
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.noteTypes.[0].name", is(noteTypes.get(1).getName())))
+      .andExpect(jsonPath("$.noteTypes.[1]").doesNotExist())
+      .andExpect(jsonPath("$.totalRecords").value(3));
   }
 
   @Test
@@ -115,12 +110,10 @@ class NoteTypesControllerTest extends TestApiBase {
 
     var cqlQuery = "name=third";
     mockMvc.perform(get(BASE_URL + "?query={cql}", cqlQuery).headers(defaultHeaders()))
-      .andExpect(matchAll(
-        status().isOk(),
-        jsonPath("$.noteTypes.[0].name", is(noteTypes.get(2).getName())),
-        jsonPath("$.noteTypes.[1]").doesNotExist(),
-        jsonPath("$.totalRecords").value(1)
-      ));
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.noteTypes.[0].name", is(noteTypes.get(2).getName())))
+      .andExpect(jsonPath("$.noteTypes.[1]").doesNotExist())
+      .andExpect(jsonPath("$.totalRecords").value(1));
   }
 
   @Test
@@ -164,12 +157,26 @@ class NoteTypesControllerTest extends TestApiBase {
     noteType.setId(UUID.randomUUID());
 
     mockMvc.perform(postNoteType(noteType))
-      .andExpect(matchAll(
-        status().isCreated(),
-        jsonPath("$.name", is(name)),
-        jsonPath("$.metadata.createdByUserId").value(USER_ID),
-        jsonPath("$.metadata.createdDate").isNotEmpty()
-      ));
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.name", is(name)))
+      .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+  }
+
+  @Test
+  @DisplayName("Create new note-type with use default limit if config doesn't exist")
+  void createNewNoteTypeWithUsedDefaultLimit() throws Exception {
+    setUpConfigurationLimit(" ");
+
+    String name = "First";
+    NoteType noteType = new NoteType().name(name);
+    noteType.setId(UUID.randomUUID());
+
+    mockMvc.perform(postNoteType(noteType))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.name", is(name)))
+      .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
   }
 
   @Test
@@ -189,7 +196,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @DisplayName("Return 422 on post note-type with limit reached")
   void return422OnPostWithLimitReached() throws Exception {
     String limit = "1";
-    setUpLimitConfigurationClient(limit);
+    setUpConfigurationLimit(limit);
 
     NoteTypeEntity existNoteType = createNoteType("LimitReached");
 
@@ -211,12 +218,10 @@ class NoteTypesControllerTest extends TestApiBase {
     NoteTypeEntity existNoteType = createNoteType("ById");
 
     mockMvc.perform(getById(existNoteType.getId()))
-      .andExpect(matchAll(
-        status().isOk(),
-        jsonPath("$.id", is(existNoteType.getId().toString())),
-        jsonPath("$.name", is(existNoteType.getName())),
-        jsonPath("$.metadata.createdDate").isNotEmpty()
-      ));
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id", is(existNoteType.getId().toString())))
+      .andExpect(jsonPath("$.name", is(existNoteType.getName())))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
   }
 
   @Test
@@ -251,13 +256,11 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(status().isNoContent());
 
     mockMvc.perform(getById(existNoteType.getId()))
-      .andExpect(matchAll(
-        status().isOk(),
-        jsonPath("$.id", is(existNoteType.getId().toString())),
-        jsonPath("$.name", is(updatedNoteType.getName())),
-        jsonPath("$.metadata.updatedByUserId").value(USER_ID),
-        jsonPath("$.metadata.createdDate").isNotEmpty()
-      ));
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id", is(existNoteType.getId().toString())))
+      .andExpect(jsonPath("$.name", is(updatedNoteType.getName())))
+      .andExpect(jsonPath("$.metadata.updatedByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
   }
 
   @Test
