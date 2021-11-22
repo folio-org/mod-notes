@@ -116,14 +116,14 @@ paths:
         $ref: '#/components/requestBodies/NoteBody'
       responses:
         '201':
-          $ref: '#/components/responses/NoteType'
+          $ref: '#/components/responses/Note'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           description: Unexpected error
-  /note/{id}:
+  /notes/{id}:
     parameters:
       - $ref: '#/components/parameters/resourceId'
     get:
@@ -173,13 +173,13 @@ paths:
         '500':
           description: Unexpected error
 
-  /note-links/type/{objectType}/id/{objectId}/:
+  /note-links/type/{objectType}/id/{objectId}:
     parameters:
       - $ref: '#/components/parameters/objectType'
       - $ref: '#/components/parameters/objectId'
     put:
-      description: Add links to specified list of notes
-      operationId: assignLinkToNotes
+      description: Add or delete links to specified list of notes
+      operationId: updateLinks
       tags:
         - notes
       requestBody:
@@ -193,7 +193,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           description: Unexpected error
-  /note-links/domain/{domain}/type/{objectType}/id/{objectId}/:
+  /note-links/domain/{domain}/type/{objectType}/id/{objectId}:
     parameters:
       - $ref: '#/components/parameters/domain'
       - $ref: '#/components/parameters/objectType'
@@ -223,24 +223,21 @@ paths:
         - name: status
           in: query
           schema:
-            type: string
-            enum: [ assigned, unassigned, all ]
+            $ref: 'schemas/link.yaml#/linkStatusFilter'
             default: all
           required: false
           description: Filtering records by status. Possible values are ASSIGNED, UNASSIGNED, ALL.
         - name: orderBy
           in: query
           schema:
-            type: string
+            $ref: 'schemas/link.yaml#/notesOrderBy'
           required: false
-          description: Field by which notes are ordered. Possible values are status, title, content, linksNumber, noteType, updatedDate.
-            The default ascending sorting is applied for status, title, content, linksNumber, noteType parameters.
-            For updatedDate is descending. Explicit selection of sorting can be set by using order query parameter.
+          description: Field by which notes are ordered. Possible values are title, content, noteType, updatedDate.
+            The default ascending sorting is applied for title, content, noteType parameters. For updatedDate is descending.
         - name: order
           in: query
           schema:
-            type: string
-            enum: [ asc, desc ]
+            $ref: 'schemas/common.yaml#/orderDirection'
           required: false
           description: Indicates order of notes. Possible values asc, desc.
         - $ref: '#/components/parameters/offset'

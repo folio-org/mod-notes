@@ -20,15 +20,17 @@ note:
     content:
       type: string
       description: Content of the note
+    popUpOnCheckOut:
+      type: boolean
+      description: Flag that specify need of pop-up on check-out app
+    popUpOnUser:
+      type: boolean
+      description: Flag that specify need of pop-up on users app
     links:
       type: array
       description: Collection of links to associated objects
       items:
         $ref: 'link.yaml#/link'
-    creator:
-      $ref: 'common.yaml#/uuid'
-    updater:
-      $ref: 'common.yaml#/uuid'
     metadata:
       $ref: 'common.yaml#/metadata'
   required:

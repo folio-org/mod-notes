@@ -32,6 +32,10 @@ public class ErrorsHelper {
     return createErrors(createError(message, ErrorType.INTERNAL, errorCode));
   }
 
+  public static Errors createExternalError(String message, ErrorCode errorCode) {
+    return createErrors(createError(message, ErrorType.FOLIO_EXTERNAL_OR_UNDEFINED, errorCode));
+  }
+
   public enum ErrorType {
     INTERNAL("-1"),
     FOLIO_EXTERNAL_OR_UNDEFINED("-2"),
@@ -51,6 +55,7 @@ public class ErrorsHelper {
 
   public enum ErrorCode {
     VALIDATION_ERROR,
-    NOT_FOUND_ERROR
+    NOT_FOUND_ERROR,
+    INTERACTION_ERROR
   }
 }

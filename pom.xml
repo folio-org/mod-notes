@@ -30,10 +30,11 @@
     <folio-spring-base.version>2.0.0</folio-spring-base.version>
     <mapstruct.version>1.4.2.Final</mapstruct.version>
     <jsoup.version>1.14.3</jsoup.version>
+    <feign-annotation-error-decoder.version>11.7</feign-annotation-error-decoder.version>
 
     <!-- Test properties -->
     <wiremock.version>2.27.2</wiremock.version>
-    <testcontainers.version>1.16.0</testcontainers.version>
+    <testcontainers.version>1.16.2</testcontainers.version>
 
     <!-- Plugin properties-->
     <openapi.input.file>${project.basedir}/src/main/resources/swagger.api/notes.yml</openapi.input.file>
@@ -53,6 +54,16 @@
       <version>${folio-spring-base.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-cache</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>org.hibernate.validator</groupId>
       <artifactId>hibernate-validator</artifactId>
     </dependency>
@@ -65,6 +76,10 @@
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-jpamodelgen</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.module</groupId>
@@ -99,6 +114,11 @@
       <groupId>org.jsoup</groupId>
       <artifactId>jsoup</artifactId>
       <version>${jsoup.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.openfeign</groupId>
+      <artifactId>feign-annotation-error-decoder</artifactId>
+      <version>${feign-annotation-error-decoder.version}</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -206,7 +226,6 @@
                 <importMapping>errors=org.folio.tenant.domain.dto.Errors</importMapping>
               </importMappings>
               <configOptions>
-                <java8>true</java8>
                 <dateLibrary>java8</dateLibrary>
                 <interfaceOnly>true</interfaceOnly>
                 <useTags>true</useTags>
