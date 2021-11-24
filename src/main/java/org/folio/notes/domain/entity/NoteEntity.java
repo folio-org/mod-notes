@@ -1,8 +1,8 @@
 package org.folio.notes.domain.entity;
 
+import java.util.HashSet;
 import java.util.Set;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Index;
@@ -10,12 +10,33 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedAttributeNode;
+import javax.persistence.NamedEntityGraph;
+import javax.persistence.NamedSubgraph;
 import javax.persistence.Table;
 
 import lombok.Getter;
 import lombok.Setter;
 
+import org.folio.notes.domain.repository.NoteRepository;
+
 @Entity
+@NamedEntityGraph(
+  name = NoteRepository.NOTE_COLLECTION_GRAPH,
+  attributeNodes = {
+    @NamedAttributeNode(value = "type", subgraph = "type-subgraph"),
+    @NamedAttributeNode(value = "links")
+  },
+  subgraphs = {
+    @NamedSubgraph(
+      name = "type-subgraph",
+      attributeNodes = {
+        @NamedAttributeNode("id"),
+        @NamedAttributeNode("name")
+      }
+    )
+  }
+)
 @Table(name = "note", indexes = {
   @Index(name = "idx_note_content", columnList = "indexed_content"),
   @Index(name = "idx_note_type_id", columnList = "type_id")
@@ -48,7 +69,19 @@ public class NoteEntity extends AuditableEntity {
   @JoinTable(name = "note_link",
     joinColumns = @JoinColumn(name = "note_id", referencedColumnName = "id"),
     inverseJoinColumns = @JoinColumn(name = "link_id", referencedColumnName = "id"))
-  @ManyToMany(cascade = {CascadeType.ALL})
+  @ManyToMany
   private Set<LinkEntity> links;
 
+  public void addLink(LinkEntity link) {
+    if (links == null) {
+      links = new HashSet<>();
+    }
+    links.add(link);
+  }
+
+  public void deleteLink(LinkEntity link) {
+    if (links != null) {
+      links.remove(link);
+    }
+  }
 }

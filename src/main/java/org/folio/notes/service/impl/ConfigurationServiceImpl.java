@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import org.folio.notes.client.ConfigurationClient;
-import org.folio.notes.client.ConfigurationClient.Configuration;
-import org.folio.notes.client.ConfigurationClient.ConfigurationCollection;
+import org.folio.notes.client.ConfigurationClient.ConfigurationEntry;
+import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
 import org.folio.notes.service.ConfigurationService;
 
 @Service
@@ -19,10 +19,10 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   @Override
   public String getConfigValue(String configName, String defaultValue) {
-    ConfigurationCollection configurations = client.getConfiguration(String.format(CONFIG_QUERY, MODULE_NAME, configName));
+    ConfigurationEntryCollection configurations = client.getConfiguration(String.format(CONFIG_QUERY, MODULE_NAME, configName));
 
     if (configurations.getTotalRecords() > 0) {
-      Configuration configuration = configurations.getConfigs().get(0);
+      ConfigurationEntry configuration = configurations.getConfigs().get(0);
       return configuration.getValue();
     } else {
       return defaultValue;

@@ -1,4 +1,4 @@
-package org.folio.notes;
+package org.folio.notes.support;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

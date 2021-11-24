@@ -14,6 +14,12 @@ metadata:
     createdByUserId:
       $ref: '#/uuid'
       description: ID of the user who created the record
+    createdByUsername:
+      type: string
+      description: Username of the user who created the record (when available)
+    createdBy:
+      $ref: '#/userInfo'
+      description: Additional information of the user who created the record (when available)
     updatedDate:
       type: string
       format: date-time
@@ -21,6 +27,12 @@ metadata:
     updatedByUserId:
       $ref: '#/uuid'
       description: ID of the user who last updated the record
+    updatedByUsername:
+      type: string
+      description: Username of the user who updated the record (when available)
+    updatedBy:
+      $ref: '#/userInfo'
+      description: Additional information of the user who updated the record (when available)
   required:
     - createdDate
 
@@ -57,3 +69,7 @@ errors:
             parameters:
               - key: moduleTo
                 value: null
+
+orderDirection:
+  type: string
+  enum: [ asc, desc ]

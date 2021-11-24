@@ -13,9 +13,8 @@ import org.springframework.stereotype.Component;
 import org.folio.spring.FolioExecutionContext;
 
 @Configuration
-@EnableJpaAuditing(modifyOnCreate = false)
+@EnableJpaAuditing
 public class JpaConfig {
-
 
   @Component
   @RequiredArgsConstructor

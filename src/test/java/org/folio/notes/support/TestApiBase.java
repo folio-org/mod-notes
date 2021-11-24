@@ -4,8 +4,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import static org.folio.notes.client.ConfigurationClient.ConfigurationCollection;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,9 +27,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.folio.notes.TestBase;
 import org.folio.notes.client.ConfigurationClient;
-import org.folio.notes.client.ConfigurationClient.Configuration;
+import org.folio.notes.client.ConfigurationClient.ConfigurationEntry;
+import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
 import org.folio.spring.FolioModuleMetadata;
 import org.folio.spring.integration.XOkapiHeaders;
 import org.folio.tenant.domain.dto.TenantAttributes;
@@ -96,14 +94,15 @@ public abstract class TestApiBase extends TestBase {
   }
 
   protected void setUpConfigurationLimit(String limit) {
-    List<Configuration> configurations = new ArrayList<>();
-    if(!limit.isBlank()){
-      Configuration configuration = new Configuration("1", "mod-notes", "note-type-limit", limit);
+    List<ConfigurationEntry> configurations = new ArrayList<>();
+    if (!limit.isBlank()) {
+      var configuration = new ConfigurationEntry("1", "mod-notes", "note-type-limit", limit);
       configurations.add(configuration);
     }
-    ConfigurationCollection configs = new ConfigurationCollection(configurations, configurations.size());
+    var configs = new ConfigurationEntryCollection(configurations, configurations.size());
 
-    Mockito.doReturn(configs).when(configurationClient).getConfiguration("module==mod-notes and configName==note-type-limit");
+    Mockito.doReturn(configs).when(configurationClient)
+      .getConfiguration("module==mod-notes and configName==note-type-limit");
   }
 
   @TestConfiguration

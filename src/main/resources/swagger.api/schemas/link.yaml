@@ -16,9 +16,18 @@ link:
     id: 1234-5678
     type: package
 
-linkStatusChange:
+linkStatus:
   type: string
   enum: [ ASSIGNED, UNASSIGNED ]
+
+linkStatusFilter:
+  type: string
+  enum: [ assigned, unassigned, all ]
+  default: all
+
+notesOrderBy:
+  type: string
+  enum: [title, content, noteType, updatedDate]
 
 noteLinkUpdate:
   type: object
@@ -29,7 +38,7 @@ noteLinkUpdate:
       $ref: 'common.yaml#/uuid'
     status:
       description: New status for link to this note
-      $ref: '#/linkStatusChange'
+      $ref: '#/linkStatus'
   required:
     - id
     - status

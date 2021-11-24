@@ -11,17 +11,41 @@ folio:
       enabled: true
       level: basic
   notes:
+    cache:
+      configs:
+        users-by-id:
+          initialCapacity: 20
+          maximumSize: 100
+          expireAfterWrite: 60
     configuration:
       module:
         name: NOTES
     types:
-      default:
+      defaults:
         name: General note
         limit: 25
     content:
       allowed:
-        tags: 'p,strong,em,a,u,ol,ul,li,h1,h2,h3,br'
-        attributes: {all:'class',a:'href,rel,target'}
+        tags:
+          - p
+          - strong
+          - em
+          - a
+          - u
+          - ol
+          - ul
+          - li
+          - h1
+          - h2
+          - h3
+          - br
+        attributes:
+          all:
+            - class
+          a:
+            - href
+            - rel
+            - target
 
 # Spring properties
 spring:
@@ -49,6 +73,8 @@ spring:
     exclude: org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration
   jackson:
     default-property-inclusion: NON_EMPTY
+  cache:
+    type: caffeine
 management:
   endpoints:
     web:

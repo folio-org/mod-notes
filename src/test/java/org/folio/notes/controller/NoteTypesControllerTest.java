@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 import java.util.UUID;
-import javax.persistence.EntityNotFoundException;
+
 import javax.validation.ConstraintViolationException;
 
 import org.hamcrest.Matcher;
@@ -34,6 +34,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.entity.NoteTypeEntity;
+import org.folio.notes.exception.NoteTypeNotFoundException;
 import org.folio.notes.exception.NoteTypesLimitReached;
 import org.folio.notes.support.TestApiBase;
 import org.folio.spring.cql.CqlQueryValidationException;
@@ -42,7 +43,7 @@ class NoteTypesControllerTest extends TestApiBase {
 
   private static final String BASE_URL = "/note-types";
 
-  @Value("${folio.notes.types.default.limit}")
+  @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
 
   @BeforeEach
@@ -150,7 +151,8 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty())
       .andExpect(header().string(HttpHeaders.LOCATION,
-        matchesRegex(BASE_URL + "/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")));
+        matchesRegex(
+          BASE_URL + "/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")));
 
     int rowsInTable = databaseHelper.countRowsInTable(TENANT);
     assertEquals(1, rowsInTable);
@@ -206,7 +208,6 @@ class NoteTypesControllerTest extends TestApiBase {
     assertEquals(Integer.parseInt(limit), rowsInTable);
   }
 
-
   // Tests for GET by id
 
   @Test
@@ -226,7 +227,7 @@ class NoteTypesControllerTest extends TestApiBase {
   void return404OnGetByIdWhenItNotExist() throws Exception {
     mockMvc.perform(getById(UUID.randomUUID()))
       .andExpect(status().isNotFound())
-      .andExpect(exceptionMatch(EntityNotFoundException.class))
+      .andExpect(exceptionMatch(NoteTypeNotFoundException.class))
       .andExpect(errorMessageMatch(containsString("was not found")));
   }
 
@@ -278,7 +279,7 @@ class NoteTypesControllerTest extends TestApiBase {
   void return404OnPutByIdWhenItNotExist() throws Exception {
     mockMvc.perform(putById(UUID.randomUUID(), new NoteType().name("NotExist")))
       .andExpect(status().isNotFound())
-      .andExpect(exceptionMatch(EntityNotFoundException.class))
+      .andExpect(exceptionMatch(NoteTypeNotFoundException.class))
       .andExpect(errorMessageMatch(containsString("was not found")));
   }
 
@@ -301,7 +302,7 @@ class NoteTypesControllerTest extends TestApiBase {
   void return404OnDeleteByIdWhenItNotExist() throws Exception {
     mockMvc.perform(deleteById(UUID.randomUUID()))
       .andExpect(status().isNotFound())
-      .andExpect(exceptionMatch(EntityNotFoundException.class))
+      .andExpect(exceptionMatch(NoteTypeNotFoundException.class))
       .andExpect(errorMessageMatch(containsString("was not found")));
   }
 

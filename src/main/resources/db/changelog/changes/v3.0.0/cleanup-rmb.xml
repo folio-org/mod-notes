@@ -79,7 +79,7 @@
     <sql dbms="postgresql">DROP FUNCTION IF EXISTS set_note_data_md_json CASCADE</sql>
   </changeSet>
   <changeSet id="MODNOTES-182@@drop-f-unaccent-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS f_unaccent</sql>
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS f_unaccent CASCADE</sql>
   </changeSet>
   <changeSet id="MODNOTES-182@@drop-upsert-function" author="Pavlo_Smahin">
     <sql dbms="postgresql">DROP FUNCTION IF EXISTS upsert</sql>
