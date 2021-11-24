@@ -43,7 +43,7 @@ class NoteTypesControllerTest extends TestApiBase {
 
   private static final String BASE_URL = "/note-types";
 
-  @Value("${folio.notes.types.default.limit}")
+  @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
 
   @BeforeEach
