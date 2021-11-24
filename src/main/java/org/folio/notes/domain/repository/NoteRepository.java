@@ -21,6 +21,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
+import org.folio.notes.domain.entity.BaseEntity_;
 import org.folio.notes.domain.entity.LinkEntity;
 import org.folio.notes.domain.entity.LinkEntity_;
 import org.folio.notes.domain.entity.NoteEntity;
@@ -63,7 +64,7 @@ public interface NoteRepository extends JpaCqlRepository<NoteEntity, UUID>, JpaS
     Root<LinkEntity> subRoot = subQuery.from(LinkEntity.class);
     SetJoin<LinkEntity, NoteEntity> subJoin = subRoot.join(LinkEntity_.notes, JoinType.INNER);
 
-    Predicate equalNoteId = cb.equal(subJoin.get(NoteEntity_.id), root.get(NoteEntity_.id));
+    Predicate equalNoteId = cb.equal(subJoin.get(BaseEntity_.id), root.get(BaseEntity_.id));
     Predicate equalObjectId = cb.equal(subRoot.get(LinkEntity_.objectId), objectId);
     Predicate equalObjectType = cb.equal(subRoot.get(LinkEntity_.objectType), objectType);
 

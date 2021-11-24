@@ -32,6 +32,7 @@ import org.folio.notes.domain.dto.NoteLinkUpdate;
 import org.folio.notes.domain.dto.NoteLinkUpdateCollection;
 import org.folio.notes.domain.dto.NotesOrderBy;
 import org.folio.notes.domain.dto.OrderDirection;
+import org.folio.notes.domain.entity.AuditableEntity_;
 import org.folio.notes.domain.entity.LinkEntity;
 import org.folio.notes.domain.entity.NoteEntity;
 import org.folio.notes.domain.entity.NoteEntity_;
@@ -66,7 +67,7 @@ public class NotesServiceImpl implements NotesService {
         NotesOrderBy.TITLE, NoteEntity_.TITLE,
         NotesOrderBy.CONTENT, NoteEntity_.INDEXED_CONTENT,
         NotesOrderBy.NOTETYPE, NoteEntity_.TYPE,
-        NotesOrderBy.UPDATEDDATE, NoteEntity_.UPDATED_DATE
+        NotesOrderBy.UPDATEDDATE, AuditableEntity_.UPDATED_DATE
       );
   }
 
