@@ -42,6 +42,7 @@ import org.folio.spring.cql.CqlQueryValidationException;
 class NoteTypesControllerTest extends TestApiBase {
 
   private static final String BASE_URL = "/note-types";
+  private static final String TYPE = "type";
 
   @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
@@ -154,7 +155,7 @@ class NoteTypesControllerTest extends TestApiBase {
         matchesRegex(
           BASE_URL + "/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")));
 
-    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(1, rowsInTable);
   }
 
@@ -172,7 +173,7 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
 
-    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(1, rowsInTable);
   }
 
@@ -204,7 +205,7 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(exceptionMatch(NoteTypesLimitReached.class))
       .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is " + limit)));
 
-    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(Integer.parseInt(limit), rowsInTable);
   }
 
@@ -293,7 +294,7 @@ class NoteTypesControllerTest extends TestApiBase {
     mockMvc.perform(deleteById(existNoteType.getId()))
       .andExpect(status().isNoContent());
 
-    var rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    var rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(0, rowsInTable);
   }
 

@@ -10,6 +10,8 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,13 +46,15 @@ public abstract class TestApiBase extends TestBase {
   protected static final String TENANT = "test";
   protected static final String USER_ID = "77777777-7777-7777-7777-777777777777";
 
-  private static final ObjectMapper OBJECT_MAPPER;
+  public static final ObjectMapper OBJECT_MAPPER;
 
   static {
     postgreDBContainer.start();
     OBJECT_MAPPER = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL)
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-      .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+      .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
+      .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+    .registerModule(new JavaTimeModule());
   }
 
   @Autowired
