@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import static org.folio.notes.support.DatabaseHelper.NOTE;
+import static org.folio.notes.support.DatabaseHelper.TYPE;
 
 import java.util.List;
 import java.util.Optional;
@@ -65,6 +66,7 @@ class NoteControllerTest extends TestApiBase {
     when(client.fetchUserById(USER_ID)).thenReturn(Optional.of(user));
     setUpConfigurationLimit(defaultNoteTypeLimit);
     databaseHelper.clearTable(TENANT, NOTE);
+    databaseHelper.clearTable(TENANT, TYPE);
   }
 
   // Tests for GET
