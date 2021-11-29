@@ -46,7 +46,7 @@ public abstract class TestApiBase extends TestBase {
   protected static final String TENANT = "test";
   protected static final String USER_ID = "77777777-7777-7777-7777-777777777777";
 
-  public static final ObjectMapper OBJECT_MAPPER;
+  protected static final ObjectMapper OBJECT_MAPPER;
 
   static {
     postgreDBContainer.start();

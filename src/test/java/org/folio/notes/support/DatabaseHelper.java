@@ -12,8 +12,8 @@ import org.folio.spring.FolioModuleMetadata;
 
 public class DatabaseHelper {
 
-  private static final String NOTE = "note";
-  private static final String TYPE = "type";
+  public static final String NOTE = "note";
+  public static final String TYPE = "type";
   private final FolioModuleMetadata metadata;
   private final JdbcTemplate jdbcTemplate;
 
@@ -30,9 +30,8 @@ public class DatabaseHelper {
     return metadata.getDBSchemaName(tenantId) + "." + table;
   }
 
-  public void clearTable(String tenant) {
-    JdbcTestUtils.deleteFromTables(jdbcTemplate, getTable(tenant, TYPE));
-    JdbcTestUtils.deleteFromTables(jdbcTemplate, getTable(tenant, TYPE));
+  public void clearTable(String tenant, String tableName) {
+    JdbcTestUtils.deleteFromTables(jdbcTemplate, getTable(tenant, tableName));
   }
 
   public void saveNoteType(NoteTypeEntity noteType, String tenant) {

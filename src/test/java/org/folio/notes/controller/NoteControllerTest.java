@@ -17,6 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.folio.notes.support.DatabaseHelper.NOTE;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,7 +51,6 @@ class NoteControllerTest extends TestApiBase {
 
   private static final String NOTE_URL = "/notes";
   private static final String NOTE_TYPE_URL = "/note-types";
-  private static final String NOTE = "note";
   private static final String DOMAIN = "domain";
 
   @Value("${folio.notes.types.defaults.limit}")
@@ -63,7 +64,7 @@ class NoteControllerTest extends TestApiBase {
     var user = new User(UUID.randomUUID(), "test_user", null);
     when(client.fetchUserById(USER_ID)).thenReturn(Optional.of(user));
     setUpConfigurationLimit(defaultNoteTypeLimit);
-    databaseHelper.clearTable(TENANT);
+    databaseHelper.clearTable(TENANT, NOTE);
   }
 
   // Tests for GET

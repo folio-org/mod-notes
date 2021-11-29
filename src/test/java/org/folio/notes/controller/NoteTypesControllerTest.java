@@ -16,6 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.folio.notes.support.DatabaseHelper.TYPE;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -42,7 +44,6 @@ import org.folio.spring.cql.CqlQueryValidationException;
 class NoteTypesControllerTest extends TestApiBase {
 
   private static final String BASE_URL = "/note-types";
-  private static final String TYPE = "type";
 
   @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
@@ -50,7 +51,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @BeforeEach
   void setUp() {
     setUpConfigurationLimit(defaultNoteTypeLimit);
-    databaseHelper.clearTable(TENANT);
+    databaseHelper.clearTable(TENANT, TYPE);
   }
 
   // Tests for GET
