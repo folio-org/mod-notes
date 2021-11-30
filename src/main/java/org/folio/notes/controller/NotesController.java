@@ -1,12 +1,12 @@
 package org.folio.notes.controller;
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import org.folio.notes.domain.dto.LinkStatusFilter;
 import org.folio.notes.domain.dto.Note;
@@ -26,12 +26,7 @@ public class NotesController implements NotesApi {
   @Override
   public ResponseEntity<Note> createNote(Note note) {
     var newNote = notesService.createNote(note);
-    var location = ServletUriComponentsBuilder
-      .fromCurrentRequest()
-      .path("/{id}")
-      .buildAndExpand(newNote.getId())
-      .toUri();
-    return ResponseEntity.created(location).body(newNote);
+    return ResponseEntity.created(URI.create("/notes/" + newNote.getId())).body(newNote);
   }
 
   @Override

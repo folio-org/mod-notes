@@ -176,7 +176,7 @@ class NoteControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty())
       .andExpect(header().string(HttpHeaders.LOCATION,
         matchesRegex(
-          "http://localhost" + NOTE_URL + "/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")));
+          NOTE_URL + "/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")));
     var rowsInTable = databaseHelper.countRowsInTable(TENANT, NOTE);
     assertEquals(1, rowsInTable);
   }
