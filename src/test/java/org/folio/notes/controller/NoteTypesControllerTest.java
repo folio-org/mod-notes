@@ -16,6 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.folio.notes.support.DatabaseHelper.TYPE;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +51,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @BeforeEach
   void setUp() {
     setUpConfigurationLimit(defaultNoteTypeLimit);
-    databaseHelper.clearTable(TENANT);
+    databaseHelper.clearTable(TENANT, TYPE);
   }
 
   // Tests for GET
@@ -154,7 +156,7 @@ class NoteTypesControllerTest extends TestApiBase {
         matchesRegex(
           BASE_URL + "/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")));
 
-    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(1, rowsInTable);
   }
 
@@ -172,7 +174,7 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
 
-    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(1, rowsInTable);
   }
 
@@ -204,7 +206,7 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(exceptionMatch(NoteTypesLimitReached.class))
       .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is " + limit)));
 
-    int rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(Integer.parseInt(limit), rowsInTable);
   }
 
@@ -293,7 +295,7 @@ class NoteTypesControllerTest extends TestApiBase {
     mockMvc.perform(deleteById(existNoteType.getId()))
       .andExpect(status().isNoContent());
 
-    var rowsInTable = databaseHelper.countRowsInTable(TENANT);
+    var rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(0, rowsInTable);
   }
 
