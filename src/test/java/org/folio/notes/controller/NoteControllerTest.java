@@ -347,7 +347,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Remove links from multiple notes")
-  public void shouldRemoveLinksFromMultipleNotes() throws Exception {
+  void shouldRemoveLinksFromMultipleNotes() throws Exception {
     var firstNote = generateNote();
     var secondNote = generateNote();
     var thirdNote = generateNote();
@@ -367,7 +367,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Remove an add links to notes")
-  public void shouldRemoveAndAddLinksToNotes() throws Exception {
+  void shouldRemoveAndAddLinksToNotes() throws Exception {
     var firstNote = generateNote();
     var secondNote = generateNote();
     var thirdNote = generateNote();
@@ -396,7 +396,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Shouldn't add link for the second time")
-  public void shouldNotAddLinkForTheSecondTime() throws Exception {
+  void shouldNotAddLinkForTheSecondTime() throws Exception {
     var note = generateNote();
     createLinks(note.getId());
     createLinks(note.getId());
@@ -408,7 +408,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should ignore second remove request")
-  public void shouldIgnoreSecondRemoveRequest() throws Exception {
+  void shouldIgnoreSecondRemoveRequest() throws Exception {
     var note = generateNote();
     createLinks(note.getId());
     removeLinks(note.getId());
@@ -421,7 +421,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should remove note when last link is removed")
-  public void shouldRemoveNoteWhenLastLinkIsRemoved() throws Exception {
+  void shouldRemoveNoteWhenLastLinkIsRemoved() throws Exception {
     var note = generateNote()
       .links(Collections.singletonList(new Link()
         .id(PACKAGE_ID_1)
@@ -437,7 +437,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should do nothing on empty list")
-  public void shouldDoNothingOnEmptyList() throws Exception {
+  void shouldDoNothingOnEmptyList() throws Exception {
     removeLinks();
 
     List<Note> notes = getNotes();
@@ -447,7 +447,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes without parameters")
-  public void shouldReturnListOfNotesWithoutParameters() throws Exception {
+  void shouldReturnListOfNotesWithoutParameters() throws Exception {
     generateNote();
     generateNote();
 
@@ -459,7 +459,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return empty note collection")
-  public void shouldReturnEmptyNoteCollection() throws Exception {
+  void shouldReturnEmptyNoteCollection() throws Exception {
     var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class);
 
@@ -468,7 +468,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes with limit")
-  public void shouldReturnListOfNotesWithLimit() throws Exception {
+  void shouldReturnListOfNotesWithLimit() throws Exception {
     generateNote();
     generateNote();
 
@@ -481,7 +481,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes with offset")
-  public void shouldReturnListOfNotesWithOffset() throws Exception {
+  void shouldReturnListOfNotesWithOffset() throws Exception {
     generateNote();
     generateNote();
 
@@ -493,7 +493,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return all records of notes from DB without parameters and with non existing id")
-  public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithNonExistingId() throws Exception {
+  void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithNonExistingId() throws Exception {
     generateNote();
     generateNote();
 
@@ -505,7 +505,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return all records of notes from DB without parameters and with incomplete url")
-  public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithIncompleteUrl() throws Exception {
+  void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithIncompleteUrl() throws Exception {
     generateNote();
     generateNote();
 
@@ -517,7 +517,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes with assigned status")
-  public void shouldReturnListOfNotesWithAssignedStatus() throws Exception {
+  void shouldReturnListOfNotesWithAssignedStatus() throws Exception {
     var firstNote = generateNote();
     generateNote();
     createLinks(firstNote.getId());
@@ -531,7 +531,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes sorted by title asc")
-  public void shouldReturnListOfNotesSortedByTitleAsc() throws Exception {
+  void shouldReturnListOfNotesSortedByTitleAsc() throws Exception {
     var firstNote = generateNote().title("ABC");
     var secondNote = generateNote().title("ZZZ");
 
@@ -552,7 +552,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes sorted by title desc")
-  public void shouldReturnListOfNotesSortedByTitleDesc() throws Exception {
+  void shouldReturnListOfNotesSortedByTitleDesc() throws Exception {
     var firstNote = generateNote().title("ABC");
     var secondNote = generateNote().title("ZZZ");
 
@@ -573,7 +573,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes sorted by note type asc")
-  public void shouldReturnListOfNotesSortedByNoteTypeAsc() throws Exception {
+  void shouldReturnListOfNotesSortedByNoteTypeAsc() throws Exception {
     var firstNote = generateNoteEntityWithParams("ABC", "13f21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
     var secondNote = generateNoteEntityWithParams("XWZ", "2af21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
 
@@ -591,7 +591,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes sorted by note type desc")
-  public void shouldReturnListOfNotesSortedByNoteTypeDesc() throws Exception {
+  void shouldReturnListOfNotesSortedByNoteTypeDesc() throws Exception {
     var firstNote = generateNoteEntityWithParams("ABC", "2af21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
     var secondNote = generateNoteEntityWithParams("XWZ", "13f21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
 
@@ -609,7 +609,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return 400 when order parameter is invalid")
-  public void shouldReturn400WhenOrderParameterIsInvalid() throws Exception {
+  void shouldReturn400WhenOrderParameterIsInvalid() throws Exception {
     generateNote();
     generateNote();
 
@@ -622,7 +622,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("should return list of notes sorted by content asc when titles are different")
-  public void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreDifferent() throws Exception {
+  void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreDifferent() throws Exception {
     var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
     var secondNote = generateNote().title("XWZ").content("<div> <strong>2</strong></div><h1>thing</h1>");
 
@@ -642,7 +642,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("should return list of notes sorted by content desc when titles are different")
-  public void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreDifferent() throws Exception {
+  void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreDifferent() throws Exception {
     var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
     var secondNote = generateNote().title("XWZ").content("<div> <strong>2</strong></div><h1>thing</h1>");
 
@@ -662,7 +662,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("should return list of notes sorted by content asc when titles are similar")
-  public void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreSimilar() throws Exception {
+  void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreSimilar() throws Exception {
     var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
     var secondNote = generateNote().title("ABC").content("<div> <strong>2</strong></div><h1>thing</h1>");
 
@@ -682,7 +682,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("should return list of notes sorted by content desc when titles are similar")
-  public void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreSimilar() throws Exception {
+  void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreSimilar() throws Exception {
     var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
     var secondNote = generateNote().title("ABC").content("<div> <strong>2</strong></div><h1>thing</h1>");
 
@@ -702,7 +702,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("should return list of notes sorted by created date asc")
-  public void shouldReturnListOfNotesSortedByCreatedDateAsc() throws Exception {
+  void shouldReturnListOfNotesSortedByCreatedDateAsc() throws Exception {
     var firstNote = generateNote();
     var secondNote = generateNote();
 
@@ -722,7 +722,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("should return list of notes sorted by created date desc")
-  public void shouldReturnListOfNotesSortedByCreatedDateDesc() throws Exception {
+  void shouldReturnListOfNotesSortedByCreatedDateDesc() throws Exception {
     var firstNote = generateNote();
     var secondNote = generateNote();
 
@@ -742,7 +742,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("should return 400 when order by updated date parameter is invalid")
-  public void shouldReturn400WhenOrderByUpdatedDateParameterIsInvalid() throws Exception {
+  void shouldReturn400WhenOrderByUpdatedDateParameterIsInvalid() throws Exception {
     generateNote();
     generateNote();
 
@@ -756,7 +756,7 @@ class NoteControllerTest extends TestApiBase {
 //  TODO Change logic for searching by adding possibility to search ignore camel case in scope MODNOTES-193
 /*  @Test
   @DisplayName("Should return list of notes searched by content")
-  public void shouldReturnListOfNotesSearchedByContent() throws Exception {
+  void shouldReturnListOfNotesSearchedByContent() throws Exception {
     var firstNote = generateNote().title("Title ABC").content("<p>test content</p><p>zztest</p>");
     var secondNote = generateNote().title("Title ZZZ ABC");
     var thirdNote = generateNote().title("Title TTT");
@@ -780,7 +780,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should interpret special regex characters literally")
-  public void shouldInterpretSpecialRegexCharactersLiterally() throws Exception {
+  void shouldInterpretSpecialRegexCharactersLiterally() throws Exception {
     var firstNote = generateNote().title("a[abc1}{]z");
     mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
 
@@ -794,7 +794,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of assigned notes searched and sorted by title")
-  public void shouldReturnListOfAssignedNotesSearchedAndSortedByTitle() throws Exception {
+  void shouldReturnListOfAssignedNotesSearchedAndSortedByTitle() throws Exception {
     var firstNote = generateNote().title("Title ABC");
     var secondNote = generateNote().title("Title ZZZ ABC");
     var thirdNote = generateNote().title("Title BBB");
@@ -816,7 +816,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of assigned notes searched and sorted by title order desc")
-  public void shouldReturnListOfAssignedNotesSearchedAndSortedByTitleOrderDesc() throws Exception {
+  void shouldReturnListOfAssignedNotesSearchedAndSortedByTitleOrderDesc() throws Exception {
     var firstNote = generateNote().title("Title ABC");
     var secondNote = generateNote().title("Title ZZZ ABC");
     var thirdNote = generateNote().title("Title BBB");
@@ -838,7 +838,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes with unassigned status")
-  public void shouldReturnListOfNotesWithUnassignedStatus() throws Exception {
+  void shouldReturnListOfNotesWithUnassignedStatus() throws Exception {
     var firsNoteWithAssignedLink = generateNote();
     generateNote();
     createLinks(firsNoteWithAssignedLink.getId());
@@ -852,7 +852,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes with non existing domain")
-  public void shouldReturnListOfNotesWithNonExistingDomain() throws Exception {
+  void shouldReturnListOfNotesWithNonExistingDomain() throws Exception {
     var firsNoteWithAssignedLink = generateNote();
     var secondNoteWithUnassignedLink = generateNote();
 
@@ -867,7 +867,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return list of notes with status all")
-  public void shouldReturnListOfNotesWithStatusAll() throws Exception {
+  void shouldReturnListOfNotesWithStatusAll() throws Exception {
     generateNote();
     generateNote();
 
@@ -879,7 +879,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return note list when search by title and note type")
-  public void shouldReturnNoteListWhenSearchByTitleAndNoteType() throws Exception {
+  void shouldReturnNoteListWhenSearchByTitleAndNoteType() throws Exception {
     var noteTitle = "testNote";
     var firstNote = generateNoteEntityWithParams(noteTitle, NOTE_TYPE_ID_1, NOTE_TYPE_NAME_2);
     var secondNote = generateNoteEntityWithParams(noteTitle, NOTE_TYPE_ID_2, NOTE_TYPE_NAME_1);
@@ -899,7 +899,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return 400 with error message wrong order")
-  public void shouldReturn400WithErrorMessageWrongOrder() throws Exception {
+  void shouldReturn400WithErrorMessageWrongOrder() throws Exception {
     generateNote();
     generateNote();
 
@@ -913,7 +913,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return note list when search by title and note type")
-  public void shouldReturn400WithErrorMessageWrongLimitAndOffset() throws Exception {
+  void shouldReturn400WithErrorMessageWrongLimitAndOffset() throws Exception {
     generateNote();
     generateNote();
 
