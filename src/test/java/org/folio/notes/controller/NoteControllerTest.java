@@ -3,11 +3,14 @@ package org.folio.notes.controller;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,15 +20,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.folio.notes.support.DatabaseHelper.LINK;
 import static org.folio.notes.support.DatabaseHelper.NOTE;
 import static org.folio.notes.support.DatabaseHelper.TYPE;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.validation.ConstraintViolationException;
 
 import org.hamcrest.Matcher;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +47,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import org.folio.notes.client.UsersClient;
+import org.folio.notes.domain.dto.Link;
+import org.folio.notes.domain.dto.LinkStatus;
 import org.folio.notes.domain.dto.Note;
+import org.folio.notes.domain.dto.NoteCollection;
+import org.folio.notes.domain.dto.NoteLinkUpdate;
+import org.folio.notes.domain.dto.NoteLinkUpdateCollection;
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.User;
 import org.folio.notes.domain.entity.NoteEntity;
@@ -52,7 +65,22 @@ class NoteControllerTest extends TestApiBase {
 
   private static final String NOTE_URL = "/notes";
   private static final String NOTE_TYPE_URL = "/note-types";
+  private static final String LINK_ID = "123-456789";
+  private static final String NOTE_TYPE_ID_1 = "13f21797-d25b-46dc-8427-1759d1db2057";
+  private static final String NOTE_TYPE_ID_2 = "2af21797-d25b-46dc-8427-1759d1db2057";
+  private static final String PACKAGE_ID_1 = "18-2356521";
+  private static final String PACKAGE_ID_2 = "123-456789";
+  private static final String NOTE_TYPE_NAME_1 = "High Priority";
+  private static final String NOTE_TYPE_NAME_2 = "test note";
+  private static final String PACKAGE_TYPE = "domain";
   private static final String DOMAIN = "domain";
+  private static final String NON_EXISTING_ID = "11111111111111";
+  private static final String NON_EXISTING_DOMAIN = "nonExistingDomain";
+  private static final String NOTE_LINKS_PATH = "/note-links/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1;
+  private static final String TITLE_1 = "First";
+  private static final String TITLE_2 = "Second";
+  private static final String TITLE_3 = "Third";
+  private static final int DEFAULT_LINK_AMOUNT = 1;
 
   @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
@@ -67,6 +95,7 @@ class NoteControllerTest extends TestApiBase {
     setUpConfigurationLimit(defaultNoteTypeLimit);
     databaseHelper.clearTable(TENANT, NOTE);
     databaseHelper.clearTable(TENANT, TYPE);
+    databaseHelper.clearTable(TENANT, LINK);
   }
 
   // Tests for GET
@@ -115,7 +144,7 @@ class NoteControllerTest extends TestApiBase {
   void returnCollectionByName() throws Exception {
     List<NoteEntity> notes = createListOfNotes();
 
-    var cqlQuery = "title=third";
+    var cqlQuery = "title="+ TITLE_3;
     mockMvc.perform(get(NOTE_URL + "?query={cql}", cqlQuery).headers(defaultHeaders()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.notes.[0].title", is(notes.get(2).getTitle())))
@@ -243,11 +272,8 @@ class NoteControllerTest extends TestApiBase {
   @DisplayName("Update existing note")
   void updateExistingNoteType() throws Exception {
     var existNote = createNote("Exist");
-
-    var updatedNote = new Note();
-    updatedNote.setTitle("Updated");
-    updatedNote.setDomain("Domain");
-    updatedNote.setTypeId(existNote.getType().getId());
+    var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
+    var updatedNote = new Note().title("Updated").domain(DOMAIN).typeId(existNote.getType().getId()).links(links);
 
     mockMvc.perform(putById(existNote.getId(), updatedNote))
       .andExpect(status().isNoContent());
@@ -264,7 +290,8 @@ class NoteControllerTest extends TestApiBase {
   @DisplayName("Return 404 on update note by ID when it is not exist")
   void return404OnPutByIdWhenItNotExist() throws Exception {
     var noteType = createNoteType();
-    var note = new Note().title("NotExist").domain("Domain").typeId(noteType.getId());
+    var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
+    var note = new Note().title("NotExist").domain("Domain").typeId(noteType.getId()).links(links);
 
     mockMvc.perform(putById(UUID.randomUUID(), note))
       .andExpect(status().isNotFound())
@@ -295,11 +322,695 @@ class NoteControllerTest extends TestApiBase {
       .andExpect(errorMessageMatch(containsString("was not found")));
   }
 
+  // Test for links
+
+  @Test
+  @DisplayName("Add links to multiple notes")
+  void shouldAddLinksToMultipleNotes() throws Exception {
+    var firstNote= generateNote();
+    var secondNote = generateNote();
+    var thirdNote = generateNote();
+
+    createLinks(firstNote.getId(), thirdNote.getId());
+    List<Note> notes = getNotes();
+
+    var firstResultNote = getNoteById(notes, firstNote.getId());
+    var secondResultNote = getNoteById(notes, secondNote.getId());
+    var thirdResultNote = getNoteById(notes, thirdNote.getId());
+
+    assertTrue(firstResultNote.getLinks().stream().anyMatch(link -> link.getType().equals(PACKAGE_TYPE)));
+    assertTrue(firstResultNote.getLinks().stream().anyMatch(link -> link.getId().equals(PACKAGE_ID_1)));
+    assertEquals(DEFAULT_LINK_AMOUNT, secondResultNote.getLinks().size());
+    assertTrue(thirdResultNote.getLinks().stream().anyMatch(link -> link.getType().equals(PACKAGE_TYPE)));
+    assertTrue(thirdResultNote.getLinks().stream().anyMatch(link -> link.getId().equals(PACKAGE_ID_1)));
+  }
+
+  @Test
+  @DisplayName("Remove links from multiple notes")
+  public void shouldRemoveLinksFromMultipleNotes() throws Exception {
+    var firstNote = generateNote();
+    var secondNote = generateNote();
+    var thirdNote = generateNote();
+
+    createLinks(firstNote.getId(), secondNote.getId(), thirdNote.getId());
+    removeLinks(secondNote.getId(), thirdNote.getId());
+    List<Note> notes = getNotes();
+
+    var firstResultNote = getNoteById(notes, firstNote.getId());
+    var secondResultNote = getNoteById(notes, secondNote.getId());
+    var thirdResultNote = getNoteById(notes, thirdNote.getId());
+
+    assertEquals(DEFAULT_LINK_AMOUNT + 1, firstResultNote.getLinks().size());
+    assertEquals(DEFAULT_LINK_AMOUNT, secondResultNote.getLinks().size());
+    assertEquals(DEFAULT_LINK_AMOUNT, thirdResultNote.getLinks().size());
+  }
+
+  @Test
+  @DisplayName("Remove an add links to notes")
+  public void shouldRemoveAndAddLinksToNotes() throws Exception {
+    var firstNote = generateNote();
+    var secondNote = generateNote();
+    var thirdNote = generateNote();
+    createLinks(firstNote.getId(), secondNote.getId());
+
+    NoteLinkUpdateCollection noteLinkUpdateCollection = new NoteLinkUpdateCollection()
+      .notes(
+        Arrays.asList(
+          createNoteLink(firstNote.getId(), LinkStatus.UNASSIGNED),
+          createNoteLink(secondNote.getId(), LinkStatus.UNASSIGNED),
+          createNoteLink(thirdNote.getId(), LinkStatus.ASSIGNED))
+      );
+
+    updateLinks(noteLinkUpdateCollection);
+
+    List<Note> notes = getNotes();
+    var firstResultNote = getNoteById(notes, firstNote.getId());
+    var secondResultNote = getNoteById(notes, secondNote.getId());
+    var thirdResultNote = getNoteById(notes, thirdNote.getId());
+
+    assertEquals(DEFAULT_LINK_AMOUNT, firstResultNote.getLinks().size());
+    assertEquals(DEFAULT_LINK_AMOUNT, secondResultNote.getLinks().size());
+    assertTrue(thirdResultNote.getLinks().stream().anyMatch(link -> link.getType().equals(PACKAGE_TYPE)));
+    assertTrue(thirdResultNote.getLinks().stream().anyMatch(link -> link.getId().equals(PACKAGE_ID_1)));
+  }
+
+  @Test
+  @DisplayName("Shouldn't add link for the second time")
+  public void shouldNotAddLinkForTheSecondTime() throws Exception {
+    var note = generateNote();
+    createLinks(note.getId());
+    createLinks(note.getId());
+
+    List<Note> notes = getNotes();
+
+    assertEquals(DEFAULT_LINK_AMOUNT + 1, getNoteById(notes, note.getId()).getLinks().size());
+  }
+
+  @Test
+  @DisplayName("Should ignore second remove request")
+  public void shouldIgnoreSecondRemoveRequest() throws Exception {
+    var note = generateNote();
+    createLinks(note.getId());
+    removeLinks(note.getId());
+    removeLinks(note.getId());
+
+    List<Note> notes = getNotes();
+
+    assertEquals(DEFAULT_LINK_AMOUNT, getNoteById(notes, note.getId()).getLinks().size());
+  }
+
+  @Test
+  @DisplayName("Should remove note when last link is removed")
+  public void shouldRemoveNoteWhenLastLinkIsRemoved() throws Exception {
+    var note = generateNote()
+      .links(Collections.singletonList(new Link()
+        .id(PACKAGE_ID_1)
+        .type(PACKAGE_TYPE)
+      ));
+
+    mockMvc.perform(postNote(note)).andExpect(status().isCreated());
+    removeLinks(note.getId());
+    List<Note> notes = getNotes();
+
+    assertFalse(notes.stream().anyMatch(resultNote -> note.getId().equals(resultNote.getId())));
+  }
+
+  @Test
+  @DisplayName("Should do nothing on empty list")
+  public void shouldDoNothingOnEmptyList() throws Exception {
+    removeLinks();
+
+    List<Note> notes = getNotes();
+
+    assertTrue(notes.isEmpty());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes without parameters")
+  public void shouldReturnListOfNotesWithoutParameters() throws Exception {
+    generateNote();
+    generateNote();
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class);
+
+    assertEquals(2, notes.getTotalRecords());
+  }
+
+  @Test
+  @DisplayName("Should return empty note collection")
+  public void shouldReturnEmptyNoteCollection() throws Exception {
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class);
+
+    assertEquals(0, notes.getTotalRecords());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes with limit")
+  public void shouldReturnListOfNotesWithLimit() throws Exception {
+    generateNote();
+    generateNote();
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class);
+
+    assertEquals(1, notes.getNotes().size());
+    assertEquals(2, notes.getTotalRecords());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes with offset")
+  public void shouldReturnListOfNotesWithOffset() throws Exception {
+    generateNote();
+    generateNote();
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?offset=1");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(1, notes.size());
+  }
+
+  @Test
+  @DisplayName("Should return all records of notes from DB without parameters and with non existing id")
+  public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithNonExistingId() throws Exception {
+    generateNote();
+    generateNote();
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + NON_EXISTING_ID);
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+  }
+
+  @Test
+  @DisplayName("Should return all records of notes from DB without parameters and with incomplete url")
+  public void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithIncompleteUrl() throws Exception {
+    generateNote();
+    generateNote();
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1 + "?orde");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes with assigned status")
+  public void shouldReturnListOfNotesWithAssignedStatus() throws Exception {
+    var firstNote = generateNote();
+    generateNote();
+    createLinks(firstNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?status=ASSIGNED");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(1, notes.size());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes sorted by title asc")
+  public void shouldReturnListOfNotesSortedByTitleAsc() throws Exception {
+    var firstNote = generateNote().title("ABC");
+    var secondNote = generateNote().title("ZZZ");
+
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?order=asc&orderBy=title");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(secondNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes sorted by title desc")
+  public void shouldReturnListOfNotesSortedByTitleDesc() throws Exception {
+    var firstNote = generateNote().title("ABC");
+    var secondNote = generateNote().title("ZZZ");
+
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?order=desc&orderBy=title");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes sorted by note type asc")
+  public void shouldReturnListOfNotesSortedByNoteTypeAsc() throws Exception {
+    var firstNote = generateNoteEntityWithParams("ABC", "13f21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
+    var secondNote = generateNoteEntityWithParams("XWZ", "2af21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=noteType&order=asc");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getType().getId(), notes.get(0).getTypeId());
+    assertEquals(secondNote.getType().getId(), notes.get(1).getTypeId());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes sorted by note type desc")
+  public void shouldReturnListOfNotesSortedByNoteTypeDesc() throws Exception {
+    var firstNote = generateNoteEntityWithParams("ABC", "2af21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
+    var secondNote = generateNoteEntityWithParams("XWZ", "13f21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=noteType&order=desc");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getType().getId(), notes.get(0).getTypeId());
+    assertEquals(secondNote.getType().getId(), notes.get(1).getTypeId());
+  }
+
+  @Test
+  @DisplayName("Should return 400 when order parameter is invalid")
+  public void shouldReturn400WhenOrderParameterIsInvalid() throws Exception {
+    generateNote();
+    generateNote();
+
+    mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=noteype&order=desc")
+      .headers(defaultHeaders()))
+      .andExpect(status().isUnprocessableEntity())
+      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required type 'org.folio.notes.domain.dto.NotesOrderBy'")));
+  }
+
+  @Test
+  @DisplayName("should return list of notes sorted by content asc when titles are different")
+  public void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreDifferent() throws Exception {
+    var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
+    var secondNote = generateNote().title("XWZ").content("<div> <strong>2</strong></div><h1>thing</h1>");
+
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=content");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  @DisplayName("should return list of notes sorted by content desc when titles are different")
+  public void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreDifferent() throws Exception {
+    var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
+    var secondNote = generateNote().title("XWZ").content("<div> <strong>2</strong></div><h1>thing</h1>");
+
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=content&order=desc");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
+  @DisplayName("should return list of notes sorted by content asc when titles are similar")
+  public void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreSimilar() throws Exception {
+    var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
+    var secondNote = generateNote().title("ABC").content("<div> <strong>2</strong></div><h1>thing</h1>");
+
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=content");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  @DisplayName("should return list of notes sorted by content desc when titles are similar")
+  public void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreSimilar() throws Exception {
+    var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
+    var secondNote = generateNote().title("ABC").content("<div> <strong>2</strong></div><h1>thing</h1>");
+
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=content&order=desc");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
+  }
+
+  @Test
+  @DisplayName("should return list of notes sorted by created date asc")
+  public void shouldReturnListOfNotesSortedByCreatedDateAsc() throws Exception {
+    var firstNote = generateNote();
+    var secondNote = generateNote();
+
+    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
+    mockMvc.perform(postNote(secondNote)).andExpect(status().isCreated());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=updatedDate&order=asc");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertTrue(notes.get(0).getMetadata().getUpdatedDate().isBefore(notes.get(1).getMetadata().getUpdatedDate()));
+  }
+
+  @Test
+  @DisplayName("should return list of notes sorted by created date desc")
+  public void shouldReturnListOfNotesSortedByCreatedDateDesc() throws Exception {
+    var firstNote = generateNote();
+    var secondNote = generateNote();
+
+    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
+    mockMvc.perform(postNote(secondNote)).andExpect(status().isCreated());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?orderBy=updatedDate");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertTrue(notes.get(0).getMetadata().getUpdatedDate().isAfter(notes.get(1).getMetadata().getUpdatedDate()));
+  }
+
+  @Test
+  @DisplayName("should return 400 when order by updated date parameter is invalid")
+  public void shouldReturn400WhenOrderByUpdatedDateParameterIsInvalid() throws Exception {
+    generateNote();
+    generateNote();
+
+    mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE  + "/id/" + PACKAGE_ID_1 +1
+      + "?orderBy=u&order=desc")
+      .headers(defaultHeaders()))
+      .andExpect(status().isUnprocessableEntity())
+      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required type 'org.folio.notes.domain.dto.NotesOrderBy'")));
+  }
+
+//  TODO Change logic for searching by adding possibility to search ignore camel case in scope MODNOTES-193
+/*  @Test
+  @DisplayName("Should return list of notes searched by content")
+  public void shouldReturnListOfNotesSearchedByContent() throws Exception {
+    var firstNote = generateNote().title("Title ABC").content("<p>test content</p><p>zztest</p>");
+    var secondNote = generateNote().title("Title ZZZ ABC");
+    var thirdNote = generateNote().title("Title TTT");
+
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(thirdNote.getId(), thirdNote)).andExpect(status().isNoContent());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+    createLinks(thirdNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+      + "?search=ZZ&orderBy=content");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(secondNote.getTitle(), notes.get(1).getTitle());
+  }*/
+
+  @Test
+  @DisplayName("Should interpret special regex characters literally")
+  public void shouldInterpretSpecialRegexCharactersLiterally() throws Exception {
+    var firstNote = generateNote().title("a[abc1}{]z");
+    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?search=a[abc1}{]z");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(1, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  @DisplayName("Should return list of assigned notes searched and sorted by title")
+  public void shouldReturnListOfAssignedNotesSearchedAndSortedByTitle() throws Exception {
+    var firstNote = generateNote().title("Title ABC");
+    var secondNote = generateNote().title("Title ZZZ ABC");
+    var thirdNote = generateNote().title("Title BBB");
+
+    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
+    mockMvc.perform(postNote(secondNote)).andExpect(status().isCreated());
+    mockMvc.perform(postNote(thirdNote)).andExpect(status().isCreated());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?status=ASSIGNED&orderBy=title");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  @DisplayName("Should return list of assigned notes searched and sorted by title order desc")
+  public void shouldReturnListOfAssignedNotesSearchedAndSortedByTitleOrderDesc() throws Exception {
+    var firstNote = generateNote().title("Title ABC");
+    var secondNote = generateNote().title("Title ZZZ ABC");
+    var thirdNote = generateNote().title("Title BBB");
+
+    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
+    mockMvc.perform(postNote(secondNote)).andExpect(status().isCreated());
+    mockMvc.perform(postNote(thirdNote)).andExpect(status().isCreated());
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?status=ASSIGNED&orderBy=title&order=desc");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+    assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes with unassigned status")
+  public void shouldReturnListOfNotesWithUnassignedStatus() throws Exception {
+    var firsNoteWithAssignedLink = generateNote();
+    generateNote();
+    createLinks(firsNoteWithAssignedLink.getId());
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?status=UNASSIGNED");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(1, notes.size());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes with non existing domain")
+  public void shouldReturnListOfNotesWithNonExistingDomain() throws Exception {
+    var firsNoteWithAssignedLink = generateNote();
+    var secondNoteWithUnassignedLink = generateNote();
+
+    var content = getNoteLinks("/note-links/domain/" + NON_EXISTING_DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?status=UNASSIGNED");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(0, notes.size());
+    assertEquals(DEFAULT_LINK_AMOUNT, firsNoteWithAssignedLink.getLinks().size());
+    assertEquals(DEFAULT_LINK_AMOUNT, secondNoteWithUnassignedLink.getLinks().size());
+  }
+
+  @Test
+  @DisplayName("Should return list of notes with status all")
+  public void shouldReturnListOfNotesWithStatusAll() throws Exception {
+    generateNote();
+    generateNote();
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1 + "?status=all");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertEquals(2, notes.size());
+  }
+
+  @Test
+  @DisplayName("Should return note list when search by title and note type")
+  public void shouldReturnNoteListWhenSearchByTitleAndNoteType() throws Exception {
+    var noteTitle = "testNote";
+    var firstNote = generateNoteEntityWithParams(noteTitle, NOTE_TYPE_ID_1, NOTE_TYPE_NAME_2);
+    var secondNote = generateNoteEntityWithParams(noteTitle, NOTE_TYPE_ID_2, NOTE_TYPE_NAME_1);
+
+    createLinks(firstNote.getId());
+    createLinks(secondNote.getId());
+
+    var content = getNoteLinks(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_2 +
+        "?search=" + noteTitle + "&noteType=" + NOTE_TYPE_NAME_1 + "&order=ASC");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
+
+    assertThat(notes.size(), equalTo(1));
+    assertThat(notes.get(0).getTypeId(), equalTo(UUID.fromString(NOTE_TYPE_ID_2)));
+    assertThat(notes.get(0).getTitle(), equalTo(noteTitle));
+  }
+
+  @Test
+  @DisplayName("Should return 400 with error message wrong order")
+  public void shouldReturn400WithErrorMessageWrongOrder() throws Exception {
+    generateNote();
+    generateNote();
+
+    mockMvc.perform(get(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+        + "/id/" + PACKAGE_ID_1 + "?order=wrong")
+      .headers(defaultHeaders()))
+      .andExpect(status().isUnprocessableEntity())
+      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required type 'org.folio.notes.domain.dto.OrderDirection")));
+  }
+
+  @Test
+  @DisplayName("Should return note list when search by title and note type")
+  public void shouldReturn400WithErrorMessageWrongLimitAndOffset() throws Exception {
+    generateNote();
+    generateNote();
+
+    mockMvc.perform(get(
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+        + "/id/" + PACKAGE_ID_1 + "?limit=-1&offset=-1")
+      .headers(defaultHeaders()))
+      .andExpect(status().isUnprocessableEntity())
+      .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.offset: must be greater than or equal to 0")))
+      .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.limit: must be greater than or equal to 1")));
+  }
+
+  private NoteEntity generateNoteEntityWithParams(String title, String typeId, String noteName) {
+    var noteType = new NoteTypeEntity();
+    noteType.setId(UUID.fromString(typeId));
+    noteType.setName(noteName);
+    databaseHelper.saveNoteType(noteType, TENANT);
+    var noteEntity = new NoteEntity();
+    noteEntity.setId(UUID.randomUUID());
+    noteEntity.setTitle(title);
+    noteEntity.setContent("");
+    noteEntity.setDomain(DOMAIN);
+    noteEntity.setType(noteType);
+    databaseHelper.saveNote(noteEntity, TENANT);
+    return noteEntity;
+  }
+
+  private Note generateNote() throws Exception {
+    var noteType = new NoteType().name(RandomStringUtils.randomAlphabetic(100));
+    var notyTypeAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
+    var existingNoteType = OBJECT_MAPPER.readValue(notyTypeAsString, NoteType.class);
+    var link = new Link().id(LINK_ID).type(DOMAIN);
+    var note = new Note().title(TITLE_1).domain(DOMAIN).typeId(existingNoteType.getId()).links(Collections.singletonList(link));
+    var noteAsString = mockMvc.perform(postNote(note)).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+    return OBJECT_MAPPER.readValue(noteAsString, Note.class);
+  }
+
+  private Note getNoteById(List<Note> notes, UUID id) {
+    return notes.stream()
+      .filter(note -> note.getId().equals(id))
+      .findFirst().get();
+  }
+
+  private void createLinks(UUID... ids) throws Exception {
+    changeLinks(ids, LinkStatus.ASSIGNED);
+  }
+
+  private void removeLinks(UUID... ids) throws Exception {
+    changeLinks(ids, LinkStatus.UNASSIGNED);
+  }
+
+  private void changeLinks(UUID[] ids, LinkStatus status) throws Exception {
+    NoteLinkUpdateCollection noteLinkUpdateCollection = createNoteLinkUpdateCollection(status, ids);
+    updateLinks(noteLinkUpdateCollection);
+  }
+
+  private void updateLinks(NoteLinkUpdateCollection noteLinkUpdateCollection) throws Exception {
+    mockMvc.perform(updateLink(noteLinkUpdateCollection));
+  }
+
+  private String getNoteLinks(String url) throws Exception {
+    return mockMvc.perform(get(url)
+      .headers(defaultHeaders()))
+      .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+  }
+
+  private MockHttpServletRequestBuilder updateLink(NoteLinkUpdateCollection noteLinkUpdateCollection) {
+    return put(NOTE_LINKS_PATH)
+      .content(asJsonString(noteLinkUpdateCollection))
+      .headers(defaultHeaders());
+  }
+
+  private NoteLinkUpdateCollection createNoteLinkUpdateCollection(LinkStatus status, UUID[] ids) {
+    return new NoteLinkUpdateCollection()
+      .notes(
+        Arrays.stream(ids)
+          .map(id -> createNoteLink(id, status))
+          .collect(Collectors.toList())
+      );
+  }
+
+  private NoteLinkUpdate createNoteLink(UUID id, LinkStatus status) {
+    return new NoteLinkUpdate()
+      .id(id)
+      .status(status);
+  }
+
+  private List<Note> getNotes() throws Exception {
+    var contentAsString = getNoteLinks(NOTE_URL);
+    return OBJECT_MAPPER.readValue(contentAsString, NoteCollection.class).getNotes();
+  }
+
   private List<NoteEntity> createListOfNotes() {
     List<NoteEntity> notes = List.of(
-      populateNote("first"),
-      populateNote("second"),
-      populateNote("third")
+      populateNote(TITLE_1),
+      populateNote(TITLE_2),
+      populateNote(TITLE_3)
     );
     databaseHelper.saveNotes(notes, TENANT);
     return notes;

@@ -14,6 +14,7 @@ public class DatabaseHelper {
 
   public static final String NOTE = "note";
   public static final String TYPE = "type";
+  public static final String LINK = "link";
   private final FolioModuleMetadata metadata;
   private final JdbcTemplate jdbcTemplate;
 
