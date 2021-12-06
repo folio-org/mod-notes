@@ -149,15 +149,23 @@ public class NotesServiceImpl implements NotesService {
       } else {
         noteEntity.addLink(linkEntity);
       }
+      if (noteEntity.getLinks().isEmpty()) {
+        noteRepository.delete(noteEntity);
+      } else {
+        noteRepository.save(noteEntity);
+      }
     }
-    noteRepository.saveAll(noteEntities);
   }
 
   @Transactional
   @Override
   public void updateNote(UUID id, Note dto) {
-    noteRepository.findById(id)
-      .ifPresentOrElse(entity -> saveNote(dto, noteDto -> notesMapper.updateNote(noteDto, entity)), throwNotFoundById(id));
+    if (dto.getLinks().isEmpty()) {
+      deleteNote(id);
+    } else {
+      noteRepository.findById(id)
+        .ifPresentOrElse(entity -> saveNote(dto, noteDto -> notesMapper.updateNote(noteDto, entity)), throwNotFoundById(id));
+    }
   }
 
   @Transactional
