@@ -270,7 +270,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Update existing note")
-  void updateExistingNoteType() throws Exception {
+  void updateExistingNote() throws Exception {
     var existNote = createNote("Exist");
     var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
     var updatedNote = new Note().title("Updated").domain(DOMAIN).typeId(existNote.getType().getId()).links(links);
@@ -366,7 +366,7 @@ class NoteControllerTest extends TestApiBase {
   }
 
   @Test
-  @DisplayName("Remove an add links to notes")
+  @DisplayName("Remove and add links to notes")
   void shouldRemoveAndAddLinksToNotes() throws Exception {
     var firstNote = generateNote();
     var secondNote = generateNote();
@@ -851,30 +851,41 @@ class NoteControllerTest extends TestApiBase {
   }
 
   @Test
-  @DisplayName("Should return list of notes with non existing domain")
-  void shouldReturnListOfNotesWithNonExistingDomain() throws Exception {
-    var firsNoteWithAssignedLink = generateNote();
-    var secondNoteWithUnassignedLink = generateNote();
+  @DisplayName("Should return empty list of notes with non existing domain")
+  void shouldReturnEmptyListOfNotesWithNonExistingDomain() throws Exception {
+    generateNote();
+    generateNote();
 
     var content = getNoteLinks("/note-links/domain/" + NON_EXISTING_DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
       + "?status=UNASSIGNED");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(0, notes.size());
-    assertEquals(DEFAULT_LINK_AMOUNT, firsNoteWithAssignedLink.getLinks().size());
-    assertEquals(DEFAULT_LINK_AMOUNT, secondNoteWithUnassignedLink.getLinks().size());
   }
 
   @Test
   @DisplayName("Should return list of notes with status all")
   void shouldReturnListOfNotesWithStatusAll() throws Exception {
-    generateNote();
-    generateNote();
+    var firstNote = generateNote();
+    var secondNote = generateNote();
 
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1 + "?status=all");
+    createLinks(firstNote.getId());
+
+    var url = "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1 + "?status=";
+    var content = getNoteLinks(url + "all");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
+    var contentWithAssignedLink = getNoteLinks(url + LinkStatus.ASSIGNED);
+    var notesWithAssignedLink = OBJECT_MAPPER.readValue(contentWithAssignedLink, NoteCollection.class).getNotes();
+
+    var contentWithUnAssignedLink = getNoteLinks(url + LinkStatus.UNASSIGNED);
+    var notesWithUnAssignedLink = OBJECT_MAPPER.readValue(contentWithUnAssignedLink, NoteCollection.class).getNotes();
+
     assertEquals(2, notes.size());
+    assertEquals(1, notesWithAssignedLink.size());
+    assertEquals(firstNote.getId(), notesWithAssignedLink.get(0).getId());
+    assertEquals(1, notesWithUnAssignedLink.size());
+    assertEquals(secondNote.getId(), notesWithUnAssignedLink.get(0).getId());
   }
 
   @Test
@@ -912,7 +923,7 @@ class NoteControllerTest extends TestApiBase {
   }
 
   @Test
-  @DisplayName("Should return note list when search by title and note type")
+  @DisplayName("Should return 400 with error message wrong limit and offset")
   void shouldReturn400WithErrorMessageWrongLimitAndOffset() throws Exception {
     generateNote();
     generateNote();
