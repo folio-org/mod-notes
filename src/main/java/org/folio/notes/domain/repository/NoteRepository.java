@@ -12,6 +12,7 @@ import javax.persistence.criteria.Root;
 import javax.persistence.criteria.SetJoin;
 import javax.persistence.criteria.Subquery;
 
+import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -21,6 +22,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
+import org.folio.notes.config.hibernate.predicate.ILikePredicate;
 import org.folio.notes.domain.entity.BaseEntity_;
 import org.folio.notes.domain.entity.LinkEntity;
 import org.folio.notes.domain.entity.LinkEntity_;
@@ -40,7 +42,11 @@ public interface NoteRepository extends JpaCqlRepository<NoteEntity, UUID>, JpaS
   }
 
   static Specification<NoteEntity> contentLike(String text) {
-    return (root, query, cb) -> cb.like(root.get(NoteEntity_.indexedContent), "%" + text + "%");
+    return (root, query, cb) -> new ILikePredicate(
+      (CriteriaBuilderImpl) cb,
+      root.get(NoteEntity_.indexedContent),
+      "%" + text + "%"
+    );
   }
 
   static Specification<NoteEntity> typeNameIn(List<String> typeNames) {

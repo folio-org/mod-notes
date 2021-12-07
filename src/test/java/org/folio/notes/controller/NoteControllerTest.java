@@ -1,5 +1,6 @@
 package org.folio.notes.controller;
 
+import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -19,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
 
 import static org.folio.notes.support.DatabaseHelper.LINK;
 import static org.folio.notes.support.DatabaseHelper.NOTE;
@@ -30,10 +32,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import javax.validation.ConstraintViolationException;
 
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +46,6 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import org.folio.notes.client.UsersClient;
 import org.folio.notes.domain.dto.Link;
@@ -90,7 +91,7 @@ class NoteControllerTest extends TestApiBase {
 
   @BeforeEach
   void setUp() {
-    var user = new User(UUID.randomUUID(), "test_user", null);
+    var user = new User(randomUUID(), "test_user", null);
     when(client.fetchUserById(USER_ID)).thenReturn(Optional.of(user));
     setUpConfigurationLimit(defaultNoteTypeLimit);
     databaseHelper.clearTable(TENANT, NOTE);
@@ -144,7 +145,7 @@ class NoteControllerTest extends TestApiBase {
   void returnCollectionByName() throws Exception {
     List<NoteEntity> notes = createListOfNotes();
 
-    var cqlQuery = "title="+ TITLE_3;
+    var cqlQuery = "title=" + TITLE_3;
     mockMvc.perform(get(NOTE_URL + "?query={cql}", cqlQuery).headers(defaultHeaders()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.notes.[0].title", is(notes.get(2).getTitle())))
@@ -191,7 +192,7 @@ class NoteControllerTest extends TestApiBase {
     String title = "First";
     var note = new Note().title(title);
 
-    var noteType = new NoteType().name(RandomStringUtils.randomAlphabetic(100));
+    var noteType = new NoteType().name(randomAlphabetic(100));
     var contentAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
     var existingNoteType = OBJECT_MAPPER.readValue(contentAsString, NoteType.class);
 
@@ -224,14 +225,13 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Return 422 on creation new note when domain is not set")
   void return422onCreationNoteWhenDomainIsNotSet() throws Exception {
-    var note = new Note().title("First").typeId(UUID.randomUUID());
+    var note = new Note().title("First").typeId(randomUUID());
 
     mockMvc.perform(postNote(note))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(MethodArgumentNotValidException.class))
       .andExpect(errorMessageMatch(containsString("Field error in object 'note' on field 'domain': rejected value [null]")));
   }
-
 
   // Tests for GET by id
 
@@ -251,7 +251,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Return 404 on get note by ID when it is not exist")
   void return404OnGetByIdWhenItNotExist() throws Exception {
-    mockMvc.perform(getById(UUID.randomUUID()))
+    mockMvc.perform(getById(randomUUID()))
       .andExpect(status().isNotFound())
       .andExpect(exceptionMatch(NoteNotFoundException.class))
       .andExpect(errorMessageMatch(containsString("was not found")));
@@ -293,7 +293,7 @@ class NoteControllerTest extends TestApiBase {
     var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
     var note = new Note().title("NotExist").domain("Domain").typeId(noteType.getId()).links(links);
 
-    mockMvc.perform(putById(UUID.randomUUID(), note))
+    mockMvc.perform(putById(randomUUID(), note))
       .andExpect(status().isNotFound())
       .andExpect(exceptionMatch(NoteNotFoundException.class))
       .andExpect(errorMessageMatch(containsString("was not found")));
@@ -316,7 +316,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Return 404 on delete note by ID when it is not exist")
   void return404OnDeleteByIdWhenItNotExist() throws Exception {
-    mockMvc.perform(deleteById(UUID.randomUUID()))
+    mockMvc.perform(deleteById(randomUUID()))
       .andExpect(status().isNotFound())
       .andExpect(exceptionMatch(NoteNotFoundException.class))
       .andExpect(errorMessageMatch(containsString("was not found")));
@@ -327,7 +327,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Add links to multiple notes")
   void shouldAddLinksToMultipleNotes() throws Exception {
-    var firstNote= generateNote();
+    var firstNote = generateNote();
     var secondNote = generateNote();
     var thirdNote = generateNote();
 
@@ -472,7 +472,8 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
     generateNote();
 
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?limit=1");
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+      + "/id/123-456789?limit=1");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class);
 
     assertEquals(1, notes.getNotes().size());
@@ -485,7 +486,8 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
     generateNote();
 
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/123-456789?offset=1");
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+      + "/id/123-456789?offset=1");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(1, notes.size());
@@ -497,7 +499,8 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
     generateNote();
 
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + NON_EXISTING_ID);
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/"
+      + NON_EXISTING_ID);
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
@@ -509,7 +512,8 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
     generateNote();
 
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1 + "?orde");
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/"
+      + PACKAGE_ID_1 + "?orde");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
@@ -574,8 +578,8 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Should return list of notes sorted by note type asc")
   void shouldReturnListOfNotesSortedByNoteTypeAsc() throws Exception {
-    var firstNote = generateNoteEntityWithParams("ABC", "13f21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
-    var secondNote = generateNoteEntityWithParams("XWZ", "2af21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
+    var firstNote = generateNoteEntityWithParams("ABC", "13f21797-d25b-46dc-8427-1759d1db2057", randomAlphabetic(100));
+    var secondNote = generateNoteEntityWithParams("XWZ", "2af21797-d25b-46dc-8427-1759d1db2057", randomAlphabetic(100));
 
     createLinks(firstNote.getId());
     createLinks(secondNote.getId());
@@ -592,8 +596,8 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Should return list of notes sorted by note type desc")
   void shouldReturnListOfNotesSortedByNoteTypeDesc() throws Exception {
-    var firstNote = generateNoteEntityWithParams("ABC", "2af21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
-    var secondNote = generateNoteEntityWithParams("XWZ", "13f21797-d25b-46dc-8427-1759d1db2057", RandomStringUtils.randomAlphabetic(100));
+    var firstNote = generateNoteEntityWithParams("ABC", "2af21797-d25b-46dc-8427-1759d1db2057", randomAlphabetic(100));
+    var secondNote = generateNoteEntityWithParams("XWZ", "13f21797-d25b-46dc-8427-1759d1db2057", randomAlphabetic(100));
 
     createLinks(firstNote.getId());
     createLinks(secondNote.getId());
@@ -614,10 +618,11 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
 
     mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
-      + "?orderBy=noteype&order=desc")
-      .headers(defaultHeaders()))
+        + "?orderBy=noteype&order=desc")
+        .headers(defaultHeaders()))
       .andExpect(status().isUnprocessableEntity())
-      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required type 'org.folio.notes.domain.dto.NotesOrderBy'")));
+      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required "
+        + "type 'org.folio.notes.domain.dto.NotesOrderBy'")));
   }
 
   @Test
@@ -746,16 +751,16 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
     generateNote();
 
-    mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE  + "/id/" + PACKAGE_ID_1 +1
-      + "?orderBy=u&order=desc")
-      .headers(defaultHeaders()))
+    mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1 + 1
+        + "?orderBy=u&order=desc")
+        .headers(defaultHeaders()))
       .andExpect(status().isUnprocessableEntity())
-      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required type 'org.folio.notes.domain.dto.NotesOrderBy'")));
+      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' "
+        + "to required type 'org.folio.notes.domain.dto.NotesOrderBy'")));
   }
 
-//  TODO Change logic for searching by adding possibility to search ignore camel case in scope MODNOTES-193
-/*  @Test
-  @DisplayName("Should return list of notes searched by content")
+  @Test
+  @DisplayName("Should return list of notes searched by content case insensitively")
   void shouldReturnListOfNotesSearchedByContent() throws Exception {
     var firstNote = generateNote().title("Title ABC").content("<p>test content</p><p>zztest</p>");
     var secondNote = generateNote().title("Title ZZZ ABC");
@@ -769,14 +774,14 @@ class NoteControllerTest extends TestApiBase {
     createLinks(secondNote.getId());
     createLinks(thirdNote.getId());
 
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
       + "?search=ZZ&orderBy=content");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
     assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
     assertEquals(secondNote.getTitle(), notes.get(1).getTitle());
-  }*/
+  }
 
   @Test
   @DisplayName("Should interpret special regex characters literally")
@@ -856,8 +861,8 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
     generateNote();
 
-    var content = getNoteLinks("/note-links/domain/" + NON_EXISTING_DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
-      + "?status=UNASSIGNED");
+    var content = getNoteLinks("/note-links/domain/" + NON_EXISTING_DOMAIN + "/type/" + PACKAGE_TYPE
+      + "/id/" + PACKAGE_ID_1 + "?status=UNASSIGNED");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(0, notes.size());
@@ -915,11 +920,12 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
 
     mockMvc.perform(get(
-      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
-        + "/id/" + PACKAGE_ID_1 + "?order=wrong")
-      .headers(defaultHeaders()))
+        "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+          + "/id/" + PACKAGE_ID_1 + "?order=wrong")
+        .headers(defaultHeaders()))
       .andExpect(status().isUnprocessableEntity())
-      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required type 'org.folio.notes.domain.dto.OrderDirection")));
+      .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' "
+        + "to required type 'org.folio.notes.domain.dto.OrderDirection")));
   }
 
   @Test
@@ -929,12 +935,14 @@ class NoteControllerTest extends TestApiBase {
     generateNote();
 
     mockMvc.perform(get(
-      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
-        + "/id/" + PACKAGE_ID_1 + "?limit=-1&offset=-1")
-      .headers(defaultHeaders()))
+        "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
+          + "/id/" + PACKAGE_ID_1 + "?limit=-1&offset=-1")
+        .headers(defaultHeaders()))
       .andExpect(status().isUnprocessableEntity())
-      .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.offset: must be greater than or equal to 0")))
-      .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.limit: must be greater than or equal to 1")));
+      .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.offset: must be greater "
+        + "than or equal to 0")))
+      .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.limit: must be greater "
+        + "than or equal to 1")));
   }
 
   private NoteEntity generateNoteEntityWithParams(String title, String typeId, String noteName) {
@@ -943,7 +951,7 @@ class NoteControllerTest extends TestApiBase {
     noteType.setName(noteName);
     databaseHelper.saveNoteType(noteType, TENANT);
     var noteEntity = new NoteEntity();
-    noteEntity.setId(UUID.randomUUID());
+    noteEntity.setId(randomUUID());
     noteEntity.setTitle(title);
     noteEntity.setContent("");
     noteEntity.setDomain(DOMAIN);
@@ -953,19 +961,21 @@ class NoteControllerTest extends TestApiBase {
   }
 
   private Note generateNote() throws Exception {
-    var noteType = new NoteType().name(RandomStringUtils.randomAlphabetic(100));
+    var noteType = new NoteType().name(randomAlphabetic(100));
     var notyTypeAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
     var existingNoteType = OBJECT_MAPPER.readValue(notyTypeAsString, NoteType.class);
     var link = new Link().id(LINK_ID).type(DOMAIN);
-    var note = new Note().title(TITLE_1).domain(DOMAIN).typeId(existingNoteType.getId()).links(Collections.singletonList(link));
-    var noteAsString = mockMvc.perform(postNote(note)).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+    var note = new Note().title(TITLE_1).domain(DOMAIN).typeId(existingNoteType.getId())
+      .links(Collections.singletonList(link));
+    var noteAsString = mockMvc.perform(postNote(note)).andExpect(status().isCreated())
+      .andReturn().getResponse().getContentAsString();
     return OBJECT_MAPPER.readValue(noteAsString, Note.class);
   }
 
   private Note getNoteById(List<Note> notes, UUID id) {
     return notes.stream()
       .filter(note -> note.getId().equals(id))
-      .findFirst().get();
+      .findFirst().orElse(null);
   }
 
   private void createLinks(UUID... ids) throws Exception {
@@ -987,7 +997,7 @@ class NoteControllerTest extends TestApiBase {
 
   private String getNoteLinks(String url) throws Exception {
     return mockMvc.perform(get(url)
-      .headers(defaultHeaders()))
+        .headers(defaultHeaders()))
       .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
   }
 
@@ -1035,7 +1045,7 @@ class NoteControllerTest extends TestApiBase {
 
   private NoteEntity populateNote(String title) {
     var noteEntity = new NoteEntity();
-    noteEntity.setId(UUID.randomUUID());
+    noteEntity.setId(randomUUID());
     noteEntity.setTitle(title);
     noteEntity.setDomain(DOMAIN);
     noteEntity.setType(createNoteType());
@@ -1044,8 +1054,8 @@ class NoteControllerTest extends TestApiBase {
 
   private NoteTypeEntity createNoteType() {
     NoteTypeEntity noteType = new NoteTypeEntity();
-    noteType.setId(UUID.randomUUID());
-    noteType.setName(RandomStringUtils.randomAlphabetic(100));
+    noteType.setId(randomUUID());
+    noteType.setName(randomAlphabetic(100));
 
     databaseHelper.saveNoteType(noteType, TENANT);
     return noteType;
