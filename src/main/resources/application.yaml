@@ -65,7 +65,7 @@ spring:
       hibernate:
         dialect: org.folio.notes.config.hibernate.ExtendedPostgreSQL10Dialect
         format_sql: true
-    show-sql: true
+    show-sql: false
   liquibase:
     changeLog: classpath:db/changelog/changelog-master.xml
     enabled: true
