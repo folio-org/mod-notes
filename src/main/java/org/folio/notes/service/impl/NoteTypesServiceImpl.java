@@ -1,6 +1,10 @@
 package org.folio.notes.service.impl;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +16,7 @@ import org.folio.notes.domain.dto.NoteTypeCollection;
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.domain.mapper.NoteTypesMapper;
 import org.folio.notes.domain.repository.NoteTypesRepository;
+import org.folio.notes.domain.repository.NoteTypeTuple;
 import org.folio.notes.exception.NoteTypeNotFoundException;
 import org.folio.notes.exception.NoteTypesLimitReached;
 import org.folio.notes.service.ConfigurationService;
@@ -32,13 +37,20 @@ public class NoteTypesServiceImpl implements NoteTypesService {
 
   @Override
   public NoteTypeCollection getNoteTypeCollection(String query, Integer offset, Integer limit) {
-    return mapper.toDtoCollection(repository.findByCQL(query, OffsetRequest.of(offset, limit)));
+    var noteTypes = repository.findByCQL(query, OffsetRequest.of(offset, limit));
+    var noteTypeIds = noteTypes.getContent().stream()
+      .map(NoteTypeEntity::getId)
+      .collect(Collectors.toList());
+    var usageNotes = getNoteUsage(noteTypeIds);
+    return mapper.toDtoCollection(noteTypes, usageNotes);
   }
 
   @Override
   public NoteType getNoteType(UUID id) {
+    var noteUsage = getNoteUsage(Collections.singletonList(id));
     return repository.findById(id)
       .map(mapper::toDto)
+      .map(noteType-> mapper.populateUsageNote(noteType, noteUsage))
       .orElseThrow(() -> notFound(id));
   }
 
@@ -91,4 +103,10 @@ public class NoteTypesServiceImpl implements NoteTypesService {
       throw new NoteTypesLimitReached(limit);
     }
   }
+
+  private Map<String, Long> getNoteUsage(List<UUID> noteTypeIds) {
+    return repository.findNoteUsage(noteTypeIds).stream()
+      .collect(Collectors.groupingBy(NoteTypeTuple::getNoteTypeId, Collectors.counting()));
+  }
+
 }
