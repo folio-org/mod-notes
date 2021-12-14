@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,9 +19,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import static org.folio.notes.support.DatabaseHelper.TYPE;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-
 import javax.validation.ConstraintViolationException;
 
 import org.hamcrest.Matcher;
@@ -28,13 +31,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
+import org.folio.notes.client.UsersClient;
+import org.folio.notes.domain.dto.Note;
 import org.folio.notes.domain.dto.NoteType;
+import org.folio.notes.domain.dto.User;
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.exception.NoteTypeNotFoundException;
 import org.folio.notes.exception.NoteTypesLimitReached;
@@ -44,12 +52,18 @@ import org.folio.spring.cql.CqlQueryValidationException;
 class NoteTypesControllerTest extends TestApiBase {
 
   private static final String BASE_URL = "/note-types";
+  private static final String NOTE_URL = "/notes";
+
+  @MockBean
+  private UsersClient client;
 
   @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
 
   @BeforeEach
   void setUp() {
+    var user = new User(UUID.randomUUID(), "test_user", null);
+    when(client.fetchUserById(USER_ID)).thenReturn(Optional.of(user));
     setUpConfigurationLimit(defaultNoteTypeLimit);
     databaseHelper.clearTable(TENANT, TYPE);
   }
@@ -65,6 +79,7 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.totalRecords").value(0));
   }
 
+
   @Test
   @DisplayName("Find all note-types")
   void returnCollection() throws Exception {
@@ -77,6 +92,26 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.noteTypes.[0].name", is(noteTypes.get(0).getName())))
       .andExpect(jsonPath("$.noteTypes.[1].name", is(noteTypes.get(1).getName())))
       .andExpect(jsonPath("$.totalRecords").value(noteTypes.size()));
+  }
+
+  @Test
+  @DisplayName("Find all note-types with note usage")
+  void returnCollectionWithNoteUsage() throws Exception {
+    var noteFirst = new Note().title("First");
+    var noteSecond = new Note().title("Second");
+    var noteThird = new Note().title("Third");
+
+    generateNoteType( Arrays.asList(noteFirst, noteSecond));
+    generateNoteType( Collections.singletonList(noteThird));
+    generateNoteType( Arrays.asList(noteFirst, noteSecond, noteThird));
+
+    mockMvc.perform(get(BASE_URL).headers(defaultHeaders()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.noteTypes.[0]", not(emptyOrNullString())))
+      .andExpect(jsonPath("$.noteTypes.[0].usage.noteTotal", is(2)))
+      .andExpect(jsonPath("$.noteTypes.[1].usage.noteTotal", is(1)))
+      .andExpect(jsonPath("$.noteTypes.[2].usage.noteTotal", is(3)))
+      .andExpect(jsonPath("$.totalRecords").value(3));
   }
 
   @Test
@@ -225,6 +260,29 @@ class NoteTypesControllerTest extends TestApiBase {
   }
 
   @Test
+  @DisplayName("Find note-type with note usage by ID")
+  void returnNoteTypeWithNoteUsageById() throws Exception {
+    NoteTypeEntity existNoteType = createNoteType("ById");
+    var noteFirst = new Note().title("First").typeId(existNoteType.getId()).domain("domain");
+    var noteSecond = new Note().title("Second").typeId(existNoteType.getId()).domain("domain");
+
+    mockMvc.perform(postNote(noteFirst))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.title", is(noteFirst.getTitle())));
+
+    mockMvc.perform(postNote(noteSecond))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.title", is(noteSecond.getTitle())));
+
+    mockMvc.perform(getById(existNoteType.getId()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id", is(existNoteType.getId().toString())))
+      .andExpect(jsonPath("$.name", is(existNoteType.getName())))
+      .andExpect(jsonPath("$.usage.noteTotal", is(2)))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+  }
+
+  @Test
   @DisplayName("Return 404 on get note-type by ID when it is not exist")
   void return404OnGetByIdWhenItNotExist() throws Exception {
     mockMvc.perform(getById(UUID.randomUUID()))
@@ -347,6 +405,29 @@ class NoteTypesControllerTest extends TestApiBase {
   private MockHttpServletRequestBuilder deleteById(UUID id) {
     return delete(BASE_URL + "/{id}", id)
       .headers(defaultHeaders());
+  }
+
+  void generateNoteType(List<Note> notes) throws Exception {
+    var noteType = new NoteType().name(RandomStringUtils.randomAlphabetic(100));
+    var contentAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
+    var existingNoteType = OBJECT_MAPPER.readValue(contentAsString, NoteType.class);
+    notes.forEach(note ->
+    {
+      note.setDomain("Domain");
+      note.setTypeId(existingNoteType.getId());
+      try {
+        mockMvc.perform(postNote(note))
+          .andExpect(status().isCreated())
+          .andExpect(jsonPath("$.title", is(note.getTitle())));
+      } catch (Exception ignored) {
+      }
+    });
+  }
+
+  private MockHttpServletRequestBuilder postNote(Note note) {
+    return post(NOTE_URL)
+      .headers(defaultHeaders())
+      .content(asJsonString(note));
   }
 
   private ResultMatcher errorMessageMatch(Matcher<String> errorMessageMatcher) {
