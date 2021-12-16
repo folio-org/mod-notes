@@ -1,3 +1,6 @@
+## 2.13.2 2021-12-16
+* MODNOTES-194 Kiwi R3 2021 - Log4j vulnerability verification and correction
+
 ## 2.13.1 2021-11-12
 * MODNOTES-190 Fix permissions for note-types
 
