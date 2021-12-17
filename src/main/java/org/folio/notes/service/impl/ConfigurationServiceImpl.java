@@ -12,7 +12,7 @@ import org.folio.notes.service.ConfigurationService;
 @RequiredArgsConstructor
 public class ConfigurationServiceImpl implements ConfigurationService {
 
-  private static final String MODULE_NAME = "mod-notes";
+  private static final String MODULE_NAME = "NOTES";
   private static final String CONFIG_QUERY = "module==%s and configName==%s";
 
   private final ConfigurationClient client;

@@ -100,13 +100,13 @@ public abstract class TestApiBase extends TestBase {
   protected void setUpConfigurationLimit(String limit) {
     List<ConfigurationEntry> configurations = new ArrayList<>();
     if (!limit.isBlank()) {
-      var configuration = new ConfigurationEntry("1", "mod-notes", "note-type-limit", limit);
+      var configuration = new ConfigurationEntry("1", "NOTES", "note-type-limit", limit);
       configurations.add(configuration);
     }
     var configs = new ConfigurationEntryCollection(configurations, configurations.size());
 
     Mockito.doReturn(configs).when(configurationClient)
-      .getConfiguration("module==mod-notes and configName==note-type-limit");
+      .getConfiguration("module==NOTES and configName==note-type-limit");
   }
 
   @TestConfiguration
