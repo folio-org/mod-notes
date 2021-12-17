@@ -1,3 +1,6 @@
+## 2.12.1 2021-12-17
+* MODNOTES-196 Juniper R2 2021 - Log4j vulnerability verification and correction
+
 ## 2.12.0 2021-06-09
 MODNOTES-174 Add `class` attribute to whitelist
 MODNOTES-176 Upgrade to RMB 33 and Vert.x 4.1.0.CR1
