@@ -65,7 +65,8 @@ public interface NoteTypesMapper {
   }
 
   private int getNoteTotal(Map<String, Long> usageNotes, NoteType noteType) {
-    return Math.toIntExact(usageNotes.get((noteType.getId().toString())));
+    var uuid = usageNotes.get(noteType.getId().toString());
+    return Math.toIntExact(uuid == null ? 0 : uuid);
   }
 
 }
