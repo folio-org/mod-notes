@@ -79,7 +79,7 @@ public abstract class TestApiBase extends TestBase {
     mockMvc.perform(post("/_/tenant").content(asJsonString(new TenantAttributes().moduleTo("mod-notes")))
         .headers(defaultHeaders())
         .contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
+      .andExpect(status().isNoContent());
   }
 
   @SneakyThrows
