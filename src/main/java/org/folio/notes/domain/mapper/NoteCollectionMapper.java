@@ -22,8 +22,6 @@ public interface NoteCollectionMapper {
   @Mapping(target = "metadata", source = ".", qualifiedByName = "BaseMetadataMapper")
   @Mapping(target = "typeId", expression = "java(entity.getType().getId())")
   @Mapping(target = "type", expression = "java(entity.getType().getName())")
-  @Mapping(target = "popUpOnCheckOut", ignore = true)
-  @Mapping(target = "popUpOnUser", ignore = true)
   Note toDto(NoteEntity entity);
 
   default NoteCollection toDtoCollection(Page<NoteEntity> entityList) {
