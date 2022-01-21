@@ -75,7 +75,7 @@ class NoteTypesControllerTest extends TestApiBase {
   void returnEmptyCollection() throws Exception {
     mockMvc.perform(get("/note-types").headers(defaultHeaders()))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.noteTypes").doesNotHaveJsonPath())
+      .andExpect(jsonPath("$.noteTypes").isEmpty())
       .andExpect(jsonPath("$.totalRecords").value(0));
   }
 

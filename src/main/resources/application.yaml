@@ -72,7 +72,7 @@ spring:
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration
   jackson:
-    default-property-inclusion: NON_EMPTY
+    default-property-inclusion: NON_NULL
   cache:
     type: caffeine
 management:
