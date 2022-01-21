@@ -36,6 +36,7 @@ import org.folio.notes.domain.entity.AuditableEntity_;
 import org.folio.notes.domain.entity.LinkEntity;
 import org.folio.notes.domain.entity.NoteEntity;
 import org.folio.notes.domain.entity.NoteEntity_;
+import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.domain.mapper.NoteCollectionMapper;
 import org.folio.notes.domain.mapper.NotesMapper;
 import org.folio.notes.domain.repository.LinkRepository;
@@ -164,7 +165,7 @@ public class NotesServiceImpl implements NotesService {
       deleteNote(id);
     } else {
       noteRepository.findById(id)
-        .ifPresentOrElse(entity -> saveNote(dto, noteDto -> notesMapper.updateNote(noteDto, entity)), throwNotFoundById(id));
+        .ifPresentOrElse(entity -> saveNote(dto, noteMapFunction(dto, entity)), throwNotFoundById(id));
     }
   }
 
@@ -192,6 +193,14 @@ public class NotesServiceImpl implements NotesService {
     } else {
       return DEFAULT_SORT_DIRECTION.get(orderBy);
     }
+  }
+
+  private Function<Note, NoteEntity> noteMapFunction(Note dto, NoteEntity noteEntity) {
+    if (!dto.getTypeId().equals(noteEntity.getType().getId())) {
+      noteEntity.setType(new NoteTypeEntity());
+    }
+
+    return noteDto -> notesMapper.updateNote(noteDto, noteEntity);
   }
 
   private NoteEntity saveNote(Note dto, Function<Note, NoteEntity> mapFunction) {
