@@ -1,20 +1,19 @@
-
 buildMvn {
   publishModDescriptor = true
   mvnDeploy = true
   doKubeDeploy = true
-  buildNode =  'jenkins-agent-java11'
+  buildNode = 'jenkins-agent-java11'
 
   doApiLint = true
   doApiDoc = true
-  apiTypes = 'RAML'
-  apiDirectories = 'ramls'
+  apiTypes = 'OAS'
+  apiDirectories = 'src/main/resources/swagger.api'
 
   doDocker = {
-    buildJavaDocker {
-      publishMaster = true
-      healthChk = true
-      healthChkCmd = 'curl -sS --fail -o /dev/null  http://localhost:8081/apidocs/ || exit 1'
+    buildDocker {
+      publishMaster = 'yes'
+      healthChk = 'yes'
+      healthChkCmd = 'curl -sS --fail -o /dev/null http://localhost:8081/admin/health || exit 1'
     }
   }
 }

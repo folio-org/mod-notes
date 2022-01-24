@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+  objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+  <changeSet id="MODTAG-52@@create-pg-trgm-extension" author="Pavlo_Smahin">
+    <sqlFile path="sql/create-pgcrypto-extension.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODTAG-52@@create-pgcrypto-extension" author="Pavlo_Smahin">
+    <sqlFile path="sql/create-pg-tgrm-extension.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@create-note-table" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="note"/>
+      </not>
+    </preConditions>
+    <createTable tableName="note">
+      <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="note_pkey"/>
+      </column>
+      <column name="title" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="content" type="text"/>
+      <column name="indexed_content" type="text">
+        <constraints nullable="false"/>
+      </column>
+      <column name="domain" type="VARCHAR(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="type_id" type="UUID">
+        <constraints nullable="false"/>
+      </column>
+      <column name="pop_up_on_user" type="boolean" defaultValueBoolean="false"/>
+      <column name="pop_up_on_check_out" type="boolean" defaultValueBoolean="false"/>
+      <column name="created_by" type="UUID"/>
+      <column name="created_date" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="now()">
+        <constraints nullable="false"/>
+      </column>
+      <column name="updated_by" type="UUID"/>
+      <column name="updated_date" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="MODTAG-52@@create-compute-indexed-content-trigger" author="Pavlo_Smahin">
+    <sqlFile path="sql/create-compute-indexed-content-trigger.sql" splitStatements="false"
+             relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@create-note-link-table" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="note_link"/>
+      </not>
+    </preConditions>
+    <createTable tableName="note_link">
+      <column name="note_id" type="UUID">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="note_link_pkey"/>
+      </column>
+      <column name="link_id" type="UUID">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="note_link_pkey"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@create-link-table" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="link"/>
+      </not>
+    </preConditions>
+    <createTable tableName="link">
+      <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="link_pkey"/>
+      </column>
+      <column name="object_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="object_type" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@create-type-table" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="type"/>
+      </not>
+    </preConditions>
+    <createTable tableName="type">
+      <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="type_pkey"/>
+      </column>
+      <column name="name" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="created_by" type="UUID"/>
+      <column name="created_date" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="now()">
+        <constraints nullable="false"/>
+      </column>
+      <column name="updated_by" type="UUID"/>
+      <column name="updated_date" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@add-note-id-to-note-link-fk" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="note_id_fkey"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="note_id" baseTableName="note_link" constraintName="note_id_fkey"
+                             onDelete="CASCADE" onUpdate="CASCADE" referencedColumnNames="id"
+                             referencedTableName="note"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@add-link-id-to-note-link-fk" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="link_id_fkey"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="link_id" baseTableName="note_link" constraintName="link_id_fkey"
+                             onDelete="CASCADE" onUpdate="CASCADE" referencedColumnNames="id"
+                             referencedTableName="link"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@add-type-id-to-note-fk" author="Pavlo_Smahin">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="type_id_fkey"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="type_id" baseTableName="note" constraintName="type_id_fkey"
+                             onDelete="CASCADE" onUpdate="CASCADE" referencedColumnNames="id"
+                             referencedTableName="type"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@add-unique-link-id-type-constraint" author="Pavlo_Smahin">
+    <addUniqueConstraint columnNames="object_id, object_type" constraintName="uc_link_object_id_and_type" tableName="link"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@add-unique-type-name-constraint" author="Pavlo_Smahin">
+    <addUniqueConstraint columnNames="name" constraintName="uc_type_name" tableName="type"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@add-link-id-and-type-index" author="Pavlo_Smahin">
+    <createIndex tableName="link" indexName="idx_link_object_id_and_type">
+      <column name="object_id"/>
+      <column name="object_type"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@add-note-content-index" author="Pavlo_Smahin">
+    <sqlFile path="sql/add-note-content-index.sql" relativeToChangelogFile="true"/>
+  </changeSet>
+
+  <changeSet id="MODNOTES-182@@add-note-type-id-index" author="Pavlo_Smahin">
+    <createIndex tableName="note" indexName="idx_note_type_id">
+      <column name="type_id"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

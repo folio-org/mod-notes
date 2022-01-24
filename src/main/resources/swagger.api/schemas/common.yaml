@@ -1,0 +1,75 @@
+uuid:
+  type: string
+  format: uuid
+
+metadata:
+  type: object
+  title: Metadata
+  description: Metadata about creation and changes to records
+  properties:
+    createdDate:
+      type: string
+      format: date-time
+      description: Date and time when the record was created
+    createdByUserId:
+      $ref: '#/uuid'
+      description: ID of the user who created the record
+    createdByUsername:
+      type: string
+      description: Username of the user who created the record (when available)
+    createdBy:
+      $ref: '#/userInfo'
+      description: Additional information of the user who created the record (when available)
+    updatedDate:
+      type: string
+      format: date-time
+      description: Date and time when the record was last updated
+    updatedByUserId:
+      $ref: '#/uuid'
+      description: ID of the user who last updated the record
+    updatedByUsername:
+      type: string
+      description: Username of the user who updated the record (when available)
+    updatedBy:
+      $ref: '#/userInfo'
+      description: Additional information of the user who updated the record (when available)
+  required:
+    - createdDate
+
+userInfo:
+  type: object
+  description: User Display Information
+  properties:
+    lastName:
+      type: string
+      readOnly: true
+      description: Last name of the user
+    firstName:
+      type: string
+      readOnly: true
+      description: First name of the user
+    middleName:
+      type: string
+      readOnly: true
+      description: Middle name or initial of the user
+  example:
+    lastName: Doe
+    firstName: John
+    middleName: X.
+
+errors:
+  type: object
+  example:
+    Error:
+      value:
+        errors:
+          - message: may not be null
+            type: 1
+            code: -1
+            parameters:
+              - key: moduleTo
+                value: null
+
+orderDirection:
+  type: string
+  enum: [ asc, desc ]

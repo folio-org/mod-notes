@@ -1,0 +1,376 @@
+openapi: 3.0.0
+info:
+  title: Notes API
+  version: 1.0.0
+paths:
+  /note-types:
+    get:
+      description: Return a list of note types
+      operationId: getNoteTypeCollection
+      tags:
+        - note-types
+      parameters:
+        - $ref: '#/components/parameters/cqlQuery'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          $ref: '#/components/responses/NoteTypeCollection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          description: Unexpected error
+    post:
+      description: Create a new note type.
+      operationId: createNoteType
+      tags:
+        - note-types
+      requestBody:
+        $ref: '#/components/requestBodies/NoteTypeBody'
+      responses:
+        '201':
+          $ref: '#/components/responses/NoteType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          description: Unexpected error
+  /note-types/{id}:
+    parameters:
+      - $ref: '#/components/parameters/resourceId'
+    get:
+      description: Retrieve note type with given ID
+      operationId: getNoteType
+      tags:
+        - note-types
+      responses:
+        '200':
+          $ref: '#/components/responses/NoteType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          description: Unexpected error
+    put:
+      description: Update note type with given ID
+      operationId: updateNoteType
+      tags:
+        - note-types
+      requestBody:
+        $ref: '#/components/requestBodies/NoteTypeBody'
+      responses:
+        '204':
+          description: Note Type successfully updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Unexpected error
+    delete:
+      description: Delete note type with given ID
+      operationId: deleteNoteType
+      tags:
+        - note-types
+      responses:
+        '204':
+          description: Note type deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Unexpected error
+
+  /notes:
+    get:
+      description: Return a list of notes
+      operationId: getNoteCollection
+      tags:
+        - notes
+      parameters:
+        - $ref: '#/components/parameters/cqlQuery'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          $ref: '#/components/responses/NoteCollection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          description: Unexpected error
+    post:
+      description: Create a new note.
+      operationId: createNote
+      tags:
+        - notes
+      requestBody:
+        $ref: '#/components/requestBodies/NoteBody'
+      responses:
+        '201':
+          $ref: '#/components/responses/Note'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          description: Unexpected error
+  /notes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/resourceId'
+    get:
+      description: Retrieve note with given ID
+      operationId: getNote
+      tags:
+        - notes
+      responses:
+        '200':
+          $ref: '#/components/responses/Note'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          description: Unexpected error
+    put:
+      description: Update note with given ID
+      operationId: updateNote
+      tags:
+        - notes
+      requestBody:
+        $ref: '#/components/requestBodies/NoteBody'
+      responses:
+        '204':
+          description: Note successfully updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Unexpected error
+    delete:
+      description: Delete note with given ID
+      operationId: deleteNote
+      tags:
+        - notes
+      responses:
+        '204':
+          description: Note deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Unexpected error
+
+  /note-links/type/{objectType}/id/{objectId}:
+    parameters:
+      - $ref: '#/components/parameters/objectType'
+      - $ref: '#/components/parameters/objectId'
+    put:
+      description: Add or delete links to specified list of notes
+      operationId: updateLinks
+      tags:
+        - notes
+      requestBody:
+        $ref: '#/components/requestBodies/NoteLinksPutBody'
+      responses:
+        '204':
+          description: Links successfully added
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Unexpected error
+  /note-links/domain/{domain}/type/{objectType}/id/{objectId}:
+    parameters:
+      - $ref: '#/components/parameters/domain'
+      - $ref: '#/components/parameters/objectType'
+      - $ref: '#/components/parameters/objectId'
+    get:
+      description: Return a list of notes by status
+      operationId: getNoteCollectionByLink
+      tags:
+        - notes
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          required: false
+          description: Partial match case-insensitive search term for note title and note content
+        - name: noteType
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          required: false
+          description: Search string for note type. Note(s) is returned only if it equals to
+            specified word or sequence of words in the titleseparated by com type name. Multiple types should be
+            declared with query parameter sequentially as follows "noteType=a&noteType=b".
+        - name: status
+          in: query
+          schema:
+            $ref: 'schemas/link.yaml#/linkStatusFilter'
+            default: all
+          required: false
+          description: Filtering records by status. Possible values are ASSIGNED, UNASSIGNED, ALL.
+        - name: orderBy
+          in: query
+          schema:
+            $ref: 'schemas/link.yaml#/notesOrderBy'
+          required: false
+          description: Field by which notes are ordered. Possible values are title, content, noteType, updatedDate.
+            The default ascending sorting is applied for title, content, noteType parameters. For updatedDate is descending.
+        - name: order
+          in: query
+          schema:
+            $ref: 'schemas/common.yaml#/orderDirection'
+          required: false
+          description: Indicates order of notes. Possible values asc, desc.
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          $ref: '#/components/responses/NoteCollection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          description: Unexpected error
+
+
+components:
+  requestBodies:
+    NoteTypeBody:
+      description: Note type object
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: 'schemas/noteType.yaml#/noteType'
+    NoteBody:
+      description: Note object
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: 'schemas/note.yaml#/note'
+    NoteLinksPutBody:
+      description: Collection of note links
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: 'schemas/link.yaml#/noteLinkUpdateCollection'
+  responses:
+    NoteType:
+      description: Returns a note type
+      content:
+        application/json:
+          schema:
+            $ref: 'schemas/noteType.yaml#/noteType'
+    NoteTypeCollection:
+      description: Returns a note types collectiom
+      content:
+        application/json:
+          schema:
+            $ref: 'schemas/noteType.yaml#/noteTypeCollection'
+    Note:
+      description: Returns a note
+      content:
+        application/json:
+          schema:
+            $ref: 'schemas/note.yaml#/note'
+    NoteCollection:
+      description: Returns a note collectiom
+      content:
+        application/json:
+          schema:
+            $ref: 'schemas/note.yaml#/noteCollection'
+    Unauthorized:
+      description: Not authorized to perform requested action
+      content:
+        text/plain:
+          example: unable to perform action -- unauthorized
+    NotFound:
+      description: Resource with a given ID not found
+      content:
+        text/plain:
+          example: resource not found
+    UnprocessableEntity:
+      description: Validation errors
+      content:
+        application/json:
+          schema:
+            $ref: 'schemas/common.yaml#/errors'
+  parameters:
+    resourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        "$ref": 'schemas/common.yaml#/uuid'
+      description: The UUID of a resource
+    objectId:
+      name: objectId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The ID of link's object
+    objectType:
+      name: objectType
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The type of link's object
+    domain:
+      name: domain
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The domain of note
+    cqlQuery:
+      name: query
+      in: query
+      schema:
+        type: string
+        default: cql.allRecords=1
+      required: false
+      description: A query expressed as a CQL string
+    offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+        maximum: 2147483647
+      required: false
+      description: Skip over a number of elements by specifying an offset value for the query
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 1000
+        minimum: 1
+        maximum: 2147483647
+      required: false
+      description: Limit the number of elements returned in the response

@@ -1,0 +1,90 @@
+# Module properties
+folio:
+  tenant:
+    validation:
+      enabled: false
+  logging:
+    request:
+      enabled: true
+      level: full
+    feign:
+      enabled: true
+      level: basic
+  notes:
+    cache:
+      configs:
+        users-by-id:
+          initialCapacity: 20
+          maximumSize: 100
+          expireAfterWrite: 60
+    configuration:
+      module:
+        name: NOTES
+    types:
+      defaults:
+        name: General note
+        limit: 25
+    content:
+      allowed:
+        tags:
+          - p
+          - strong
+          - em
+          - a
+          - u
+          - ol
+          - ul
+          - li
+          - h1
+          - h2
+          - h3
+          - br
+        attributes:
+          all:
+            - class
+          a:
+            - href
+            - rel
+            - target
+
+# Spring properties
+spring:
+  application:
+    name: mod-notes
+  datasource:
+    continue-on-error: true
+    password: ${DB_PASSWORD:folio_admin}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_DATABASE:okapi_modules}
+    username: ${DB_USERNAME:folio_admin}
+  jpa:
+    open-in-view: true
+    database-platform: org.folio.notes.config.hibernate.ExtendedPostgreSQL10Dialect
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.folio.notes.config.hibernate.ExtendedPostgreSQL10Dialect
+        format_sql: true
+    show-sql: false
+  liquibase:
+    changeLog: classpath:db/changelog/changelog-master.xml
+    enabled: true
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration
+  jackson:
+    default-property-inclusion: NON_NULL
+  cache:
+    type: caffeine
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info,health,env,httptrace
+      base-path: /admin
+  health:
+    defaults:
+      enabled: false
+    readinessstate:
+      enabled: true
+server:
+  port: 8081
