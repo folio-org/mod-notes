@@ -95,18 +95,16 @@
             "POST"
           ],
           "pathPattern": "/note-types",
-          "permissionsRequired": [
-            "note.types.item.post"
-          ]
+          "permissionsRequired": ["note.types.item.post"],
+          "modulePermissions": ["users.item.get"]
         },
         {
           "methods": [
             "PUT"
           ],
           "pathPattern": "/note-types/{id}",
-          "permissionsRequired": [
-            "note.types.item.put"
-          ]
+          "permissionsRequired": ["note.types.item.put"],
+          "modulePermissions": ["users.item.get"]
         },
         {
           "methods": [

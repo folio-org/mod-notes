@@ -1,3 +1,6 @@
+## 2.14.0-SNAPSHOT 2021-xx-xx
+* MODNOTES-194 Kiwi R3 2021 - Log4j vulnerability verification and correction
+
 ## 2.13.0 2021-10-04
 * MODNOTES-172 Add script to update function update_search_content()
 
