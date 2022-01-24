@@ -287,6 +287,45 @@ class NoteControllerTest extends TestApiBase {
   }
 
   @Test
+  @DisplayName("Update note type for existing note")
+  void updateNoteTypeForExistingNote() throws Exception {
+    var existNote = createNote("Exist");
+    var newNoteType = createNoteType();
+    var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
+    var updatedNote = new Note().title("Updated").domain(DOMAIN).typeId(newNoteType.getId()).links(links);
+
+    mockMvc.perform(putById(existNote.getId(), updatedNote))
+      .andExpect(status().isNoContent());
+
+    mockMvc.perform(getById(existNote.getId()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id", is(existNote.getId().toString())))
+      .andExpect(jsonPath("$.title", is(updatedNote.getTitle())))
+      .andExpect(jsonPath("$.typeId", is(updatedNote.getTypeId().toString())))
+      .andExpect(jsonPath("$.metadata.updatedByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+  }
+
+  @Test
+  @DisplayName("Return 422 on update note type for existing note when note type does not exist")
+  void return422OnUpdateNoteTypeForExistingNoteWhenNoteTypeDoesNotExist() throws Exception {
+    var existNote = createNote("Exist");
+    var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
+    var updatedNote = new Note().title("Updated").domain(DOMAIN).typeId(UUID.randomUUID()).links(links);
+
+    mockMvc.perform(putById(existNote.getId(), updatedNote))
+      .andExpect(status().isUnprocessableEntity());
+
+    mockMvc.perform(getById(existNote.getId()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id", is(existNote.getId().toString())))
+      .andExpect(jsonPath("$.title", is(existNote.getTitle())))
+      .andExpect(jsonPath("$.typeId", is(existNote.getType().getId().toString())))
+      .andExpect(jsonPath("$.metadata.updatedByUserId").doesNotExist())
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+  }
+
+  @Test
   @DisplayName("Return 404 on update note by ID when it is not exist")
   void return404OnPutByIdWhenItNotExist() throws Exception {
     var noteType = createNoteType();
