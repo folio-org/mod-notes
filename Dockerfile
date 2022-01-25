@@ -1,7 +1,7 @@
 FROM folioci/alpine-jre-openjdk11:latest
 
 # Copy your fat jar to the container
-ENV APP_FILE mod-tags-fat.jar
+ENV APP_FILE mod-notes-fat.jar
 # - should be a single jar file
 ARG JAR_FILE=./target/*.jar
 # - copy
