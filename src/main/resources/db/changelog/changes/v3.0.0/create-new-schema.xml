@@ -37,8 +37,12 @@
       <column name="type_id" type="UUID">
         <constraints nullable="false"/>
       </column>
-      <column name="pop_up_on_user" type="boolean" defaultValueBoolean="false"/>
-      <column name="pop_up_on_check_out" type="boolean" defaultValueBoolean="false"/>
+      <column name="pop_up_on_user" type="boolean" defaultValueBoolean="false">
+        <constraints nullable="false"/>
+      </column>
+      <column name="pop_up_on_check_out" type="boolean" defaultValueBoolean="false">
+        <constraints nullable="false"/>
+      </column>
       <column name="created_by" type="UUID"/>
       <column name="created_date" type="TIMESTAMP WITHOUT TIME ZONE" defaultValueComputed="now()">
         <constraints nullable="false"/>
