@@ -188,6 +188,11 @@
       "description": "All domains"
     },
     {
+      "permissionName": "note.types.collection.get",
+      "displayName": "Note types - get note types collection",
+      "description": "Get note types collection"
+    },
+    {
       "permissionName": "note.types.item.get",
       "displayName": "Note types - get individual note type from storage",
       "description": "Get individual note type"
