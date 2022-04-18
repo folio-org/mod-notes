@@ -32,7 +32,6 @@ public interface ConfigurationClient {
 
   @Value
   class ConfigurationEntry {
-
     String id;
     String module;
     String configName;
@@ -41,7 +40,6 @@ public interface ConfigurationClient {
 
   @Value
   class ConfigurationEntryCollection {
-
     List<ConfigurationEntry> configs;
     Integer totalRecords;
   }

@@ -1,5 +1,8 @@
 package org.folio.notes.controller;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static org.folio.notes.support.DatabaseHelper.TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -17,15 +20,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import static org.folio.notes.support.DatabaseHelper.TYPE;
-
+import com.github.tomakehurst.wiremock.client.WireMock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.validation.ConstraintViolationException;
-
+import org.folio.notes.client.UsersClient;
+import org.folio.notes.domain.dto.Note;
+import org.folio.notes.domain.dto.NoteType;
+import org.folio.notes.domain.dto.User;
+import org.folio.notes.domain.entity.NoteTypeEntity;
+import org.folio.notes.exception.NoteTypeNotFoundException;
+import org.folio.notes.exception.NoteTypesLimitReached;
+import org.folio.notes.support.TestApiBase;
+import org.folio.spring.cql.CqlQueryValidationException;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,16 +48,6 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
-
-import org.folio.notes.client.UsersClient;
-import org.folio.notes.domain.dto.Note;
-import org.folio.notes.domain.dto.NoteType;
-import org.folio.notes.domain.dto.User;
-import org.folio.notes.domain.entity.NoteTypeEntity;
-import org.folio.notes.exception.NoteTypeNotFoundException;
-import org.folio.notes.exception.NoteTypesLimitReached;
-import org.folio.notes.support.TestApiBase;
-import org.folio.spring.cql.CqlQueryValidationException;
 
 class NoteTypesControllerTest extends TestApiBase {
 
@@ -79,7 +79,6 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.totalRecords").value(0));
   }
 
-
   @Test
   @DisplayName("Find all note-types")
   void returnCollection() throws Exception {
@@ -101,9 +100,9 @@ class NoteTypesControllerTest extends TestApiBase {
     var noteSecond = new Note().title("Second");
     var noteThird = new Note().title("Third");
 
-    generateNoteType( Arrays.asList(noteFirst, noteSecond));
-    generateNoteType( Collections.singletonList(noteThird));
-    generateNoteType( Arrays.asList(noteFirst, noteSecond, noteThird));
+    generateNoteType(Arrays.asList(noteFirst, noteSecond));
+    generateNoteType(Collections.singletonList(noteThird));
+    generateNoteType(Arrays.asList(noteFirst, noteSecond, noteThird));
 
     mockMvc.perform(get(BASE_URL).headers(defaultHeaders()))
       .andExpect(status().isOk())
@@ -199,6 +198,27 @@ class NoteTypesControllerTest extends TestApiBase {
   @DisplayName("Create new note-type with use default limit if config doesn't exist")
   void createNewNoteTypeWithUseDefaultLimit() throws Exception {
     setUpConfigurationLimit(" ");
+
+    String name = "First";
+    NoteType noteType = new NoteType().name(name);
+
+    mockMvc.perform(postNoteType(noteType))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.name", is(name)))
+      .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
+    assertEquals(1, rowsInTable);
+  }
+
+  @Test
+  @DisplayName("Create new note-type with use default limit if config returns error")
+  void createNewNoteTypeWithUseDefaultLimitIfConfigReturnsError() throws Exception {
+    wireMockServer.stubFor(WireMock.get(urlMatching("configurations/entries"))
+      .willReturn(aResponse()
+        .withStatus(400)
+        .withBody("Required permission")));
 
     String name = "First";
     NoteType noteType = new NoteType().name(name);
