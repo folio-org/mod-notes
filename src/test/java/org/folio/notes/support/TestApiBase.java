@@ -128,9 +128,7 @@ public abstract class TestApiBase extends TestBase {
           .request(Request.create(
             Request.HttpMethod.GET,
             "configurations/entries", headers,
-            null,
-            null,
-            null))
+            null, null, null))
           .build()));
   }
 
