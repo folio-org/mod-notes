@@ -1,7 +1,5 @@
 package org.folio.notes.controller;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static org.folio.notes.support.DatabaseHelper.TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -20,7 +18,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -215,10 +212,7 @@ class NoteTypesControllerTest extends TestApiBase {
   @Test
   @DisplayName("Create new note-type with use default limit if config returns error")
   void createNewNoteTypeWithUseDefaultLimitIfConfigReturnsError() throws Exception {
-    wireMockServer.stubFor(WireMock.get(urlMatching("configurations/entries"))
-      .willReturn(aResponse()
-        .withStatus(400)
-        .withBody("Required permission")));
+    stubConfigurationClientError(400, "Required permission: get-configuration");
 
     String name = "First";
     NoteType noteType = new NoteType().name(name);

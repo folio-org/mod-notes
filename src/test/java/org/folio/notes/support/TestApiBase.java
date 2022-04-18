@@ -1,11 +1,16 @@
 package org.folio.notes.support;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
+import feign.FeignException;
+import feign.Request;
+import feign.Response;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,11 +18,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,7 +34,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.util.SocketUtils;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.folio.notes.client.ConfigurationClient;
@@ -48,10 +52,8 @@ public abstract class TestApiBase extends TestBase {
 
   protected static final String TENANT = "test";
   protected static final String USER_ID = "77777777-7777-7777-7777-777777777777";
-  protected static final int WIRE_MOCK_PORT = SocketUtils.findAvailableTcpPort();
 
   protected static final ObjectMapper OBJECT_MAPPER;
-  protected static WireMockServer wireMockServer;
 
   static {
     postgreDBContainer.start();
@@ -60,21 +62,18 @@ public abstract class TestApiBase extends TestBase {
       .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
       .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
       .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-    .registerModule(new JavaTimeModule());
+      .registerModule(new JavaTimeModule());
   }
 
   @Autowired
   protected MockMvc mockMvc;
   @Autowired
   protected DatabaseHelper databaseHelper;
-  @Autowired
+  @MockBean
   protected ConfigurationClient configurationClient;
 
   @BeforeAll
   static void beforeAll(@Autowired MockMvc mockMvc) {
-    wireMockServer = new WireMockServer(WIRE_MOCK_PORT);
-    wireMockServer.start();
-
     setUpTenant(mockMvc);
   }
 
@@ -114,12 +113,25 @@ public abstract class TestApiBase extends TestBase {
     }
     var configs = new ConfigurationEntryCollection(configurations, configurations.size());
 
-
+    Mockito.doReturn(configs).when(configurationClient)
+      .getConfiguration("module==NOTES and configName==note-type-limit");
   }
 
-  @AfterAll
-  static void tearDown() {
-    wireMockServer.stop();
+  protected void stubConfigurationClientError(int status, String message) {
+    Map<String, Collection<String>> headers = new HashMap<>();
+    Mockito.when(configurationClient.getConfiguration(anyString()))
+      .thenThrow(FeignException.errorStatus("getConfiguration",
+        Response.builder()
+          .status(status)
+          .headers(headers)
+          .reason(message)
+          .request(Request.create(
+            Request.HttpMethod.GET,
+            "configurations/entries", headers,
+            null,
+            null,
+            null))
+          .build()));
   }
 
   @TestConfiguration
