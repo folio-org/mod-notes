@@ -79,7 +79,6 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.totalRecords").value(0));
   }
 
-
   @Test
   @DisplayName("Find all note-types")
   void returnCollection() throws Exception {
@@ -101,9 +100,9 @@ class NoteTypesControllerTest extends TestApiBase {
     var noteSecond = new Note().title("Second");
     var noteThird = new Note().title("Third");
 
-    generateNoteType( Arrays.asList(noteFirst, noteSecond));
-    generateNoteType( Collections.singletonList(noteThird));
-    generateNoteType( Arrays.asList(noteFirst, noteSecond, noteThird));
+    generateNoteType(Arrays.asList(noteFirst, noteSecond));
+    generateNoteType(Collections.singletonList(noteThird));
+    generateNoteType(Arrays.asList(noteFirst, noteSecond, noteThird));
 
     mockMvc.perform(get(BASE_URL).headers(defaultHeaders()))
       .andExpect(status().isOk())
@@ -199,6 +198,24 @@ class NoteTypesControllerTest extends TestApiBase {
   @DisplayName("Create new note-type with use default limit if config doesn't exist")
   void createNewNoteTypeWithUseDefaultLimit() throws Exception {
     setUpConfigurationLimit(" ");
+
+    String name = "First";
+    NoteType noteType = new NoteType().name(name);
+
+    mockMvc.perform(postNoteType(noteType))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.name", is(name)))
+      .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+
+    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
+    assertEquals(1, rowsInTable);
+  }
+
+  @Test
+  @DisplayName("Create new note-type with use default limit if config returns error")
+  void createNewNoteTypeWithUseDefaultLimitIfConfigReturnsError() throws Exception {
+    stubConfigurationClientError(400, "Required permission: get-configuration");
 
     String name = "First";
     NoteType noteType = new NoteType().name(name);

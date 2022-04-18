@@ -1,10 +1,16 @@
 package org.folio.notes.support;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import feign.FeignException;
+import feign.Request;
+import feign.Response;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -12,6 +18,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,7 +62,7 @@ public abstract class TestApiBase extends TestBase {
       .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
       .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
       .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-    .registerModule(new JavaTimeModule());
+      .registerModule(new JavaTimeModule());
   }
 
   @Autowired
@@ -108,6 +115,21 @@ public abstract class TestApiBase extends TestBase {
 
     Mockito.doReturn(configs).when(configurationClient)
       .getConfiguration("module==NOTES and configName==note-type-limit");
+  }
+
+  protected void stubConfigurationClientError(int status, String message) {
+    Map<String, Collection<String>> headers = new HashMap<>();
+    Mockito.when(configurationClient.getConfiguration(anyString()))
+      .thenThrow(FeignException.errorStatus("getConfiguration",
+        Response.builder()
+          .status(status)
+          .headers(headers)
+          .reason(message)
+          .request(Request.create(
+            Request.HttpMethod.GET,
+            "configurations/entries", headers,
+            null, null, null))
+          .build()));
   }
 
   @TestConfiguration
