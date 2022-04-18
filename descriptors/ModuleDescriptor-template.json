@@ -96,7 +96,10 @@
           ],
           "pathPattern": "/note-types",
           "permissionsRequired": ["note.types.item.post"],
-          "modulePermissions": ["users.item.get"]
+          "modulePermissions": [
+            "configuration.entries.collection.get",
+            "users.item.get"
+          ]
         },
         {
           "methods": [
