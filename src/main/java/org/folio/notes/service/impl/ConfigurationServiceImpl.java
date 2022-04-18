@@ -30,7 +30,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
         return configuration.getValue();
       }
     } catch (Exception ex) {
-      log.info("Failed to get configuration={} : {}", configName, ex.getMessage());
+      log.warn("Failed to get configuration={} : {}", configName, ex.getMessage());
     }
     return defaultValue;
   }
