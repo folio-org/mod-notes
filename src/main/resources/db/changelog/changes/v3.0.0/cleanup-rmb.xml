@@ -6,85 +6,85 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
-  <changeSet id="MODNOTES-182@@drop-rmb-job-table" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP TABLE IF EXISTS rmb_job</sql>
+  <changeSet id="MODNOTES-182@@drop-rmb-job-table" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP TABLE IF EXISTS ${database.defaultSchemaName}.rmb_job</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-rmb-internal-table" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP TABLE IF EXISTS rmb_internal</sql>
+  <changeSet id="MODNOTES-182@@drop-rmb-internal-table" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP TABLE IF EXISTS ${database.defaultSchemaName}.rmb_internal</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-rmb-internal-analyze-table" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP TABLE IF EXISTS rmb_internal_analyze</sql>
+  <changeSet id="MODNOTES-182@@drop-rmb-internal-analyze-table" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP TABLE IF EXISTS ${database.defaultSchemaName}.rmb_internal_analyze</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-rmb-internal-index-table" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP TABLE IF EXISTS rmb_internal_index</sql>
+  <changeSet id="MODNOTES-182@@drop-rmb-internal-index-table" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP TABLE IF EXISTS ${database.defaultSchemaName}.rmb_internal_index</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-count-estimate-smart2-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS count_estimate_smart2</sql>
+  <changeSet id="MODNOTES-182@@drop-count-estimate-smart2-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.count_estimate_smart2</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-first-array-object-value-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS first_array_object_value</sql>
+  <changeSet id="MODNOTES-182@@drop-first-array-object-value-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.first_array_object_value</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-normalize-digits-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS normalize_digits</sql>
+  <changeSet id="MODNOTES-182@@drop-normalize-digits-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.normalize_digits</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-count-estimate-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS count_estimate</sql>
+  <changeSet id="MODNOTES-182@@drop-count-estimate-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.count_estimate</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-concat-array-object-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS concat_array_object</sql>
+  <changeSet id="MODNOTES-182@@drop-concat-array-object-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.concat_array_object</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-concat-array-object-values2-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS concat_array_object_values (in jsonb_array jsonb, in field text)</sql>
+  <changeSet id="MODNOTES-182@@drop-concat-array-object-values2-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.concat_array_object_values (in jsonb_array jsonb, in field text)</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-concat-array-object-values4-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS concat_array_object_values (in jsonb_array jsonb, in field text, in filterkey text, in filtervalue text)</sql>
+  <changeSet id="MODNOTES-182@@drop-concat-array-object-values4-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.concat_array_object_values (in jsonb_array jsonb, in field text, in filterkey text, in filtervalue text)</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-tsquery-or-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS tsquery_or (in text)</sql>
+  <changeSet id="MODNOTES-182@@drop-tsquery-or-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.tsquery_or (in text)</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-uuid-smaller-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS uuid_smaller CASCADE</sql>
+  <changeSet id="MODNOTES-182@@drop-uuid-smaller-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.uuid_smaller CASCADE</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-count-estimate-default-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS count_estimate_default</sql>
+  <changeSet id="MODNOTES-182@@drop-count-estimate-default-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.count_estimate_default</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-next-uuid-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS next_uuid</sql>
+  <changeSet id="MODNOTES-182@@drop-next-uuid-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.next_uuid</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-uuid-larger-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS uuid_larger CASCADE</sql>
+  <changeSet id="MODNOTES-182@@drop-uuid-larger-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.uuid_larger CASCADE</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-tsquery-phrase-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS tsquery_phrase (in text)</sql>
+  <changeSet id="MODNOTES-182@@drop-tsquery-phrase-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.tsquery_phrase (in text)</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-get-tsvector-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS get_tsvector</sql>
+  <changeSet id="MODNOTES-182@@drop-get-tsvector-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.get_tsvector</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-rmb-internal-index-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS rmb_internal_index</sql>
+  <changeSet id="MODNOTES-182@@drop-rmb-internal-index-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.rmb_internal_index</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-tsquery-and-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS tsquery_and (in text)</sql>
+  <changeSet id="MODNOTES-182@@drop-tsquery-and-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.tsquery_and (in text)</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-concat-space-sql-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS concat_space_sql</sql>
+  <changeSet id="MODNOTES-182@@drop-concat-space-sql-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.concat_space_sql</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-set-id-in-jsonb-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS set_id_in_jsonb CASCADE</sql>
+  <changeSet id="MODNOTES-182@@drop-set-id-in-jsonb-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.set_id_in_jsonb CASCADE</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-set-note-type-md-json-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS set_note_type_md_json CASCADE</sql>
+  <changeSet id="MODNOTES-182@@drop-set-note-type-md-json-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.set_note_type_md_json CASCADE</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-set-note-data-md-json-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS set_note_data_md_json CASCADE</sql>
+  <changeSet id="MODNOTES-182@@drop-set-note-data-md-json-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.set_note_data_md_json CASCADE</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-f-unaccent-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS f_unaccent CASCADE</sql>
+  <changeSet id="MODNOTES-182@@drop-f-unaccent-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.f_unaccent CASCADE</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-upsert-function" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS upsert</sql>
+  <changeSet id="MODNOTES-182@@drop-upsert-function" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.upsert</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-rmb-internal-id-seq-sequence" author="Pavlo_Smahin">
-    <sql dbms="postgresql">DROP SEQUENCE IF EXISTS rmb_internal_id_seq</sql>
+  <changeSet id="MODNOTES-182@@drop-rmb-internal-id-seq-sequence" author="Pavlo_Smahin" runOnChange="true">
+    <sql dbms="postgresql">DROP SEQUENCE IF EXISTS ${database.defaultSchemaName}.rmb_internal_id_seq</sql>
   </changeSet>
 </databaseChangeLog>
