@@ -18,7 +18,7 @@ INSERT INTO note_type(id, jsonb)
                                                  "metadata": {
                                                      "createdDate": "2021-10-28T10:46:55.066+00:00",
                                                      "updatedDate": "2021-10-28T10:46:55.066+00:00",
-                                                     "createdByUserId": "6f30f62c-d3cf-5ace-840d-6229ed676c4e",
+                                                     "createdByUserId": "undefined",
                                                      "updatedByUserId": "6f30f62c-d3cf-5ace-840d-6229ed676c4e",
                                                      "createdByUsername": "diku_admin"
                                                  }
