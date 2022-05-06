@@ -5,7 +5,7 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-  <changeSet id="MODNOTES-182@@migrate-note-types" author="Pavlo_Smahin">
+  <changeSet id="MODNOTES-182@@migrate-note-types" author="Pavlo_Smahin" runOnChange="true">
     <preConditions onFail="MARK_RAN">
       <tableExists tableName="note_type"/>
     </preConditions>
