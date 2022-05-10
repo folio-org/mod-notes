@@ -1,3 +1,7 @@
+## 3.0.1 2022-05-10
+* MODNOTES-218 Improve note-links migration script
+* MODNOTES-219 Fix migration when userId is undefined
+
 ## 3.0.0 2022-02-23
 * MODNOTES-190 Fix permissions for note-types
 * MODNOTES-194 Log4j vulnerability verification and correction
