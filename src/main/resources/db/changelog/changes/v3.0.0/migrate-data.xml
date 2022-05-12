@@ -26,7 +26,7 @@
     <sqlFile path="sql/migrate-notes.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
-  <changeSet id="MODNOTES-182@@migrate-note-links" author="Pavlo_Smahin">
+  <changeSet id="MODNOTES-182@@migrate-note-links" author="Pavlo_Smahin" runOnChange="true">
     <preConditions onFail="MARK_RAN">
       <tableExists tableName="note_data"/>
     </preConditions>
