@@ -1,3 +1,6 @@
+## 3.0.2 2022-05-12
+* MODNOTES-221 Update mod-notes from 3.0.0 to 3.0.1 failed
+
 ## 3.0.1 2022-05-10
 * MODNOTES-218 Improve note-links migration script
 * MODNOTES-219 Fix migration when userId is undefined
