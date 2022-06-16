@@ -17,7 +17,7 @@ import lombok.ToString;
 @Table(name = "type", uniqueConstraints = {
   @UniqueConstraint(name = "uc_type_name", columnNames = {"name"})
 })
-@Builder
+//@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter @ToString(onlyExplicitlyIncluded = true)
