@@ -7,7 +7,6 @@ import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,7 +16,6 @@ import lombok.ToString;
 @Table(name = "type", uniqueConstraints = {
   @UniqueConstraint(name = "uc_type_name", columnNames = {"name"})
 })
-//@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter @ToString(onlyExplicitlyIncluded = true)
