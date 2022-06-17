@@ -25,8 +25,6 @@ public class NoteTenantService extends TenantService {
 
   @Override
   public void loadReferenceData() {
-    super.loadReferenceData();
     noteTypesService.populateDefaultType();
   }
 }
-
