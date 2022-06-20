@@ -1,6 +1,7 @@
 package org.folio.notes.controller;
 
 import static java.util.UUID.randomUUID;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -20,7 +21,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
 
 import static org.folio.notes.support.DatabaseHelper.LINK;
 import static org.folio.notes.support.DatabaseHelper.NOTE;

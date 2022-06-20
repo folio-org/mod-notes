@@ -1,3 +1,6 @@
+## 3.1.0-SNAPSHOT 2022-xx-xx
+* MODNOTES-226 Update folio-spring-base to v4.1.0
+
 ## 3.0.0 2022-02-23
 * MODNOTES-190 Fix permissions for note-types
 * MODNOTES-194 Log4j vulnerability verification and correction
