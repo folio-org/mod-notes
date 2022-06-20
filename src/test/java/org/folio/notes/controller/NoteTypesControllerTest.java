@@ -394,9 +394,9 @@ class NoteTypesControllerTest extends TestApiBase {
 
   private List<NoteTypeEntity> createListOfNoteTypes() {
     List<NoteTypeEntity> noteTypes = List.of(
-      NoteTypeEntity.builder().name("first").build(),
-      NoteTypeEntity.builder().name("second").build(),
-      NoteTypeEntity.builder().name("third").build()
+      new NoteTypeEntity("first"),
+      new NoteTypeEntity("second"),
+      new NoteTypeEntity("third")
     );
     databaseHelper.saveNoteTypes(noteTypes, TENANT);
     return noteTypes;
