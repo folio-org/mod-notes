@@ -1,3 +1,6 @@
+## 3.0.4 2022-06-21
+* MODNOTES-224 Improve note type count calculation
+
 ## 3.0.2 2022-05-12
 * MODNOTES-221 Update mod-notes from 3.0.0 to 3.0.1 failed
 
