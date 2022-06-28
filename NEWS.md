@@ -1,4 +1,9 @@
-## 3.1.0-SNAPSHOT 2022-xx-xx
+## 3.1.0-SNAPSHOT 2022-06-28
+* MODNOTES-211 Define perm note.types.collection.get
+* MODNOTES-218 Migration Issue from Kiwi-Lotus - improve note-links migration script
+* MODNOTES-219 Fix migration when userId is undefined
+* MODNOTES-223 Jenkinsfile healthChkCmd: Prefer wget over curl
+* MODNOTES-224 Improve note type count calculation
 * MODNOTES-226 Update folio-spring-base to v4.1.0
 
 ## 3.0.0 2022-02-23
