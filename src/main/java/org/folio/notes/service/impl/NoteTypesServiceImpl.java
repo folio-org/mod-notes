@@ -101,9 +101,9 @@ public class NoteTypesServiceImpl implements NoteTypesService {
     }
   }
 
-  private Map<UUID, Long> getNoteTypeUsage(List<UUID> noteTypeIds) {
+  private Map<UUID, Boolean> getNoteTypeUsage(List<UUID> noteTypeIds) {
     return repository.findNoteUsage(noteTypeIds).stream()
-      .collect(Collectors.toMap(NoteTypeCount::getTypeId, NoteTypeCount::getCount));
+      .collect(Collectors.toMap(NoteTypeCount::getTypeId, NoteTypeCount::getIsAssigned));
   }
 
 }

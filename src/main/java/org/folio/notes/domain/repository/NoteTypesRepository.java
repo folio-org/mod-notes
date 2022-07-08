@@ -12,7 +12,7 @@ import org.folio.spring.cql.JpaCqlRepository;
 
 public interface NoteTypesRepository extends JpaCqlRepository<NoteTypeEntity, UUID> {
 
-  @Query("SELECT n.type.id as typeId, COUNT(n.id) as count FROM NoteEntity AS n WHERE n.type.id IN (:noteTypeIds) GROUP BY n.type.id")
+  @Query("SELECT t.id as typeId, EXISTS (SELECT n.type.id FROM NoteEntity AS n WHERE n.type.id = t.id) as isAssigned FROM NoteTypeEntity as t WHERE t.id IN (:noteTypeIds)")
   List<NoteTypeCount> findNoteUsage(@Param("noteTypeIds") List<UUID> noteTypeIds);
 
 }
