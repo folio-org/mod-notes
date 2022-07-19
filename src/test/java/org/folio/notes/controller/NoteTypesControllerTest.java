@@ -101,15 +101,15 @@ class NoteTypesControllerTest extends TestApiBase {
     var noteThird = new Note().title("Third");
 
     generateNoteType(Arrays.asList(noteFirst, noteSecond));
-    generateNoteType(Collections.singletonList(noteThird));
+    generateNoteType(Collections.emptyList());
     generateNoteType(Arrays.asList(noteFirst, noteSecond, noteThird));
 
     mockMvc.perform(get(BASE_URL).headers(defaultHeaders()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.noteTypes.[0]", not(emptyOrNullString())))
-      .andExpect(jsonPath("$.noteTypes.[0].usage.noteTotal", is(2)))
-      .andExpect(jsonPath("$.noteTypes.[1].usage.noteTotal", is(1)))
-      .andExpect(jsonPath("$.noteTypes.[2].usage.noteTotal", is(3)))
+      .andExpect(jsonPath("$.noteTypes.[0].usage.isAssigned", is(true)))
+      .andExpect(jsonPath("$.noteTypes.[1].usage.isAssigned", is(false)))
+      .andExpect(jsonPath("$.noteTypes.[2].usage.isAssigned", is(true)))
       .andExpect(jsonPath("$.totalRecords").value(3));
   }
 
@@ -295,7 +295,7 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.id", is(existNoteType.getId().toString())))
       .andExpect(jsonPath("$.name", is(existNoteType.getName())))
-      .andExpect(jsonPath("$.usage.noteTotal", is(2)))
+      .andExpect(jsonPath("$.usage.isAssigned", is(true)))
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
   }
 
