@@ -29,7 +29,6 @@
     <folio-spring-base.version>4.1.0</folio-spring-base.version>
     <mapstruct.version>1.5.1.Final</mapstruct.version>
     <jsoup.version>1.15.1</jsoup.version>
-    <feign-annotation-error-decoder.version>11.8</feign-annotation-error-decoder.version>
 
     <!-- Test properties -->
     <wiremock.version>2.27.2</wiremock.version>
@@ -114,11 +113,6 @@
       <groupId>org.jsoup</groupId>
       <artifactId>jsoup</artifactId>
       <version>${jsoup.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.github.openfeign</groupId>
-      <artifactId>feign-annotation-error-decoder</artifactId>
-      <version>${feign-annotation-error-decoder.version}</version>
     </dependency>
 
     <!-- Test dependencies -->

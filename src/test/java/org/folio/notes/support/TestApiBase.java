@@ -1,57 +1,62 @@
 package org.folio.notes.support;
 
-import static org.mockito.ArgumentMatchers.anyString;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static java.util.Objects.requireNonNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import feign.FeignException;
-import feign.Request;
-import feign.Response;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.util.Map;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import lombok.SneakyThrows;
+import org.apache.http.HttpStatus;
+import org.folio.notes.client.ConfigurationClient.ConfigurationEntry;
+import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
+import org.folio.notes.domain.dto.User;
+import org.folio.spring.FolioModuleMetadata;
+import org.folio.spring.integration.XOkapiHeaders;
+import org.folio.tenant.domain.dto.TenantAttributes;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.folio.notes.client.ConfigurationClient;
-import org.folio.notes.client.ConfigurationClient.ConfigurationEntry;
-import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
-import org.folio.spring.FolioModuleMetadata;
-import org.folio.spring.integration.XOkapiHeaders;
-import org.folio.tenant.domain.dto.TenantAttributes;
-
 @Testcontainers
 @DirtiesContext
-@ContextConfiguration
+@ContextConfiguration(initializers = {WireMockInitializer.class})
 @AutoConfigureMockMvc
 @SpringBootTest
+@ActiveProfiles("test")
 public abstract class TestApiBase extends TestBase {
 
   protected static final String TENANT = "test";
-  protected static final String USER_ID = "77777777-7777-7777-7777-777777777777";
+  protected static final UUID USER_ID = UUID.randomUUID();
 
   protected static final ObjectMapper OBJECT_MAPPER;
 
@@ -69,8 +74,12 @@ public abstract class TestApiBase extends TestBase {
   protected MockMvc mockMvc;
   @Autowired
   protected DatabaseHelper databaseHelper;
-  @MockBean
-  protected ConfigurationClient configurationClient;
+  @Autowired
+  protected WireMockServer okapiServer;
+  @Value("${x-okapi-url}")
+  protected String okapiUrl;
+  @Autowired
+  private CacheManager cacheManager;
 
   @BeforeAll
   static void beforeAll(@Autowired MockMvc mockMvc) {
@@ -80,6 +89,11 @@ public abstract class TestApiBase extends TestBase {
   @AfterAll
   static void afterAll() {
     postgreDBContainer.stop();
+  }
+
+  @AfterEach
+  void cleanupCache() {
+    cacheManager.getCacheNames().forEach(name -> requireNonNull(cacheManager.getCache(name)).clear());
   }
 
   @SneakyThrows
@@ -100,36 +114,48 @@ public abstract class TestApiBase extends TestBase {
 
     httpHeaders.setContentType(APPLICATION_JSON);
     httpHeaders.add(XOkapiHeaders.TENANT, TENANT);
-    httpHeaders.add(XOkapiHeaders.USER_ID, USER_ID);
+    httpHeaders.add(XOkapiHeaders.USER_ID, USER_ID.toString());
 
     return httpHeaders;
   }
 
-  protected void setUpConfigurationLimit(String limit) {
+  public HttpHeaders okapiHeaders() {
+    final HttpHeaders httpHeaders = defaultHeaders();
+    httpHeaders.add(XOkapiHeaders.URL, okapiUrl);
+    return httpHeaders;
+  }
+
+  @SneakyThrows
+  protected void stubConfigurationLimit(String limit) {
     List<ConfigurationEntry> configurations = new ArrayList<>();
     if (!limit.isBlank()) {
       var configuration = new ConfigurationEntry("1", "NOTES", "note-type-limit", limit);
       configurations.add(configuration);
     }
     var configs = new ConfigurationEntryCollection(configurations, configurations.size());
-
-    Mockito.doReturn(configs).when(configurationClient)
-      .getConfiguration("module==NOTES and configName==note-type-limit");
+    okapiServer.stubFor(get(urlPathEqualTo("/configurations/entries"))
+      .withQueryParam("query", equalTo("module==NOTES and configName==note-type-limit"))
+      .willReturn(aResponse().withBody(OBJECT_MAPPER.writeValueAsString(configs))
+        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .withStatus(HttpStatus.SC_OK)));
   }
 
-  protected void stubConfigurationClientError(int status, String message) {
-    Map<String, Collection<String>> headers = new HashMap<>();
-    Mockito.when(configurationClient.getConfiguration(anyString()))
-      .thenThrow(FeignException.errorStatus("getConfiguration",
-        Response.builder()
-          .status(status)
-          .headers(headers)
-          .reason(message)
-          .request(Request.create(
-            Request.HttpMethod.GET,
-            "configurations/entries", headers,
-            null, null, null))
-          .build()));
+  @SneakyThrows
+  protected void stubUser(User user) {
+    okapiServer.stubFor(get(urlPathMatching("/users/.*"))
+      .willReturn(aResponse().withBody(OBJECT_MAPPER.writeValueAsString(user))
+        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .withStatus(HttpStatus.SC_OK)));
+  }
+
+  protected void stubConfigurationClientError(int status) {
+    okapiServer.stubFor(get(urlEqualTo("/configurations/entries"))
+      .willReturn(aResponse().withBody("random message").withStatus(status)));
+  }
+
+  protected void stubUserClientError(int status) {
+    okapiServer.stubFor(get(urlPathMatching("/users/.*"))
+      .willReturn(aResponse().withBody("random message").withStatus(status)));
   }
 
   @TestConfiguration

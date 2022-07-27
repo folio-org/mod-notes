@@ -1,3 +1,11 @@
+folio:
+  logging:
+    request:
+      enabled: true
+      level: full
+    feign:
+      enabled: true
+      level: full
 spring:
   application:
     name: mod-notes

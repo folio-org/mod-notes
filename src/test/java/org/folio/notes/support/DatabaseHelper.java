@@ -36,13 +36,13 @@ public class DatabaseHelper {
   }
 
   public void saveNoteType(NoteTypeEntity noteType, String tenant) {
-    var sql = "INSERT INTO " + getTable(tenant, TYPE) + " (id, name) VALUES (?, ?)";
-    jdbcTemplate.update(sql, noteType.getId(), noteType.getName());
+    var sql = "INSERT INTO " + getTable(tenant, TYPE) + " (id, name, created_by) VALUES (?, ?, ?)";
+    jdbcTemplate.update(sql, noteType.getId(), noteType.getName(), noteType.getCreatedBy());
   }
 
   public void saveNote(NoteEntity note, String tenant) {
-    var sql = "INSERT INTO " + getTable(tenant, NOTE) + " (id, title, domain, type_id) VALUES (?,?,?,?)";
-    jdbcTemplate.update(sql, note.getId(), note.getTitle(), note.getDomain(), note.getType().getId());
+    var sql = "INSERT INTO " + getTable(tenant, NOTE) + " (id, title, domain, type_id, created_by) VALUES (?,?,?,?,?)";
+    jdbcTemplate.update(sql, note.getId(), note.getTitle(), note.getDomain(), note.getType().getId(), note.getCreatedBy());
   }
 
   public void saveNoteTypes(List<NoteTypeEntity> noteTypes, String tenant) {
