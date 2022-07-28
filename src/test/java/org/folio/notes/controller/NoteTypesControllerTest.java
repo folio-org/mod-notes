@@ -207,10 +207,11 @@ class NoteTypesControllerTest extends TestApiBase {
     assertEquals(1, rowsInTable);
   }
 
-  @Test
+  @ParameterizedTest
+  @ValueSource(ints = {HttpStatus.SC_BAD_REQUEST, HttpStatus.SC_FORBIDDEN, HttpStatus.SC_INTERNAL_SERVER_ERROR})
   @DisplayName("Create new note-type with use default limit if config returns error")
-  void createNewNoteTypeWithUseDefaultLimitIfConfigReturnsError() throws Exception {
-    stubConfigurationClientError(400);
+  void createNewNoteTypeWithUseDefaultLimitIfConfigReturnsError(int configErrorStatus) throws Exception {
+    stubConfigurationClientError(configErrorStatus);
 
     String name = "First";
     NoteType noteType = new NoteType().name(name);
