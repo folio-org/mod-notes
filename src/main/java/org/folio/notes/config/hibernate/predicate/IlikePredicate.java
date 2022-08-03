@@ -2,7 +2,6 @@ package org.folio.notes.config.hibernate.predicate;
 
 import static org.folio.notes.config.hibernate.ExtendedPostgreSql10Dialect.CASE_IN_SENSITIVE_MATCHING_FUNCTION;
 
-import java.io.Serializable;
 import javax.persistence.criteria.Expression;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 import org.hibernate.query.criteria.internal.ParameterRegistry;
@@ -11,11 +10,11 @@ import org.hibernate.query.criteria.internal.compile.RenderingContext;
 import org.hibernate.query.criteria.internal.expression.LiteralExpression;
 import org.hibernate.query.criteria.internal.predicate.AbstractSimplePredicate;
 
-public class IlikePredicate extends AbstractSimplePredicate implements Serializable {
+public class IlikePredicate extends AbstractSimplePredicate {
 
-  private final Expression<String> matchExpression;
+  private final transient Expression<String> matchExpression;
 
-  private final Expression<String> pattern;
+  private final transient Expression<String> pattern;
 
   public IlikePredicate(CriteriaBuilderImpl criteriaBuilder, Expression<String> matchExpression,
                         Expression<String> pattern) {
