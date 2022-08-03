@@ -669,8 +669,8 @@ class NoteControllerTest extends TestApiBase {
 
   @ParameterizedTest
   @CsvSource({
-//    "ABC, 2, XYZ, 1, asc", //todo: uncomment both cases when behaviour fixed in https://issues.folio.org/browse/MODNOTES-241
-//    "ABC, 2, XYZ, 1, desc",
+    // "ABC, 2, XYZ, 1, asc", //todo: uncomment both cases when behaviour fixed in https://issues.folio.org/browse/MODNOTES-241
+    // "ABC, 2, XYZ, 1, desc",
     "ABC, 2, ABC, 1, asc",
     "ABC, 2, ABC, 1, desc"})
   @DisplayName("should return list of notes sorted by content")
@@ -678,7 +678,7 @@ class NoteControllerTest extends TestApiBase {
                                               String secondTitle, String secondContent,
                                               String sortDirection) throws Exception {
     Function<String, String> contentFormat = content ->
-      String.format("<div> <strong>%s</strong></div><h1>thing</h1>",content);
+      String.format("<div> <strong>%s</strong></div><h1>thing</h1>", content);
     var firstNote = generateNote()
       .title(firstTitle)
       .content(contentFormat.apply(firstContent));
