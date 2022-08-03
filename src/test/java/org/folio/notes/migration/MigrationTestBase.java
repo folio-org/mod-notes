@@ -2,10 +2,9 @@ package org.folio.notes.migration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.folio.notes.support.TestBase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-
-import org.folio.notes.support.TestBase;
 
 abstract class MigrationTestBase extends TestBase {
 

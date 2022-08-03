@@ -2,11 +2,9 @@ package org.folio.notes.domain.entity;
 
 import java.sql.Timestamp;
 import java.util.UUID;
-
 import javax.persistence.Column;
 import javax.persistence.EntityListeners;
 import javax.persistence.MappedSuperclass;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

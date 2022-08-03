@@ -1,15 +1,13 @@
 package org.folio.notes.domain.mapper;
 
 import java.util.List;
-
+import org.folio.notes.domain.dto.Note;
+import org.folio.notes.domain.dto.NoteCollection;
+import org.folio.notes.domain.entity.NoteEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;
 import org.springframework.data.domain.Page;
-
-import org.folio.notes.domain.dto.Note;
-import org.folio.notes.domain.dto.NoteCollection;
-import org.folio.notes.domain.entity.NoteEntity;
 
 @Mapper(componentModel = "spring", nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
   uses = {

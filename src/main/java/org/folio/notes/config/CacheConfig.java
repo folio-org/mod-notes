@@ -1,14 +1,12 @@
 package org.folio.notes.config;
 
-import java.util.concurrent.TimeUnit;
-
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.util.concurrent.TimeUnit;
+import org.folio.notes.config.properties.CacheProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import org.folio.notes.config.properties.CacheProperties;
 
 @Configuration
 public class CacheConfig {

@@ -2,7 +2,6 @@ package org.folio.notes.service;
 
 import java.util.List;
 import java.util.UUID;
-
 import org.folio.notes.domain.dto.LinkStatusFilter;
 import org.folio.notes.domain.dto.Note;
 import org.folio.notes.domain.dto.NoteCollection;
@@ -14,7 +13,8 @@ public interface NotesService {
 
   NoteCollection getNoteCollection(String query, Integer offset, Integer limit);
 
-  NoteCollection getNoteCollection(String domain, String objectType, String objectId, String search, List<String> noteType,
+  NoteCollection getNoteCollection(String domain, String objectType, String objectId, String search,
+                                   List<String> noteType,
                                    LinkStatusFilter status, NotesOrderBy orderBy, OrderDirection order, Integer offset,
                                    Integer limit);
 

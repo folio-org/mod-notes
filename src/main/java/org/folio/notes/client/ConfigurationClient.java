@@ -1,21 +1,19 @@
 package org.folio.notes.client;
 
-import java.util.List;
-
 import feign.codec.ErrorDecoder;
 import feign.error.AnnotationErrorDecoder;
 import feign.error.ErrorCodes;
 import feign.error.ErrorHandling;
+import java.util.List;
 import lombok.Value;
+import org.folio.notes.exception.FolioExternalException;
+import org.folio.notes.exception.FolioUnauthorizedException;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import org.folio.notes.exception.FolioExternalException;
-import org.folio.notes.exception.FolioUnauthorizedException;
 
 @ErrorHandling(codeSpecific =
   {

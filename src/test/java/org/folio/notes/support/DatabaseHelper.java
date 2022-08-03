@@ -2,13 +2,11 @@ package org.folio.notes.support;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.jdbc.JdbcTestUtils;
-
 import org.folio.notes.domain.entity.NoteEntity;
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.spring.FolioModuleMetadata;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.jdbc.JdbcTestUtils;
 
 public class DatabaseHelper {
 

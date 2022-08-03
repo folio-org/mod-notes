@@ -4,14 +4,12 @@ import static org.folio.notes.config.CacheConfig.CACHE_USERS_BY_ID;
 
 import java.util.Optional;
 import java.util.UUID;
-
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-
 import org.folio.notes.client.UsersClient;
 import org.folio.notes.domain.dto.User;
 import org.folio.notes.service.UsersService;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor

@@ -1,9 +1,7 @@
 package org.folio.notes.util;
 
 import java.util.List;
-
 import lombok.experimental.UtilityClass;
-
 import org.folio.tenant.domain.dto.Error;
 import org.folio.tenant.domain.dto.Errors;
 

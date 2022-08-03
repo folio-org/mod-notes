@@ -5,6 +5,11 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import feign.FeignException;
 import feign.Request;
 import feign.Response;
@@ -12,14 +17,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.Map;
 import lombok.SneakyThrows;
+import org.folio.notes.client.ConfigurationClient;
+import org.folio.notes.client.ConfigurationClient.ConfigurationEntry;
+import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
+import org.folio.spring.FolioModuleMetadata;
+import org.folio.spring.integration.XOkapiHeaders;
+import org.folio.tenant.domain.dto.TenantAttributes;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.mockito.Mockito;
@@ -35,13 +40,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import org.folio.notes.client.ConfigurationClient;
-import org.folio.notes.client.ConfigurationClient.ConfigurationEntry;
-import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
-import org.folio.spring.FolioModuleMetadata;
-import org.folio.spring.integration.XOkapiHeaders;
-import org.folio.tenant.domain.dto.TenantAttributes;
 
 @Testcontainers
 @DirtiesContext
@@ -117,14 +115,14 @@ public abstract class TestApiBase extends TestBase {
       .getConfiguration("module==NOTES and configName==note-type-limit");
   }
 
-  protected void stubConfigurationClientError(int status, String message) {
+  protected void stubConfigurationPermissionError() {
     Map<String, Collection<String>> headers = new HashMap<>();
     Mockito.when(configurationClient.getConfiguration(anyString()))
       .thenThrow(FeignException.errorStatus("getConfiguration",
         Response.builder()
-          .status(status)
+          .status(400)
           .headers(headers)
-          .reason(message)
+          .reason("Required permission: get-configuration")
           .request(Request.create(
             Request.HttpMethod.GET,
             "configurations/entries", headers,

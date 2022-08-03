@@ -1,22 +1,20 @@
 package org.folio.notes.client;
 
-import java.util.Optional;
-
 import feign.codec.ErrorDecoder;
 import feign.error.AnnotationErrorDecoder;
 import feign.error.ErrorCodes;
 import feign.error.ErrorHandling;
+import java.util.Optional;
+import org.folio.notes.domain.dto.User;
+import org.folio.notes.exception.FolioExternalException;
+import org.folio.notes.exception.FolioUnauthorizedException;
+import org.folio.notes.exception.FolioUserNotFoundException;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
-import org.folio.notes.domain.dto.User;
-import org.folio.notes.exception.FolioExternalException;
-import org.folio.notes.exception.FolioUnauthorizedException;
-import org.folio.notes.exception.FolioUserNotFoundException;
 
 @ErrorHandling(codeSpecific =
   {

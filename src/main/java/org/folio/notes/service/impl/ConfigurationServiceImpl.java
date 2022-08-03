@@ -2,12 +2,11 @@ package org.folio.notes.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import org.folio.notes.client.ConfigurationClient;
 import org.folio.notes.client.ConfigurationClient.ConfigurationEntry;
 import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
 import org.folio.notes.service.ConfigurationService;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service

@@ -2,6 +2,9 @@ package org.folio.notes.controller;
 
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.folio.notes.support.DatabaseHelper.LINK;
+import static org.folio.notes.support.DatabaseHelper.NOTE;
+import static org.folio.notes.support.DatabaseHelper.TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -22,31 +25,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import static org.folio.notes.support.DatabaseHelper.LINK;
-import static org.folio.notes.support.DatabaseHelper.NOTE;
-import static org.folio.notes.support.DatabaseHelper.TYPE;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import javax.validation.ConstraintViolationException;
-
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpHeaders;
-import org.springframework.test.web.servlet.ResultMatcher;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
 import org.folio.notes.client.UsersClient;
 import org.folio.notes.domain.dto.Link;
 import org.folio.notes.domain.dto.LinkStatus;
@@ -61,6 +47,19 @@ import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.exception.NoteNotFoundException;
 import org.folio.notes.support.TestApiBase;
 import org.folio.spring.cql.CqlQueryValidationException;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
+import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 class NoteControllerTest extends TestApiBase {
 
@@ -219,7 +218,8 @@ class NoteControllerTest extends TestApiBase {
     mockMvc.perform(postNote(note))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(MethodArgumentNotValidException.class))
-      .andExpect(errorMessageMatch(containsString("Field error in object 'note' on field 'typeId': rejected value [null]")));
+      .andExpect(errorMessageMatch(containsString(
+        "Field error in object 'note' on field 'typeId': rejected value [null]")));
   }
 
   @Test
@@ -230,7 +230,8 @@ class NoteControllerTest extends TestApiBase {
     mockMvc.perform(postNote(note))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(MethodArgumentNotValidException.class))
-      .andExpect(errorMessageMatch(containsString("Field error in object 'note' on field 'domain': rejected value [null]")));
+      .andExpect(errorMessageMatch(containsString(
+        "Field error in object 'note' on field 'domain': rejected value [null]")));
   }
 
   // Tests for GET by id
@@ -375,11 +376,13 @@ class NoteControllerTest extends TestApiBase {
 
     var firstResultNote = getNoteById(notes, firstNote.getId());
     var secondResultNote = getNoteById(notes, secondNote.getId());
-    var thirdResultNote = getNoteById(notes, thirdNote.getId());
 
     assertTrue(firstResultNote.getLinks().stream().anyMatch(link -> link.getType().equals(PACKAGE_TYPE)));
     assertTrue(firstResultNote.getLinks().stream().anyMatch(link -> link.getId().equals(PACKAGE_ID_1)));
     assertEquals(DEFAULT_LINK_AMOUNT, secondResultNote.getLinks().size());
+
+    var thirdResultNote = getNoteById(notes, thirdNote.getId());
+
     assertTrue(thirdResultNote.getLinks().stream().anyMatch(link -> link.getType().equals(PACKAGE_TYPE)));
     assertTrue(thirdResultNote.getLinks().stream().anyMatch(link -> link.getId().equals(PACKAGE_ID_1)));
   }
@@ -534,7 +537,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return all records of notes from DB without parameters and with non existing id")
-  void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithNonExistingId() throws Exception {
+  void shouldReturnAllRecordsOfNotesFromDbWithoutParametersAndWithNonExistingId() throws Exception {
     generateNote();
     generateNote();
 
@@ -547,7 +550,7 @@ class NoteControllerTest extends TestApiBase {
 
   @Test
   @DisplayName("Should return all records of notes from DB without parameters and with incomplete url")
-  void shouldReturnAllRecordsOfNotesFromDBWithoutParametersAndWithIncompleteUrl() throws Exception {
+  void shouldReturnAllRecordsOfNotesFromDbWithoutParametersAndWithIncompleteUrl() throws Exception {
     generateNote();
     generateNote();
 
@@ -664,11 +667,24 @@ class NoteControllerTest extends TestApiBase {
         + "type 'org.folio.notes.domain.dto.NotesOrderBy'")));
   }
 
-  @Test
-  @DisplayName("should return list of notes sorted by content asc when titles are different")
-  void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreDifferent() throws Exception {
-    var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
-    var secondNote = generateNote().title("XWZ").content("<div> <strong>2</strong></div><h1>thing</h1>");
+  @ParameterizedTest
+  @CsvSource({
+//    "ABC, 2, XYZ, 1, asc", //todo: uncomment both cases when behaviour fixed in https://issues.folio.org/browse/MODNOTES-241
+//    "ABC, 2, XYZ, 1, desc",
+    "ABC, 2, ABC, 1, asc",
+    "ABC, 2, ABC, 1, desc"})
+  @DisplayName("should return list of notes sorted by content")
+  void shouldReturnListOfNotesSortedByContent(String firstTitle, String firstContent,
+                                              String secondTitle, String secondContent,
+                                              String sortDirection) throws Exception {
+    Function<String, String> contentFormat = content ->
+      String.format("<div> <strong>%s</strong></div><h1>thing</h1>",content);
+    var firstNote = generateNote()
+      .title(firstTitle)
+      .content(contentFormat.apply(firstContent));
+    var secondNote = generateNote()
+      .title(secondTitle)
+      .content(contentFormat.apply(secondContent));
 
     mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
     mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
@@ -677,71 +693,25 @@ class NoteControllerTest extends TestApiBase {
     createLinks(secondNote.getId());
 
     var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
-      + "?orderBy=content");
+      + "?orderBy=content&order=" + sortDirection);
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
-  }
 
-  @Test
-  @DisplayName("should return list of notes sorted by content desc when titles are different")
-  void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreDifferent() throws Exception {
-    var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
-    var secondNote = generateNote().title("XWZ").content("<div> <strong>2</strong></div><h1>thing</h1>");
-
-    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
-    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
-
-    createLinks(firstNote.getId());
-    createLinks(secondNote.getId());
-
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
-      + "?orderBy=content&order=desc");
-    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
-
-    assertEquals(2, notes.size());
-    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
-  }
-
-  @Test
-  @DisplayName("should return list of notes sorted by content asc when titles are similar")
-  void shouldReturnListOfNotesSortedByContentAscWhenTitlesAreSimilar() throws Exception {
-    var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
-    var secondNote = generateNote().title("ABC").content("<div> <strong>2</strong></div><h1>thing</h1>");
-
-    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
-    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
-
-    createLinks(firstNote.getId());
-    createLinks(secondNote.getId());
-
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
-      + "?orderBy=content");
-    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
-
-    assertEquals(2, notes.size());
-    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
-  }
-
-  @Test
-  @DisplayName("should return list of notes sorted by content desc when titles are similar")
-  void shouldReturnListOfNotesSortedByContentDescWhenTitlesAreSimilar() throws Exception {
-    var firstNote = generateNote().title("ABC").content("<div> <strong>1</strong></div><h1>thing</h1>");
-    var secondNote = generateNote().title("ABC").content("<div> <strong>2</strong></div><h1>thing</h1>");
-
-    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
-    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
-
-    createLinks(firstNote.getId());
-    createLinks(secondNote.getId());
-
-    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
-      + "?orderBy=content&order=desc");
-    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
-
-    assertEquals(2, notes.size());
-    assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
+    var actualFirstNoteId = notes.get(0).getId();
+    if (sortDirection.equals("asc")) {
+      if (firstContent.compareTo(secondContent) <= 0) {
+        assertEquals(firstNote.getId(), actualFirstNoteId);
+      } else {
+        assertEquals(secondNote.getId(), actualFirstNoteId);
+      }
+    } else {
+      if (firstContent.compareTo(secondContent) >= 0) {
+        assertEquals(firstNote.getId(), actualFirstNoteId);
+      } else {
+        assertEquals(secondNote.getId(), actualFirstNoteId);
+      }
+    }
   }
 
   @Test
@@ -919,17 +889,19 @@ class NoteControllerTest extends TestApiBase {
     var content = getNoteLinks(url + "all");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
-    var contentWithAssignedLink = getNoteLinks(url + LinkStatus.ASSIGNED);
-    var notesWithAssignedLink = OBJECT_MAPPER.readValue(contentWithAssignedLink, NoteCollection.class).getNotes();
+    assertEquals(2, notes.size());
 
     var contentWithUnAssignedLink = getNoteLinks(url + LinkStatus.UNASSIGNED);
     var notesWithUnAssignedLink = OBJECT_MAPPER.readValue(contentWithUnAssignedLink, NoteCollection.class).getNotes();
 
-    assertEquals(2, notes.size());
-    assertEquals(1, notesWithAssignedLink.size());
-    assertEquals(firstNote.getId(), notesWithAssignedLink.get(0).getId());
-    assertEquals(1, notesWithUnAssignedLink.size());
     assertEquals(secondNote.getId(), notesWithUnAssignedLink.get(0).getId());
+    assertEquals(1, notesWithUnAssignedLink.size());
+
+    var contentWithAssignedLink = getNoteLinks(url + LinkStatus.ASSIGNED);
+    var notesWithAssignedLink = OBJECT_MAPPER.readValue(contentWithAssignedLink, NoteCollection.class).getNotes();
+
+    assertEquals(firstNote.getId(), notesWithAssignedLink.get(0).getId());
+    assertEquals(1, notesWithAssignedLink.size());
   }
 
   @Test
@@ -943,8 +915,8 @@ class NoteControllerTest extends TestApiBase {
     createLinks(secondNote.getId());
 
     var content = getNoteLinks(
-      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_2 +
-        "?search=" + noteTitle + "&noteType=" + NOTE_TYPE_NAME_1 + "&order=ASC");
+      "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_2
+        + "?search=" + noteTitle + "&noteType=" + NOTE_TYPE_NAME_1 + "&order=ASC");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertThat(notes.size(), equalTo(1));

@@ -1,11 +1,10 @@
 package org.folio.notes.config;
 
+import org.folio.notes.config.properties.SafelistProperties;
 import org.jsoup.safety.Safelist;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import org.folio.notes.config.properties.SafelistProperties;
 
 @Configuration
 @EnableCaching
