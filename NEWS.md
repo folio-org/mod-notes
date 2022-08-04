@@ -1,3 +1,7 @@
+## 4.0.0 IN-PROGRESS
+
+* MODNOTES-236 Supports users interface 15.1 16.0
+
 ## 3.1.0-SNAPSHOT 2022-06-28
 * MODNOTES-211 Define perm note.types.collection.get
 * MODNOTES-218 Migration Issue from Kiwi-Lotus - improve note-links migration script
