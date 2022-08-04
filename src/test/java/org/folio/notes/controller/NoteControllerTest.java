@@ -2,6 +2,9 @@ package org.folio.notes.controller;
 
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.folio.notes.support.DatabaseHelper.LINK;
+import static org.folio.notes.support.DatabaseHelper.NOTE;
+import static org.folio.notes.support.DatabaseHelper.TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -13,7 +16,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -22,32 +24,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import static org.folio.notes.support.DatabaseHelper.LINK;
-import static org.folio.notes.support.DatabaseHelper.NOTE;
-import static org.folio.notes.support.DatabaseHelper.TYPE;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import javax.validation.ConstraintViolationException;
-
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpHeaders;
-import org.springframework.test.web.servlet.ResultMatcher;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import org.folio.notes.client.UsersClient;
+import org.apache.http.HttpStatus;
 import org.folio.notes.domain.dto.Link;
 import org.folio.notes.domain.dto.LinkStatus;
 import org.folio.notes.domain.dto.Note;
@@ -61,6 +44,18 @@ import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.exception.NoteNotFoundException;
 import org.folio.notes.support.TestApiBase;
 import org.folio.spring.cql.CqlQueryValidationException;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 class NoteControllerTest extends TestApiBase {
 
@@ -86,14 +81,11 @@ class NoteControllerTest extends TestApiBase {
   @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
 
-  @MockBean
-  private UsersClient client;
-
   @BeforeEach
   void setUp() {
-    var user = new User(randomUUID(), "test_user", null);
-    when(client.fetchUserById(USER_ID)).thenReturn(Optional.of(user));
-    setUpConfigurationLimit(defaultNoteTypeLimit);
+    var user = new User(USER_ID, "test_user", null);
+    stubUser(user);
+    stubConfigurationLimit(defaultNoteTypeLimit);
     databaseHelper.clearTable(TENANT, NOTE);
     databaseHelper.clearTable(TENANT, TYPE);
     databaseHelper.clearTable(TENANT, LINK);
@@ -104,7 +96,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Find all notes - empty collection")
   void returnEmptyCollection() throws Exception {
-    mockMvc.perform(get("/notes").headers(defaultHeaders()))
+    mockMvc.perform(get("/notes").headers(okapiHeaders()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.notes").isEmpty())
       .andExpect(jsonPath("$.totalRecords").value(0));
@@ -115,7 +107,7 @@ class NoteControllerTest extends TestApiBase {
   void returnCollection() throws Exception {
     List<NoteEntity> notes = createListOfNotes();
 
-    mockMvc.perform(get(NOTE_URL).headers(defaultHeaders()))
+    mockMvc.perform(get(NOTE_URL).headers(okapiHeaders()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.notes.[0]", not(emptyOrNullString())))
       .andExpect(jsonPath("$.notes.[1]", not(emptyOrNullString())))
@@ -133,7 +125,7 @@ class NoteControllerTest extends TestApiBase {
     var limit = "1";
     var offset = "1";
     mockMvc.perform(get(NOTE_URL + "?limit={l}&offset={o}&query={cql}", limit, offset, cqlQuery)
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.notes.[0].title", is(notes.get(1).getTitle())))
       .andExpect(jsonPath("$.notes.[1]").doesNotExist())
@@ -146,7 +138,7 @@ class NoteControllerTest extends TestApiBase {
     List<NoteEntity> notes = createListOfNotes();
 
     var cqlQuery = "title=" + TITLE_3;
-    mockMvc.perform(get(NOTE_URL + "?query={cql}", cqlQuery).headers(defaultHeaders()))
+    mockMvc.perform(get(NOTE_URL + "?query={cql}", cqlQuery).headers(okapiHeaders()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.notes.[0].title", is(notes.get(2).getTitle())))
       .andExpect(jsonPath("$.notes.[1]").doesNotExist())
@@ -158,7 +150,7 @@ class NoteControllerTest extends TestApiBase {
   void return422OnGetCollectionWithInvalidCqlQuery() throws Exception {
     var cqlQuery = "!invalid-cql!";
     mockMvc.perform(get(NOTE_URL + "?query={cql}", cqlQuery)
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(CqlQueryValidationException.class))
       .andExpect(errorMessageMatch(containsString("Not implemented yet node type")));
@@ -168,7 +160,7 @@ class NoteControllerTest extends TestApiBase {
   @DisplayName("Return 422 on get collection with invalid offset")
   void return422OnGetCollectionWithInvalidOffset() throws Exception {
     mockMvc.perform(get(NOTE_URL + "?offset={offset}", -1)
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(ConstraintViolationException.class))
       .andExpect(errorMessageMatch(containsString("must be greater than or equal to 0")));
@@ -178,7 +170,7 @@ class NoteControllerTest extends TestApiBase {
   @DisplayName("Return 422 on get collection with invalid limit")
   void return422OnGetCollectionWithInvalidLimit() throws Exception {
     mockMvc.perform(get(NOTE_URL + "?limit={limit}", -1)
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(ConstraintViolationException.class))
       .andExpect(errorMessageMatch(containsString("must be greater than or equal to 1")));
@@ -202,7 +194,7 @@ class NoteControllerTest extends TestApiBase {
     mockMvc.perform(postNote(note))
       .andExpect(status().isCreated())
       .andExpect(jsonPath("$.title", is(title)))
-      .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID.toString()))
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty())
       .andExpect(header().string(HttpHeaders.LOCATION,
         matchesRegex(
@@ -219,7 +211,8 @@ class NoteControllerTest extends TestApiBase {
     mockMvc.perform(postNote(note))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(MethodArgumentNotValidException.class))
-      .andExpect(errorMessageMatch(containsString("Field error in object 'note' on field 'typeId': rejected value [null]")));
+      .andExpect(
+        errorMessageMatch(containsString("Field error in object 'note' on field 'typeId': rejected value [null]")));
   }
 
   @Test
@@ -230,7 +223,8 @@ class NoteControllerTest extends TestApiBase {
     mockMvc.perform(postNote(note))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(MethodArgumentNotValidException.class))
-      .andExpect(errorMessageMatch(containsString("Field error in object 'note' on field 'domain': rejected value [null]")));
+      .andExpect(
+        errorMessageMatch(containsString("Field error in object 'note' on field 'domain': rejected value [null]")));
   }
 
   // Tests for GET by id
@@ -245,7 +239,26 @@ class NoteControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.id", is(note.getId().toString())))
       .andExpect(jsonPath("$.title", is(note.getTitle())))
       .andExpect(jsonPath("$.typeId", is(note.getType().getId().toString())))
-      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty())
+      .andExpect(jsonPath("$.metadata.createdByUserId").isNotEmpty())
+      .andExpect(jsonPath("$.metadata.createdByUsername").isNotEmpty());
+  }
+
+  @ValueSource(ints = {HttpStatus.SC_NOT_FOUND, HttpStatus.SC_FORBIDDEN, HttpStatus.SC_INTERNAL_SERVER_ERROR})
+  @ParameterizedTest
+  @DisplayName("Find note by ID when user is not exist")
+  void returnByIdWhenUserIsNotAvailable(int httpStatus) throws Exception {
+    stubUserClientError(httpStatus);
+    var note = createNote("NoteById");
+
+    mockMvc.perform(getById(note.getId()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id", is(note.getId().toString())))
+      .andExpect(jsonPath("$.title", is(note.getTitle())))
+      .andExpect(jsonPath("$.typeId", is(note.getType().getId().toString())))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty())
+      .andExpect(jsonPath("$.metadata.createdByUserId").isNotEmpty())
+      .andExpect(jsonPath("$.metadata.createdByUsername").doesNotExist());
   }
 
   @Test
@@ -282,7 +295,7 @@ class NoteControllerTest extends TestApiBase {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.id", is(existNote.getId().toString())))
       .andExpect(jsonPath("$.title", is(updatedNote.getTitle())))
-      .andExpect(jsonPath("$.metadata.updatedByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.updatedByUserId").value(USER_ID.toString()))
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
   }
 
@@ -302,7 +315,7 @@ class NoteControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.id", is(existNote.getId().toString())))
       .andExpect(jsonPath("$.title", is(updatedNote.getTitle())))
       .andExpect(jsonPath("$.typeId", is(updatedNote.getTypeId().toString())))
-      .andExpect(jsonPath("$.metadata.updatedByUserId").value(USER_ID))
+      .andExpect(jsonPath("$.metadata.updatedByUserId").value(USER_ID.toString()))
       .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
   }
 
@@ -658,7 +671,7 @@ class NoteControllerTest extends TestApiBase {
 
     mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
         + "?orderBy=noteype&order=desc")
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required "
         + "type 'org.folio.notes.domain.dto.NotesOrderBy'")));
@@ -792,7 +805,7 @@ class NoteControllerTest extends TestApiBase {
 
     mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1 + 1
         + "?orderBy=u&order=desc")
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' "
         + "to required type 'org.folio.notes.domain.dto.NotesOrderBy'")));
@@ -961,7 +974,7 @@ class NoteControllerTest extends TestApiBase {
     mockMvc.perform(get(
         "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
           + "/id/" + PACKAGE_ID_1 + "?order=wrong")
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' "
         + "to required type 'org.folio.notes.domain.dto.OrderDirection")));
@@ -976,7 +989,7 @@ class NoteControllerTest extends TestApiBase {
     mockMvc.perform(get(
         "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
           + "/id/" + PACKAGE_ID_1 + "?limit=-1&offset=-1")
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isUnprocessableEntity())
       .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.offset: must be greater "
         + "than or equal to 0")))
@@ -1036,14 +1049,14 @@ class NoteControllerTest extends TestApiBase {
 
   private String getNoteLinks(String url) throws Exception {
     return mockMvc.perform(get(url)
-        .headers(defaultHeaders()))
+        .headers(okapiHeaders()))
       .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
   }
 
   private MockHttpServletRequestBuilder updateLink(NoteLinkUpdateCollection noteLinkUpdateCollection) {
     return put(NOTE_LINKS_PATH)
       .content(asJsonString(noteLinkUpdateCollection))
-      .headers(defaultHeaders());
+      .headers(okapiHeaders());
   }
 
   private NoteLinkUpdateCollection createNoteLinkUpdateCollection(LinkStatus status, UUID[] ids) {
@@ -1088,6 +1101,7 @@ class NoteControllerTest extends TestApiBase {
     noteEntity.setTitle(title);
     noteEntity.setDomain(DOMAIN);
     noteEntity.setType(createNoteType());
+    noteEntity.setCreatedBy(USER_ID);
     return noteEntity;
   }
 
@@ -1102,30 +1116,30 @@ class NoteControllerTest extends TestApiBase {
 
   private MockHttpServletRequestBuilder postNote(Note note) {
     return post(NOTE_URL)
-      .headers(defaultHeaders())
+      .headers(okapiHeaders())
       .content(asJsonString(note));
   }
 
   private MockHttpServletRequestBuilder postNoteType(NoteType noteType) {
     return post(NOTE_TYPE_URL)
-      .headers(defaultHeaders())
+      .headers(okapiHeaders())
       .content(asJsonString(noteType));
   }
 
   private MockHttpServletRequestBuilder getById(Object id) {
     return get(NOTE_URL + "/{id}", id)
-      .headers(defaultHeaders());
+      .headers(okapiHeaders());
   }
 
   private MockHttpServletRequestBuilder putById(UUID id, Note note) {
     return put(NOTE_URL + "/{id}", id)
       .content(asJsonString(note))
-      .headers(defaultHeaders());
+      .headers(okapiHeaders());
   }
 
   private MockHttpServletRequestBuilder deleteById(UUID id) {
     return delete(NOTE_URL + "/{id}", id)
-      .headers(defaultHeaders());
+      .headers(okapiHeaders());
   }
 
   private ResultMatcher errorMessageMatch(Matcher<String> errorMessageMatcher) {
