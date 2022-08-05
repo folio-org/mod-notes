@@ -1,5 +1,6 @@
-## 4.0.0 IN-PROGRESS
-
+## 3.1.1-SNAPSHOT 2022-08-05
+* MODNOTES-233 Do not include # of notes assigned to note types in response
+* MODNOTES-234 Respond with note if user can't be fetched
 * MODNOTES-236 Supports users interface 15.1 16.0
 
 ## 3.1.0-SNAPSHOT 2022-06-28
