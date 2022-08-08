@@ -1,18 +1,21 @@
 package org.folio.notes.domain.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.domain.entity.projection.NoteTypeCount;
+import org.folio.spring.cql.JpaCqlRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import org.folio.notes.domain.entity.NoteTypeEntity;
-import org.folio.spring.cql.JpaCqlRepository;
-
 public interface NoteTypesRepository extends JpaCqlRepository<NoteTypeEntity, UUID> {
 
-  @Query("SELECT n.type.id as typeId, COUNT(n.id) as count FROM NoteEntity AS n WHERE n.type.id IN (:noteTypeIds) GROUP BY n.type.id")
-  List<NoteTypeCount> findNoteUsage(@Param("noteTypeIds") List<UUID> noteTypeIds);
+  @Query(name = NoteTypeEntity.FIND_ALL_NOTE_TYPES_USAGES_QUERY_NAME)
+  List<NoteTypeCount> findAllNoteTypesUsages();
+
+  @Query(name = NoteTypeEntity.FIND_NOTE_TYPE_USAGE_QUERY_NAME)
+  Optional<NoteTypeCount> findNoteTypeUsage(@Param("noteTypeId") UUID noteTypeId);
 
 }
