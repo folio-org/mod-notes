@@ -1,9 +1,13 @@
 package org.folio.notes.service.impl;
 
+import static java.util.Collections.singletonList;
+
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.folio.notes.config.properties.NoteTypesProperties;
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.NoteTypeCollection;
@@ -17,9 +21,6 @@ import org.folio.notes.service.ConfigurationService;
 import org.folio.notes.service.NoteTypesService;
 import org.folio.spring.data.OffsetRequest;
 import org.springframework.stereotype.Service;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -36,7 +37,10 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   @Override
   public NoteTypeCollection getNoteTypeCollection(String query, Integer offset, Integer limit) {
     var noteTypes = repository.findByCQL(query, OffsetRequest.of(offset, limit));
-    var noteTypeUsage = getAllNoteTypeUsage();
+    var noteTypeIds = noteTypes.getContent().stream()
+      .map(NoteTypeEntity::getId)
+      .collect(Collectors.toList());
+    var noteTypeUsage = getNoteTypeUsage(noteTypeIds);
     return mapper.toDtoCollection(noteTypes, noteTypeUsage);
   }
 
@@ -44,7 +48,7 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   public NoteType getNoteType(UUID id) {
     return repository.findById(id)
       .map(mapper::toDto)
-      .map(noteType -> noteType.usage(mapper.getNoteTypeUsage(id, getNoteTypeUsage(id))))
+      .map(noteType -> noteType.usage(mapper.getNoteTypeUsage(id, getNoteTypeUsage(singletonList(id)))))
       .orElseThrow(() -> notFound(id));
   }
 
@@ -97,14 +101,9 @@ public class NoteTypesServiceImpl implements NoteTypesService {
     }
   }
 
-  private Map<UUID, Boolean> getAllNoteTypeUsage() {
-    return repository.findAllNoteTypesUsages().stream()
-      .collect(Collectors.toMap(NoteTypeCount::getTypeId, NoteTypeCount::getIsAssigned));
-  }
-
-  private Map<UUID, Boolean> getNoteTypeUsage(UUID noteTypeId) {
-    return repository.findNoteTypeUsage(noteTypeId).stream()
-      .collect(Collectors.toMap(NoteTypeCount::getTypeId, NoteTypeCount::getIsAssigned));
+  private Map<UUID, Long> getNoteTypeUsage(List<UUID> noteTypeIds) {
+    return repository.findNoteUsage(noteTypeIds).stream()
+      .collect(Collectors.toMap(NoteTypeCount::getTypeId, NoteTypeCount::getCount));
   }
 
 }

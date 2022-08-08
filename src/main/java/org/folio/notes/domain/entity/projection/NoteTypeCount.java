@@ -5,5 +5,5 @@ import java.util.UUID;
 public interface NoteTypeCount {
 
   UUID getTypeId();
-  Boolean getIsAssigned();
+  Long getCount();
 }

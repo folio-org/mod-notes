@@ -15,10 +15,10 @@ noteType:
       readOnly: true
       description: Type usage statistics
       properties:
-        isAssigned:
-          type: boolean
+        noteTotal:
+          type: integer
           readOnly: true
-          description: Is this note type assigned to any note
+          description: Total number of notes of this type
       required:
         - noteTotal
     metadata:

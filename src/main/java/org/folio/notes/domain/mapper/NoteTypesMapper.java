@@ -26,7 +26,7 @@ public interface NoteTypesMapper {
   @Mapping(target = "updatedBy", ignore = true)
   NoteTypeEntity toEntity(NoteType dto);
 
-  default NoteTypeCollection toDtoCollection(Page<NoteTypeEntity> entityList, Map<UUID, Boolean> noteTypeUsage) {
+  default NoteTypeCollection toDtoCollection(Page<NoteTypeEntity> entityList, Map<UUID, Long> noteTypeUsage) {
     var noteTypes = toDtoList(entityList.getContent());
     noteTypes.forEach(noteType -> noteType.setUsage(getNoteTypeUsage(noteType.getId(), noteTypeUsage)));
     return new NoteTypeCollection()
@@ -44,9 +44,9 @@ public interface NoteTypesMapper {
   @Mapping(target = "name", source = "name", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
   NoteTypeEntity updateNoteType(NoteType dto, @MappingTarget NoteTypeEntity entity);
 
-  default NoteTypeUsage getNoteTypeUsage(UUID id, Map<UUID, Boolean> noteTypeUsage) {
-    var isAssigned = noteTypeUsage.getOrDefault(id, false);
-    return new NoteTypeUsage().isAssigned(isAssigned);
+  default NoteTypeUsage getNoteTypeUsage(UUID id, Map<UUID, Long> noteTypeUsage) {
+    var noteTotal = Math.toIntExact(noteTypeUsage.getOrDefault(id, 0L));
+    return new NoteTypeUsage().noteTotal(noteTotal);
   }
 
 }
