@@ -40,7 +40,8 @@ public class DatabaseHelper {
 
   public void saveNote(NoteEntity note, String tenant) {
     var sql = "INSERT INTO " + getTable(tenant, NOTE) + " (id, title, domain, type_id, created_by) VALUES (?,?,?,?,?)";
-    jdbcTemplate.update(sql, note.getId(), note.getTitle(), note.getDomain(), note.getType().getId(), note.getCreatedBy());
+    jdbcTemplate.update(sql,
+      note.getId(), note.getTitle(), note.getDomain(), note.getType().getId(), note.getCreatedBy());
   }
 
   public void saveNoteTypes(List<NoteTypeEntity> noteTypes, String tenant) {

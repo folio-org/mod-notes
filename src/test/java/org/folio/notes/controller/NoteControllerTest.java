@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.validation.ConstraintViolationException;
 import org.apache.http.HttpStatus;
-import org.folio.notes.client.UsersClient;
 import org.folio.notes.domain.dto.Link;
 import org.folio.notes.domain.dto.LinkStatus;
 import org.folio.notes.domain.dto.Note;
@@ -52,18 +51,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpHeaders;
-import org.springframework.test.web.servlet.ResultMatcher;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -696,10 +683,10 @@ class NoteControllerTest extends TestApiBase {
 
   @ParameterizedTest
   @CsvSource({
-    // "ABC, 2, XYZ, 1, asc", //todo: uncomment both cases when behaviour fixed in https://issues.folio.org/browse/MODNOTES-241
-    // "ABC, 2, XYZ, 1, desc",
-    "ABC, 2, ABC, 1, asc",
-    "ABC, 2, ABC, 1, desc"})
+    "ABC, 2, XYZ, 1, asc",
+    "ABC, 2, XYZ, 1, desc",
+    "ABC, 1, ABC, 2, asc",
+    "ABC, 1, ABC, 2, desc"})
   @DisplayName("should return list of notes sorted by content")
   void shouldReturnListOfNotesSortedByContent(String firstTitle, String firstContent,
                                               String secondTitle, String secondContent,
@@ -727,17 +714,9 @@ class NoteControllerTest extends TestApiBase {
 
     var actualFirstNoteId = notes.get(0).getId();
     if (sortDirection.equals("asc")) {
-      if (firstContent.compareTo(secondContent) <= 0) {
-        assertEquals(firstNote.getId(), actualFirstNoteId);
-      } else {
-        assertEquals(secondNote.getId(), actualFirstNoteId);
-      }
+      assertEquals(firstNote.getId(), actualFirstNoteId);
     } else {
-      if (firstContent.compareTo(secondContent) >= 0) {
-        assertEquals(firstNote.getId(), actualFirstNoteId);
-      } else {
-        assertEquals(secondNote.getId(), actualFirstNoteId);
-      }
+      assertEquals(secondNote.getId(), actualFirstNoteId);
     }
   }
 
