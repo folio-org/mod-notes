@@ -1,8 +1,14 @@
-## 4.0.0 IN-PROGRESS
+## 4.0.0-SNAPSHOT IN PROGRESS
+* MODNOTES-233 Do not include # of notes assigned to note types in response
 
+## 3.1.2 2022-08-08
+* Revert Nolana features (MODNOTES-233)
+
+## 3.1.1 2022-08-05
+* MODNOTES-234 Respond with note if user can't be fetched
 * MODNOTES-236 Supports users interface 15.1 16.0
 
-## 3.1.0-SNAPSHOT 2022-06-28
+## 3.1.0 2022-06-28
 * MODNOTES-211 Define perm note.types.collection.get
 * MODNOTES-218 Migration Issue from Kiwi-Lotus - improve note-links migration script
 * MODNOTES-219 Fix migration when userId is undefined

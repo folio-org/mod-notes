@@ -2,6 +2,7 @@ package org.folio.notes.service.impl;
 
 import static org.folio.notes.config.CacheConfig.CACHE_USERS_BY_ID;
 
+import feign.FeignException;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +19,13 @@ public class UsersServiceImpl implements UsersService {
   private final UsersClient client;
 
   @Override
-  @Cacheable(cacheNames = CACHE_USERS_BY_ID, key = "@folioExecutionContext.tenantId + ':' + #id")
+  @Cacheable(cacheNames = CACHE_USERS_BY_ID, key = "@folioExecutionContext.tenantId + ':' + #id",
+             unless = "#result == null")
   public Optional<User> getUser(UUID id) {
-    return id == null ? Optional.empty() : client.fetchUserById(id.toString());
+    try {
+      return id == null ? Optional.empty() : client.fetchUserById(id.toString());
+    } catch (FeignException e) {
+      return Optional.empty();
+    }
   }
 }
