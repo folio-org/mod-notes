@@ -1,5 +1,10 @@
-## 3.1.1 2022-08-05
+## 4.0.0-SNAPSHOT IN PROGRESS
 * MODNOTES-233 Do not include # of notes assigned to note types in response
+
+## 3.1.2 2022-08-08
+* Revert Nolana features (MODNOTES-233)
+
+## 3.1.1 2022-08-05
 * MODNOTES-234 Respond with note if user can't be fetched
 * MODNOTES-236 Supports users interface 15.1 16.0
 
