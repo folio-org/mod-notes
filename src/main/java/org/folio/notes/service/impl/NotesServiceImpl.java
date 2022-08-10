@@ -1,29 +1,19 @@
 package org.folio.notes.service.impl;
 
-import static org.springframework.data.jpa.domain.Specification.where;
-
 import static org.folio.notes.domain.repository.NoteRepository.contentLike;
 import static org.folio.notes.domain.repository.NoteRepository.domainEq;
 import static org.folio.notes.domain.repository.NoteRepository.linkIs;
 import static org.folio.notes.domain.repository.NoteRepository.linkIsNot;
 import static org.folio.notes.domain.repository.NoteRepository.typeNameIn;
+import static org.springframework.data.jpa.domain.Specification.where;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-
 import org.folio.notes.domain.dto.LinkStatus;
 import org.folio.notes.domain.dto.LinkStatusFilter;
 import org.folio.notes.domain.dto.Note;
@@ -45,6 +35,13 @@ import org.folio.notes.exception.NoteNotFoundException;
 import org.folio.notes.service.NotesService;
 import org.folio.notes.util.HtmlSanitizer;
 import org.folio.spring.data.OffsetRequest;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 @Service
 @RequiredArgsConstructor

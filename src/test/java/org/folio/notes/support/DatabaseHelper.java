@@ -2,13 +2,11 @@ package org.folio.notes.support;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.jdbc.JdbcTestUtils;
-
 import org.folio.notes.domain.entity.NoteEntity;
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.spring.FolioModuleMetadata;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.jdbc.JdbcTestUtils;
 
 public class DatabaseHelper {
 
@@ -42,7 +40,8 @@ public class DatabaseHelper {
 
   public void saveNote(NoteEntity note, String tenant) {
     var sql = "INSERT INTO " + getTable(tenant, NOTE) + " (id, title, domain, type_id, created_by) VALUES (?,?,?,?,?)";
-    jdbcTemplate.update(sql, note.getId(), note.getTitle(), note.getDomain(), note.getType().getId(), note.getCreatedBy());
+    jdbcTemplate.update(sql,
+      note.getId(), note.getTitle(), note.getDomain(), note.getType().getId(), note.getCreatedBy());
   }
 
   public void saveNoteTypes(List<NoteTypeEntity> noteTypes, String tenant) {

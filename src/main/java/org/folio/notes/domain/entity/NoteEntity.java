@@ -2,7 +2,6 @@ package org.folio.notes.domain.entity;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Index;
@@ -14,10 +13,8 @@ import javax.persistence.NamedAttributeNode;
 import javax.persistence.NamedEntityGraph;
 import javax.persistence.NamedSubgraph;
 import javax.persistence.Table;
-
 import lombok.Getter;
 import lombok.Setter;
-
 import org.folio.notes.domain.repository.NoteRepository;
 
 @Entity
@@ -41,7 +38,8 @@ import org.folio.notes.domain.repository.NoteRepository;
   @Index(name = "idx_note_content", columnList = "indexed_content"),
   @Index(name = "idx_note_type_id", columnList = "type_id")
 })
-@Getter @Setter
+@Getter
+@Setter
 public class NoteEntity extends AuditableEntity {
 
   @Column(name = "title", nullable = false)

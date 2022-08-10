@@ -4,7 +4,11 @@ import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
-
+import org.folio.notes.domain.dto.Metadata;
+import org.folio.notes.domain.dto.User;
+import org.folio.notes.domain.dto.UserInfo;
+import org.folio.notes.domain.entity.AuditableEntity;
+import org.folio.notes.service.UsersService;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
@@ -13,12 +17,6 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.mapstruct.NullValueCheckStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import org.folio.notes.domain.dto.Metadata;
-import org.folio.notes.domain.dto.User;
-import org.folio.notes.domain.dto.UserInfo;
-import org.folio.notes.domain.entity.AuditableEntity;
-import org.folio.notes.service.UsersService;
 
 @Mapper(componentModel = "spring", nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS, uses = UsersService.class)
 public abstract class MetadataMapper {

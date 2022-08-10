@@ -1,7 +1,6 @@
 package org.folio.notes.domain.dto;
 
 import java.util.UUID;
-
 import lombok.Value;
 
 @Value

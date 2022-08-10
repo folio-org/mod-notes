@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import javax.validation.ConstraintViolationException;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
 import org.folio.notes.domain.dto.Note;
@@ -46,6 +47,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+@Log4j2
 class NoteTypesControllerTest extends TestApiBase {
 
   private static final String BASE_URL = "/note-types";
@@ -444,15 +446,15 @@ class NoteTypesControllerTest extends TestApiBase {
     var noteType = new NoteType().name(RandomStringUtils.randomAlphabetic(100));
     var contentAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
     var existingNoteType = OBJECT_MAPPER.readValue(contentAsString, NoteType.class);
-    notes.forEach(note ->
-    {
+    notes.forEach(note -> {
       note.setDomain("Domain");
       note.setTypeId(existingNoteType.getId());
       try {
         mockMvc.perform(postNote(note))
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.title", is(note.getTitle())));
-      } catch (Exception ignored) {
+      } catch (Exception ex) {
+        log.warn("Exception caught: ", ex);
       }
     });
   }

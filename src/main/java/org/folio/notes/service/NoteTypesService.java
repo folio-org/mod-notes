@@ -1,7 +1,6 @@
 package org.folio.notes.service;
 
 import java.util.UUID;
-
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.NoteTypeCollection;
 

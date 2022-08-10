@@ -3,7 +3,8 @@ package org.folio.notes.service.impl;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.folio.notes.config.properties.NoteTypesProperties;
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.NoteTypeCollection;
@@ -17,9 +18,6 @@ import org.folio.notes.service.ConfigurationService;
 import org.folio.notes.service.NoteTypesService;
 import org.folio.spring.data.OffsetRequest;
 import org.springframework.stereotype.Service;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service

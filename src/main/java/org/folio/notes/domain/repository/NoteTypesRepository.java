@@ -3,7 +3,6 @@ package org.folio.notes.domain.repository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.domain.entity.projection.NoteTypeCount;
 import org.folio.spring.cql.JpaCqlRepository;

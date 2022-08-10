@@ -3,11 +3,7 @@ package org.folio.notes.controller;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
-
 import org.folio.notes.domain.dto.LinkStatusFilter;
 import org.folio.notes.domain.dto.Note;
 import org.folio.notes.domain.dto.NoteCollection;
@@ -16,6 +12,8 @@ import org.folio.notes.domain.dto.NotesOrderBy;
 import org.folio.notes.domain.dto.OrderDirection;
 import org.folio.notes.rest.resource.NotesApi;
 import org.folio.notes.service.NotesService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor

@@ -2,7 +2,6 @@ package org.folio.notes.domain.repository;
 
 import java.util.List;
 import java.util.UUID;
-
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
@@ -11,7 +10,15 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.SetJoin;
 import javax.persistence.criteria.Subquery;
-
+import org.folio.notes.config.hibernate.predicate.IlikePredicate;
+import org.folio.notes.domain.entity.BaseEntity_;
+import org.folio.notes.domain.entity.LinkEntity;
+import org.folio.notes.domain.entity.LinkEntity_;
+import org.folio.notes.domain.entity.NoteEntity;
+import org.folio.notes.domain.entity.NoteEntity_;
+import org.folio.notes.domain.entity.NoteTypeEntity;
+import org.folio.notes.domain.entity.NoteTypeEntity_;
+import org.folio.spring.cql.JpaCqlRepository;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,16 +28,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
-
-import org.folio.notes.config.hibernate.predicate.ILikePredicate;
-import org.folio.notes.domain.entity.BaseEntity_;
-import org.folio.notes.domain.entity.LinkEntity;
-import org.folio.notes.domain.entity.LinkEntity_;
-import org.folio.notes.domain.entity.NoteEntity;
-import org.folio.notes.domain.entity.NoteEntity_;
-import org.folio.notes.domain.entity.NoteTypeEntity;
-import org.folio.notes.domain.entity.NoteTypeEntity_;
-import org.folio.spring.cql.JpaCqlRepository;
 
 @Repository
 public interface NoteRepository extends JpaCqlRepository<NoteEntity, UUID>, JpaSpecificationExecutor<NoteEntity> {
@@ -42,7 +39,7 @@ public interface NoteRepository extends JpaCqlRepository<NoteEntity, UUID>, JpaS
   }
 
   static Specification<NoteEntity> contentLike(String text) {
-    return (root, query, cb) -> new ILikePredicate(
+    return (root, query, cb) -> new IlikePredicate(
       (CriteriaBuilderImpl) cb,
       root.get(NoteEntity_.indexedContent),
       "%" + text + "%"

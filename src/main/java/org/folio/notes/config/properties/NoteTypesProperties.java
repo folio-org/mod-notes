@@ -6,13 +6,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@Getter @Setter
+@Getter
+@Setter
 @ConfigurationProperties(prefix = "folio.notes.types")
 public class NoteTypesProperties {
 
   private DefaultOptions defaults;
 
-  @Getter @Setter
+  @Getter
+  @Setter
   public static class DefaultOptions {
 
     private String name;

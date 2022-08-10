@@ -2,15 +2,13 @@ package org.folio.notes.controller;
 
 import java.net.URI;
 import java.util.UUID;
-
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
-
 import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.NoteTypeCollection;
 import org.folio.notes.rest.resource.NoteTypesApi;
 import org.folio.notes.service.NoteTypesService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
