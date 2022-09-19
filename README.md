@@ -1,32 +1,20 @@
 # mod-notes
 
-Copyright (C) 2017-2021 The Open Library Foundation
+Copyright (C) 2017-2022 The Open Library Foundation
 
 This software is distributed under the terms of the Apache License,
 Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 
 ## Introduction
 
-Notes on all types of objects
+Notes on all types of objects.
 
-The notes module implements a simple CRUD interface on `/notes` where users
-can post notes, small comment texts that refer to other objects in the system,
-for example users or items. See `ramls/note.json` for the precise definition.
+The notes module implements a simple CRUD interface where users can post notes,
+small comment texts that refer to other objects in the system, for example users or items.
 
-The interface provides the usual CRUD operations POST/PUT/GET/DELETE on `/notes`
-and `/notes/$id`. See the RAML for precise definitions.
+## API
 
-The GET interfaces accept a query as usual, for example `notes/?query=domain=users`.
-Querying on the domain is practical to limit to notes on given types of items,
-querying on the text is good for searching.
-
-For ease of use, the notes contain the username and human readable name (first,
-middle, and last) of the creating user. These get automatically populated when
-a note is created, if necessary. They can be changed later with a PUT request,
-in case the user changes his name.
-
-## User mentions
-Does not supported.
+See [API Guide](docs/api-guide.md)
 
 ## Permissions
 The module declares the usual permission bits for the CRUD operations, but it
@@ -39,13 +27,45 @@ and enable that for the users who will have access to the permissions on that
 domain, together with the CRUD permissions telling what kind of operations the
 user is allowed to perform.
 
-There is also a overall permission 'notes.domains.all' that grants permission to
+There is also an overall permission 'notes.domains.all' that grants permission to
 all possible domains.
 
 The way this is designed, the notes module does not need to know or care about
 which domains we end up having in the system. Unfortunately it requires
 mod-permissions to support wildcards in the DesiredPermissions, which it does not
 quite do yet.
+
+## Installing and deployment
+
+### Compiling
+
+Compile with 
+```shell
+mvn clean install
+```
+
+### Running it
+Run locally on listening port 8081 (default listening port):
+
+Using Docker to run the local stand-alone instance:
+
+```shell
+DB_HOST=localhost DB_PORT=5432 DB_DATABASE=okapi_modules DB_USERNAME=folio_admin DB_PASSWORD=folio_admin \
+   java -Dserver.port=8081 -jar target/mod-notes-*.jar
+```
+
+### Docker
+
+Build the docker container with:
+
+```shell
+docker build -t dev.folio/mod-notes .
+```
+
+### ModuleDescriptor
+
+See the built `target/ModuleDescriptor.json` for the interfaces that this module
+requires and provides, the permissions, and the additional module metadata.
 
 ## Additional information
 
@@ -59,32 +79,9 @@ with further FOLIO Developer documentation at [dev.folio.org](https://dev.folio.
 See project [MODNOTES](https://issues.folio.org/browse/MODNOTES)
 at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker).
 
-### Quick start
-
-Compile with `mvn clean install`
-
-Run the local stand-alone instance:
-
-```
-java -jar target/mod-notes-fat.jar \
-  -Dhttp.port=8081 embed_postgres=true
-```
-
-### ModuleDescriptor
-
-See the built `target/ModuleDescriptor.json` for the interfaces that this module
-requires and provides, the permissions, and the additional module metadata.
-
 ### API documentation
 
 This module's [API documentation](https://dev.folio.org/reference/api/#mod-notes).
-
-The local API docs are available, for example:
-```
-http://localhost:8081/apidocs/?raml=raml/note.raml
-http://localhost:8081/apidocs/?raml=raml/admin.raml
-etc.
-```
 
 ### Code analysis
 

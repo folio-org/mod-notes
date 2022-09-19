@@ -16,6 +16,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.validation.ConstraintViolationException;
 import org.apache.http.HttpStatus;
 import org.folio.notes.domain.dto.Link;
@@ -50,7 +52,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -59,7 +63,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-class NoteControllerTest extends TestApiBase {
+class NotesControllerTest extends TestApiBase {
 
   private static final String NOTE_URL = "/notes";
   private static final String NOTE_TYPE_URL = "/note-types";
@@ -70,18 +74,36 @@ class NoteControllerTest extends TestApiBase {
   private static final String PACKAGE_ID_2 = "123-456789";
   private static final String NOTE_TYPE_NAME_1 = "High Priority";
   private static final String NOTE_TYPE_NAME_2 = "test note";
-  private static final String PACKAGE_TYPE = "domain";
+  private static final String PACKAGE_TYPE = "package";
   private static final String DOMAIN = "domain";
   private static final String NON_EXISTING_ID = "11111111111111";
   private static final String NON_EXISTING_DOMAIN = "nonExistingDomain";
   private static final String NOTE_LINKS_PATH = "/note-links/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1;
-  private static final String TITLE_1 = "First";
-  private static final String TITLE_2 = "Second";
-  private static final String TITLE_3 = "Third";
+
+  private static final UUID[] NOTE_IDS = new UUID[] {randomUUID(), randomUUID(), randomUUID()};
+  private static final String[] NOTE_TITLES = new String[] {"First", "Second", "Third"};
+  private static final String[] NOTE_DOMAINS = new String[] {"users", "titles", "titles"};
+  private static final String[] NOTE_CONTENT = new String[] {"first content", "second", "third content"};
+  private static final String[] TYPE_NAMES = new String[] {"General Note", "Special"};
+  private static final UUID[] TYPE_IDS = new UUID[] {randomUUID(), randomUUID()};
   private static final int DEFAULT_LINK_AMOUNT = 1;
 
   @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
+
+  private static Stream<Arguments> cqlQueryProvider() {
+    return Stream.of(
+      arguments("id = \"" + NOTE_IDS[0] + "\""),
+      arguments("title = \"" + NOTE_TITLES[0] + "\""),
+      arguments("domain == \"" + NOTE_DOMAINS[0] + "\""),
+      arguments("content all \"" + NOTE_CONTENT[0] + "\""),
+      arguments("type.id = \"" + TYPE_IDS[0] + "\""),
+      arguments("type.name = \"" + TYPE_NAMES[0] + "\""),
+      arguments("links.objectId = \"" + PACKAGE_ID_1 + "\""),
+      arguments("links.objectType = \"" + PACKAGE_TYPE + "\""),
+      arguments("createdBy = \"" + USER_ID + "\" and id = \"" + NOTE_IDS[0] + "\"")
+    );
+  }
 
   @BeforeEach
   void setUp() {
@@ -94,7 +116,6 @@ class NoteControllerTest extends TestApiBase {
   }
 
   // Tests for GET
-
   @Test
   @DisplayName("Find all notes - empty collection")
   void returnEmptyCollection() throws Exception {
@@ -134,15 +155,20 @@ class NoteControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.totalRecords").value(3));
   }
 
-  @Test
-  @DisplayName("Find all notes by title")
-  void returnCollectionByName() throws Exception {
-    List<NoteEntity> notes = createListOfNotes();
+  @MethodSource("cqlQueryProvider")
+  @ParameterizedTest
+  @DisplayName("Find only one note by CQL")
+  void returnCollectionByName(String cqlQuery) throws Exception {
+    createListOfNotes();
+    createLinks(NOTE_IDS[0]);
 
-    var cqlQuery = "title=" + TITLE_3;
-    mockMvc.perform(get(NOTE_URL + "?query={cql}", cqlQuery).headers(okapiHeaders()))
+    mockMvc.perform(get(NOTE_URL + "?query=({cql})", cqlQuery).headers(okapiHeaders()))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.notes.[0].title", is(notes.get(2).getTitle())))
+      .andExpect(jsonPath("$.notes.[0].id", is(NOTE_IDS[0].toString())))
+      .andExpect(jsonPath("$.notes.[0].title", is(NOTE_TITLES[0])))
+      .andExpect(jsonPath("$.notes.[0].domain", is(NOTE_DOMAINS[0])))
+      .andExpect(jsonPath("$.notes.[0].typeId", is(TYPE_IDS[0].toString())))
+      .andExpect(jsonPath("$.notes.[0].type", is(TYPE_NAMES[0])))
       .andExpect(jsonPath("$.notes.[1]").doesNotExist())
       .andExpect(jsonPath("$.totalRecords").value(1));
   }
@@ -234,7 +260,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Find note by ID")
   void returnById() throws Exception {
-    var note = createNote("NoteById");
+    var note = createNote();
 
     mockMvc.perform(getById(note.getId()))
       .andExpect(status().isOk())
@@ -251,7 +277,7 @@ class NoteControllerTest extends TestApiBase {
   @DisplayName("Find note by ID when user is not exist")
   void returnByIdWhenUserIsNotAvailable(int httpStatus) throws Exception {
     stubUserClientError(httpStatus);
-    var note = createNote("NoteById");
+    var note = createNote();
 
     mockMvc.perform(getById(note.getId()))
       .andExpect(status().isOk())
@@ -286,7 +312,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Update existing note")
   void updateExistingNote() throws Exception {
-    var existNote = createNote("Exist");
+    var existNote = createNote();
     var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
     var updatedNote = new Note().title("Updated").domain(DOMAIN).typeId(existNote.getType().getId()).links(links);
 
@@ -304,8 +330,8 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Update note type for existing note")
   void updateNoteTypeForExistingNote() throws Exception {
-    var existNote = createNote("Exist");
-    var newNoteType = createNoteType();
+    var existNote = createNote();
+    var newNoteType = createNoteType(1);
     var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
     var updatedNote = new Note().title("Updated").domain(DOMAIN).typeId(newNoteType.getId()).links(links);
 
@@ -324,7 +350,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Return 422 on update note type for existing note when note type does not exist")
   void return422OnUpdateNoteTypeForExistingNoteWhenNoteTypeDoesNotExist() throws Exception {
-    var existNote = createNote("Exist");
+    var existNote = createNote();
     var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
     var updatedNote = new Note().title("Updated").domain(DOMAIN).typeId(UUID.randomUUID()).links(links);
 
@@ -343,7 +369,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Return 404 on update note by ID when it is not exist")
   void return404OnPutByIdWhenItNotExist() throws Exception {
-    var noteType = createNoteType();
+    var noteType = createNoteType(1);
     var links = Collections.singletonList(new Link().id(PACKAGE_ID_1).type(PACKAGE_TYPE));
     var note = new Note().title("NotExist").domain("Domain").typeId(noteType.getId()).links(links);
 
@@ -358,7 +384,7 @@ class NoteControllerTest extends TestApiBase {
   @Test
   @DisplayName("Delete existing note")
   void deleteExistingNoteType() throws Exception {
-    var note = createNote("ToDelete");
+    var note = createNote();
 
     mockMvc.perform(deleteById(note.getId()))
       .andExpect(status().isNoContent());
@@ -982,7 +1008,7 @@ class NoteControllerTest extends TestApiBase {
     var notyTypeAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
     var existingNoteType = OBJECT_MAPPER.readValue(notyTypeAsString, NoteType.class);
     var link = new Link().id(LINK_ID).type(DOMAIN);
-    var note = new Note().title(TITLE_1).domain(DOMAIN).typeId(existingNoteType.getId())
+    var note = new Note().title(NOTE_TITLES[0]).domain(DOMAIN).typeId(existingNoteType.getId())
       .links(Collections.singletonList(link));
     var noteAsString = mockMvc.perform(postNote(note)).andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
@@ -1046,37 +1072,43 @@ class NoteControllerTest extends TestApiBase {
 
   private List<NoteEntity> createListOfNotes() {
     List<NoteEntity> notes = List.of(
-      populateNote(TITLE_1),
-      populateNote(TITLE_2),
-      populateNote(TITLE_3)
+      prepareNote(0),
+      prepareNote(1),
+      prepareNote(2)
     );
     databaseHelper.saveNotes(notes, TENANT);
     return notes;
   }
 
-  private NoteEntity createNote(String title) {
-    var noteEntity = populateNote(title);
+  private NoteEntity createNote() {
+    var noteEntity = prepareNote(0);
     databaseHelper.saveNote(noteEntity, TENANT);
     return noteEntity;
   }
 
-  private NoteEntity populateNote(String title) {
+  private NoteEntity prepareNote(int noteNum) {
     var noteEntity = new NoteEntity();
-    noteEntity.setId(randomUUID());
-    noteEntity.setTitle(title);
-    noteEntity.setDomain(DOMAIN);
-    noteEntity.setType(createNoteType());
+    noteEntity.setId(NOTE_IDS[noteNum]);
+    noteEntity.setTitle(NOTE_TITLES[noteNum]);
+    noteEntity.setDomain(NOTE_DOMAINS[noteNum]);
+    noteEntity.setContent(NOTE_CONTENT[noteNum]);
+    noteEntity.setType(createNoteType(noteNum));
     noteEntity.setCreatedBy(USER_ID);
     return noteEntity;
   }
 
-  private NoteTypeEntity createNoteType() {
-    NoteTypeEntity noteType = new NoteTypeEntity();
-    noteType.setId(randomUUID());
-    noteType.setName(randomAlphabetic(100));
+  private NoteTypeEntity createNoteType(int noteNum) {
+    int typeId = Math.min(noteNum, TYPE_IDS.length - 1);
+    var noteTypeById = databaseHelper.getNoteTypeById(TYPE_IDS[typeId], TENANT);
+    if (noteTypeById == null) {
+      NoteTypeEntity noteType = new NoteTypeEntity();
+      noteType.setId(TYPE_IDS[typeId]);
+      noteType.setName(TYPE_NAMES[typeId]);
 
-    databaseHelper.saveNoteType(noteType, TENANT);
-    return noteType;
+      databaseHelper.saveNoteType(noteType, TENANT);
+      return noteType;
+    }
+    return noteTypeById;
   }
 
   private MockHttpServletRequestBuilder postNote(Note note) {
