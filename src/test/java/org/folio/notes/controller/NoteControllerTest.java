@@ -135,6 +135,21 @@ class NoteControllerTest extends TestApiBase {
   }
 
   @Test
+  @DisplayName("Find all notes by type id and limit=totalRecords")
+  void returnCollectionByTypeIdAndLimitIsEqualToTotalRecords() throws Exception {
+    var note = createNote(TITLE_1);
+    var cqlQuery = "(type.id=" + note.getType().getId() + ")";
+    var limit = "1";
+    mockMvc.perform(get(NOTE_URL + "?limit={l}&query={cql}", limit, cqlQuery)
+        .headers(okapiHeaders()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.notes.[0].title", is(note.getTitle())))
+      .andExpect(jsonPath("$.notes.[0].typeId", is(note.getType().getId().toString())))
+      .andExpect(jsonPath("$.notes.[1]").doesNotExist())
+      .andExpect(jsonPath("$.totalRecords").value(1));
+  }
+
+  @Test
   @DisplayName("Find all notes by title")
   void returnCollectionByName() throws Exception {
     List<NoteEntity> notes = createListOfNotes();
