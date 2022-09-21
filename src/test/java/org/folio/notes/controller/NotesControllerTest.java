@@ -170,7 +170,6 @@ class NotesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.totalRecords").value(1));
   }
 
-  @Test
   @MethodSource("cqlQueryProvider")
   @ParameterizedTest
   @DisplayName("Find only one note by CQL")
