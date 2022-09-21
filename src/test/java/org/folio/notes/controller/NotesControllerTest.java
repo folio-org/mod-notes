@@ -155,13 +155,27 @@ class NotesControllerTest extends TestApiBase {
       .andExpect(jsonPath("$.totalRecords").value(3));
   }
 
+  @Test
+  @DisplayName("Find all notes by type id and limit=totalRecords")
+  void returnCollectionByTypeIdAndLimitIsEqualToTotalRecords() throws Exception {
+    var note = createNote();
+    var cqlQuery = "(type.id=" + note.getType().getId() + ")";
+    var limit = "1";
+    mockMvc.perform(get(NOTE_URL + "?limit={l}&query={cql}", limit, cqlQuery)
+        .headers(okapiHeaders()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.notes.[0].title", is(note.getTitle())))
+      .andExpect(jsonPath("$.notes.[0].typeId", is(note.getType().getId().toString())))
+      .andExpect(jsonPath("$.notes.[1]").doesNotExist())
+      .andExpect(jsonPath("$.totalRecords").value(1));
+  }
+
   @MethodSource("cqlQueryProvider")
   @ParameterizedTest
   @DisplayName("Find only one note by CQL")
   void returnCollectionByName(String cqlQuery) throws Exception {
     createListOfNotes();
     createLinks(NOTE_IDS[0]);
-
     mockMvc.perform(get(NOTE_URL + "?query=({cql})", cqlQuery).headers(okapiHeaders()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.notes.[0].id", is(NOTE_IDS[0].toString())))
