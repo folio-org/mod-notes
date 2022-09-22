@@ -11,9 +11,9 @@ in [shared API documentation](https://s3.amazonaws.com/foliodocs/api/mod-notes/s
 |--------|-------------------------------------------------------------|---------------------------------------------------------------------------------|
 | GET    | /notes                                                      | Return notes based on `query` (CQL), `limit`, `offset` params or without params |
 | POST   | /notes                                                      | Create new note and related links                                               |
-| GET    | /notes/<noteId>                                             | Return note with provided `noteId`                                              |
-| PUT    | /notes/<noteId>                                             | Update note and related links with provided `noteId`                            |     
-| DELETE | /notes/<noteId>                                             | Delete note and related links with provided `noteId`                            |  
+| GET    | /notes/{noteId}                                             | Return note with provided `noteId`                                              |
+| PUT    | /notes/{noteId}                                             | Update note and related links with provided `noteId`                            |     
+| DELETE | /notes/{noteId}                                             | Delete note and related links with provided `noteId`                            |  
 | PUT    | /note-links/type/{objectType}/id/{objectId}                 | Add or delete links to specified list of notes                                  |  
 | GET    | /note-links/domain/{domain}/type/{objectType}/id/{objectId} | Return a list of notes by `search`, `noteType`, `status`                        |  
 
@@ -40,9 +40,9 @@ in [shared API documentation](https://s3.amazonaws.com/foliodocs/api/mod-notes/s
 |--------|----------------------|--------------------------------------------------------------------------------------|
 | GET    | /note-types          | Return note-types based on `query` (CQL), `limit`, `offset` params or without params |
 | POST   | /note-types          | Create new note-type and related links                                               |
-| GET    | /note-types/<typeId> | Return note-type with provided `typeId`                                              |
-| PUT    | /note-types/<typeId> | Update note-type with provided `typeId`                                              |     
-| DELETE | /note-types/<typeId> | Delete note-type with provided `typeId`                                              |
+| GET    | /note-types/{typeId} | Return note-type with provided `typeId`                                              |
+| PUT    | /note-types/{typeId} | Update note-type with provided `typeId`                                              |     
+| DELETE | /note-types/{typeId} | Delete note-type with provided `typeId`                                              |
 
 ### Supported CQL-query options
 
