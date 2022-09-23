@@ -10,7 +10,7 @@ paths:
       tags:
         - note-types
       parameters:
-        - $ref: '#/components/parameters/cqlQuery'
+        - $ref: '#/components/parameters/cqlQueryNoteType'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/limit'
       responses:
@@ -95,7 +95,7 @@ paths:
       tags:
         - notes
       parameters:
-        - $ref: '#/components/parameters/cqlQuery'
+        - $ref: '#/components/parameters/cqlQueryNote'
         - $ref: '#/components/parameters/offset'
         - $ref: '#/components/parameters/limit'
       responses:
@@ -346,14 +346,22 @@ components:
       schema:
         type: string
       description: The domain of note
-    cqlQuery:
+    cqlQueryNote:
       name: query
       in: query
       schema:
         type: string
         default: cql.allRecords=1
       required: false
-      description: A query expressed as a CQL string
+      description: A query expressed as a CQL string, for details see [Notes API](https://github.com/folio-org/mod-notes/blob/master/docs/api-guide.md#notes-api)
+    cqlQueryNoteType:
+      name: query
+      in: query
+      schema:
+        type: string
+        default: cql.allRecords=1
+      required: false
+      description: A query expressed as a CQL string, for details see [Note Types API](https://github.com/folio-org/mod-notes/blob/master/docs/api-guide.md#note-types-api)
     offset:
       name: offset
       in: query
