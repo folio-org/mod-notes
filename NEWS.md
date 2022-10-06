@@ -1,5 +1,6 @@
 ## 4.0.0-SNAPSHOT IN PROGRESS
 * MODNOTES-233 Do not include # of notes assigned to note types in response
+* MODNOTES-247 Upgrade to folio-spring-base v5.0.0
 
 ## 3.1.2 2022-08-08
 * Revert Nolana features (MODNOTES-233)
@@ -74,7 +75,7 @@
  * MODNOTES-127 - Update folio-service-tools with newer version
  * MODNOTES-117 - Remove dangerous html tags from note content
  * MODNOTES-119 - Fix error message for quering notes
- * MODNOTES-100 - Fix error message when we try to delete a note type 
+ * MODNOTES-100 - Fix error message when we try to delete a note type
 
 ## 2.6.1 2019-07-24
  * MODNOTES-115 - Ability to filter by notes types
@@ -104,7 +105,7 @@
  * MODNOTES-99 - Migrate the code to folio-service-tools library
  * MODNOTES-96 - Check note title and detail limit
  * MODNOTES-93 - Improvements: Modify metadata triggers not to use additional columns
- 
+
 ## 2.4.0 2019-05-08
  * MODNOTES-97 - Modify Module Descriptor, Dependencies and group id
  * MODNOTES-98 - Fix failing API Tests - missing validate annotation
@@ -113,8 +114,8 @@
  * MODNOTES-71 - Notes: Limit the number of note types that can be defined in the system
  * MODNOTES-88 - Note metadata fields are not completely stored on PUT
  * MODNOTES-69 - Notes: Support bulk method to add/remove notes from/to an entity
- * MODNOTES-66 - Notes: Support create new note 
- * MODNOTES-67 - Notes: Support note update 
+ * MODNOTES-66 - Notes: Support create new note
+ * MODNOTES-67 - Notes: Support note update
  * MODNOTES-65 - Notes: Support to GET note by id
  * MODNOTES-61 - Notes: Implement POST new type endpoint
  * MODNOTES-63 - Notes: Implement DELETE type endpoint
