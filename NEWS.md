@@ -1,4 +1,4 @@
-## 4.0.0-SNAPSHOT IN PROGRESS
+## 4.0.0 2022-10-19
 * MODNOTES-233 Do not include # of notes assigned to note types in response
 * MODNOTES-247 Upgrade to folio-spring-base v5.0.0
 
