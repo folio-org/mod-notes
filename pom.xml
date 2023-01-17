@@ -22,7 +22,7 @@
   </licenses>
 
   <properties>
-    <java.version>11</java.version>
+    <java.version>17</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
@@ -258,7 +258,7 @@
             <annotationProcessorPath>
               <groupId>org.projectlombok</groupId>
               <artifactId>lombok</artifactId>
-              <version>1.18.20</version>
+              <version>1.18.24</version>
             </annotationProcessorPath>
             <annotationProcessorPath>
               <groupId>org.projectlombok</groupId>
