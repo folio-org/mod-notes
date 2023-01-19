@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.notes.domain.dto.LinkStatus;
 import org.folio.notes.domain.dto.LinkStatusFilter;
@@ -45,6 +46,7 @@ import org.springframework.util.CollectionUtils;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotesServiceImpl implements NotesService {
 
   private static final Sort.Order DEFAULT_FIELD_ORDER = Sort.Order.asc(NoteEntity_.INDEXED_CONTENT);
@@ -77,7 +79,10 @@ public class NotesServiceImpl implements NotesService {
 
   @Override
   public NoteCollection getNoteCollection(String query, Integer offset, Integer limit) {
+    log.debug("getNoteCollection:: trying to get Note collection by query: {}, offset: {} and limit: {}",
+      query, offset, limit);
     var noteEntities = noteRepository.findByCQL(query, OffsetRequest.of(offset, limit));
+    log.info("getNoteCollection:: result size: {}", noteEntities.getContent().size());
     return noteCollectionMapper.toDtoCollection(noteEntities);
   }
 
@@ -107,26 +112,38 @@ public class NotesServiceImpl implements NotesService {
       spec = spec.and(typeNameIn(noteTypes));
     }
 
+    log.debug("getNoteCollection:: trying to get Note collection by spec: {}, order: {}", spec, order);
     Sort sort = getSort(orderBy, order);
 
     Page<NoteEntity> t = noteRepository.findAll(where(spec), OffsetRequest.of(offset, limit, sort));
+    log.info("getNoteCollection:: loaded Note collection by spec: {}, offset: {}, limit: {}, sort: {}",
+      spec, offset, limit, sort);
     return noteCollectionMapper.toDtoCollection(t);
   }
 
   @Override
   public Note getNote(UUID id) {
-    return notesMapper.toDto(noteRepository.findById(id).orElseThrow(() -> notFoundException(id)));
+    log.debug("getNote:: trying to get note by id: {}", id);
+    NoteEntity entity = noteRepository.findById(id).orElseThrow(() -> notFoundException(id));
+    log.info("getNote:: loaded note with id: {}", id);
+    return notesMapper.toDto(entity);
   }
 
   @Transactional
   @Override
   public Note createNote(Note note) {
-    return notesMapper.toDto(saveNote(note, notesMapper::toEntity));
+    log.debug("createNote:: trying to create note by title: {}, domain: {}, type: {}",
+      note.getTitle(), note.getDomain(), note.getType());
+    NoteEntity entity = saveNote(note, notesMapper::toEntity);
+    log.info("createNote:: created note by title: {}, domain: {}, type: {}",
+      note.getTitle(), note.getDomain(), note.getType());
+    return notesMapper.toDto(entity);
   }
 
   @Transactional
   @Override
   public void updateLinks(String objectType, String objectId, NoteLinkUpdateCollection noteLinkUpdateCollection) {
+    log.debug("updateLinks:: trying to update links by objectType: {}, objectId: {}", objectType, objectId);
     var linkEntity = fetchOrSaveLink(objectId, objectType);
 
     var linkUpdates = noteLinkUpdateCollection.getNotes();
@@ -135,6 +152,7 @@ public class NotesServiceImpl implements NotesService {
       .collect(Collectors.toList());
 
     var noteEntities = noteRepository.findAllById(noteIds);
+    log.info("updateLinks:: updating note entities' links: {}", noteEntities.size());
     for (NoteEntity noteEntity : noteEntities) {
       var linkStatusChange = linkUpdates.stream()
         .filter(noteLinkUpdate -> noteLinkUpdate.getId().equals(noteEntity.getId()))
@@ -158,19 +176,28 @@ public class NotesServiceImpl implements NotesService {
   @Transactional
   @Override
   public void updateNote(UUID id, Note dto) {
+    log.debug("updateNote:: trying to update note by id: {}", id);
     if (dto.getLinks().isEmpty()) {
+      log.warn("updateNote:: note has no links, thus delete note id: {}", id);
       deleteNote(id);
     } else {
       noteRepository.findById(id)
-        .ifPresentOrElse(entity -> saveNote(dto, noteMapFunction(dto, entity)), throwNotFoundById(id));
+        .ifPresentOrElse(entity -> {
+          log.info("updateNote:: note loaded with id: {}", id);
+          saveNote(dto, noteMapFunction(dto, entity));
+        }, throwNotFoundById(id));
     }
   }
 
   @Transactional
   @Override
   public void deleteNote(UUID id) {
+    log.debug("deleteNote:: trying to delete note with id: {}", id);
     noteRepository.findById(id)
-      .ifPresentOrElse(entity -> noteRepository.deleteById(id), throwNotFoundById(id));
+      .ifPresentOrElse(entity -> {
+        noteRepository.deleteById(id);
+        log.info("deleteNote:: deleted note with id: {}", id);
+      }, throwNotFoundById(id));
   }
 
   private Sort getSort(NotesOrderBy orderBy, OrderDirection order) {
