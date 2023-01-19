@@ -74,7 +74,7 @@ public class NoteTypesServiceImpl implements NoteTypesService {
       repository.save(mapper.updateNoteType(entity, existedEntity));
       log.info("updateNoteType:: updated note type with id: {}", id);
     },
-        throwNotFoundById(id));
+        throwNotFoundById(id, "updateNoteType"));
   }
 
   @Override
@@ -84,7 +84,7 @@ public class NoteTypesServiceImpl implements NoteTypesService {
       .ifPresentOrElse(entity -> {
         repository.delete(entity);
         log.info("removeNoteType:: removed note type with id: {}", id);
-      }, throwNotFoundById(id));
+      }, throwNotFoundById(id, "removeNoteType"));
   }
 
   @Override
@@ -98,9 +98,11 @@ public class NoteTypesServiceImpl implements NoteTypesService {
     }
   }
 
-  private Runnable throwNotFoundById(UUID id) {
+  private Runnable throwNotFoundById(UUID id, String methodName) {
     return () -> {
-      throw notFound(id);
+      NoteTypeNotFoundException noteTypeNotFoundException = notFound(id);
+      log.warn(String.format("%s:: error loading note type with id: {}", methodName), id);
+      throw noteTypeNotFoundException;
     };
   }
 

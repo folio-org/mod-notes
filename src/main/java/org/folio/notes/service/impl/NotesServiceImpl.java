@@ -185,7 +185,7 @@ public class NotesServiceImpl implements NotesService {
         .ifPresentOrElse(entity -> {
           log.info("updateNote:: note loaded with id: {}", id);
           saveNote(dto, noteMapFunction(dto, entity));
-        }, throwNotFoundById(id));
+        }, throwNotFoundById(id, "updateNote"));
     }
   }
 
@@ -197,7 +197,7 @@ public class NotesServiceImpl implements NotesService {
       .ifPresentOrElse(entity -> {
         noteRepository.deleteById(id);
         log.info("deleteNote:: deleted note with id: {}", id);
-      }, throwNotFoundById(id));
+      }, throwNotFoundById(id, "deleteNote"));
   }
 
   private Sort getSort(NotesOrderBy orderBy, OrderDirection order) {
@@ -260,9 +260,11 @@ public class NotesServiceImpl implements NotesService {
     return new NoteNotFoundException(id);
   }
 
-  private Runnable throwNotFoundById(UUID id) {
+  private Runnable throwNotFoundById(UUID id, String methodName) {
     return () -> {
-      throw notFoundException(id);
+      NoteNotFoundException noteNotFoundException = notFoundException(id);
+      log.warn(String.format("%s:: error loading note with id: {}", methodName), id);
+      throw noteNotFoundException;
     };
   }
 }
