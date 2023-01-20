@@ -9,28 +9,28 @@
     <preConditions onFail="MARK_RAN">
       <tableExists tableName="note_type"/>
     </preConditions>
-    <sqlFile path="sql/migrate-types.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/migrate-types.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
   <changeSet id="MODNOTES-182@@migrate-links" author="Pavlo_Smahin">
     <preConditions onFail="MARK_RAN">
       <tableExists tableName="note_data"/>
     </preConditions>
-    <sqlFile path="sql/migrate-links.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/migrate-links.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
   <changeSet id="MODNOTES-182@@migrate-notes" author="Pavlo_Smahin">
     <preConditions onFail="MARK_RAN">
       <tableExists tableName="note_data"/>
     </preConditions>
-    <sqlFile path="sql/migrate-notes.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/migrate-notes.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
   <changeSet id="MODNOTES-182@@migrate-note-links" author="Pavlo_Smahin" runOnChange="true">
     <preConditions onFail="MARK_RAN">
       <tableExists tableName="note_data"/>
     </preConditions>
-    <sqlFile path="sql/migrate-note-links.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/migrate-note-links.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
   <changeSet id="MODNOTES-182@@drop-note-data-table" author="Pavlo_Smahin">
@@ -62,11 +62,11 @@
   </changeSet>
 
   <changeSet id="MODNOTES-182@@drop-update-type-id-function" author="Pavlo_Smahin">
-    <sqlFile path="sql/drop-update-type-id-function.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/drop-update-type-id-function.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
   <changeSet id="MODNOTES-182@@drop-update-search-content-function" author="Pavlo_Smahin">
-    <sqlFile path="sql/drop-update-search-content-function.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/drop-update-search-content-function.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
 </databaseChangeLog>

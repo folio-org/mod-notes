@@ -4,7 +4,7 @@ import static org.folio.notes.util.ErrorsHelper.ErrorCode.NOT_FOUND_ERROR;
 import static org.folio.notes.util.ErrorsHelper.ErrorCode.VALIDATION_ERROR;
 import static org.folio.notes.util.ErrorsHelper.createInternalError;
 
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolationException;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.notes.exception.NoteTypesLimitReached;
 import org.folio.notes.exception.ResourceNotFoundException;
