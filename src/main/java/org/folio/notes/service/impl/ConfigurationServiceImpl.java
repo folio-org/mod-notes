@@ -19,16 +19,20 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   @Override
   public String getConfigValue(String configName, String defaultValue) {
+    log.debug("getConfigValue:: trying to get configValue by configName: {}", configName);
     try {
       var configurations = client.getConfiguration(String.format(CONFIG_QUERY, MODULE_NAME, configName));
 
       if (configurations != null && configurations.getTotalRecords() > 0) {
         ConfigurationEntry configuration = configurations.getConfigs().get(0);
+        log.info("getConfigValue:: configValue loaded by configName: {}", configName);
         return configuration.getValue();
       }
     } catch (Exception ex) {
       log.warn("Failed to get configuration={} : {}", configName, ex.getMessage());
     }
+    log.warn("getConfigValue:: error loading configValue with configName: {}, returning defaultValue: {}",
+      configName, defaultValue);
     return defaultValue;
   }
 }
