@@ -7,11 +7,11 @@
   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
   <changeSet id="MODTAG-52@@create-pg-trgm-extension" author="Pavlo_Smahin">
-    <sqlFile path="sql/create-pgcrypto-extension.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/create-pgcrypto-extension.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
   <changeSet id="MODTAG-52@@create-pgcrypto-extension" author="Pavlo_Smahin">
-    <sqlFile path="sql/create-pg-tgrm-extension.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/create-pg-tgrm-extension.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
   <changeSet id="MODNOTES-182@@create-note-table" author="Pavlo_Smahin">
@@ -53,7 +53,7 @@
   </changeSet>
 
   <changeSet id="MODTAG-52@@create-compute-indexed-content-trigger" author="Pavlo_Smahin">
-    <sqlFile path="sql/create-compute-indexed-content-trigger.sql" splitStatements="false"
+    <sqlFile path="v3.0.0/sql/create-compute-indexed-content-trigger.sql" splitStatements="false"
              relativeToChangelogFile="true"/>
   </changeSet>
 
@@ -163,7 +163,7 @@
   </changeSet>
 
   <changeSet id="MODNOTES-182@@add-note-content-index" author="Pavlo_Smahin">
-    <sqlFile path="sql/add-note-content-index.sql" relativeToChangelogFile="true"/>
+    <sqlFile path="v3.0.0/sql/add-note-content-index.sql" relativeToChangelogFile="true"/>
   </changeSet>
 
   <changeSet id="MODNOTES-182@@add-note-type-id-index" author="Pavlo_Smahin">
