@@ -1,3 +1,20 @@
+## v5.0.0 2023-02-15
+### Breaking changes
+* Migration to Spring Boot v3.0.0 and Java 17 ([MODNOTES-252](https://issues.folio.org/browse/MODNOTES-252))
+
+### Tech Dept
+* Align logging configuration with common Folio solution ([MODNOTES-250](https://issues.folio.org/browse/MODNOTES-250))
+* Improve logging according common Folio solution ([MODNOTES-209](https://issues.folio.org/browse/MODNOTES-209))
+
+### Dependencies
+* Bump `java` from `11` to `17`
+* Bump `spring-boot-starter-parent` from `2.7.4` to `3.0.2`
+* Bump `folio-spring-base` from `5.0.1` to `6.0.1`
+* Bump `mapstruct` from `1.5.2.Final` to `1.5.3.Final`
+* Bump `jsoup` from `1.15.1` to `1.15.3`
+* Bump `testcontainers` from `1.17.5` to `1.17.6`
+* Changed `wiremock` from `wiremock` `2.27.2` to `wiremock-standalone` `2.27.2`
+
 ## 4.0.0 2022-10-19
 * MODNOTES-233 Do not include # of notes assigned to note types in response
 * MODNOTES-247 Upgrade to folio-spring-base v5.0.0
