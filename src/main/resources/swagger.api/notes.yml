@@ -379,6 +379,6 @@ components:
         type: integer
         default: 1000
         minimum: 1
-        maximum: 2147483647
+        maximum: 1000
       required: false
       description: Limit the number of elements returned in the response
