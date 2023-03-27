@@ -36,6 +36,7 @@ import org.folio.notes.exception.NoteNotFoundException;
 import org.folio.notes.service.NotesService;
 import org.folio.notes.util.HtmlSanitizer;
 import org.folio.spring.data.OffsetRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -70,6 +71,9 @@ public class NotesServiceImpl implements NotesService {
         NotesOrderBy.UPDATEDDATE, AuditableEntity_.UPDATED_DATE
       );
   }
+
+  @Value("${folio.notes.response.limit}")
+  private Integer responseLimit;
 
   private final NoteRepository noteRepository;
   private final LinkRepository linkRepository;
@@ -114,10 +118,11 @@ public class NotesServiceImpl implements NotesService {
 
     log.debug("getNoteCollection:: trying to get Note collection by spec: {}, order: {}", spec, order);
     Sort sort = getSort(orderBy, order);
+    var actualLimit = Math.min(limit, responseLimit);
 
-    Page<NoteEntity> t = noteRepository.findAll(where(spec), OffsetRequest.of(offset, limit, sort));
+    Page<NoteEntity> t = noteRepository.findAll(where(spec), OffsetRequest.of(offset, actualLimit, sort));
     log.info("getNoteCollection:: loaded Note collection by spec: {}, offset: {}, limit: {}, sort: {}",
-      spec, offset, limit, sort);
+      spec, offset, actualLimit, sort);
     return noteCollectionMapper.toDtoCollection(t);
   }
 

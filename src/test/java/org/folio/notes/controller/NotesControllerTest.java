@@ -971,6 +971,22 @@ class NotesControllerTest extends TestApiBase {
   }
 
   @Test
+  @DisplayName("should return list of notes with internal response limit")
+  void shouldReturnListOfNotesWithInternalResponseLimit() throws Exception {
+    generateNote();
+    generateNote();
+    generateNote();
+    generateNote();
+
+    var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
+      + "?limit=100");
+    var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class);
+
+    assertEquals(4, notes.getTotalRecords());
+    assertEquals(3, notes.getNotes().size());
+  }
+
+  @Test
   @DisplayName("Should return 400 with error message wrong order")
   void shouldReturn400WithErrorMessageWrongOrder() throws Exception {
     generateNote();
