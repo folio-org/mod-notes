@@ -199,7 +199,7 @@ paths:
       - $ref: '#/components/parameters/objectType'
       - $ref: '#/components/parameters/objectId'
     get:
-      description: Return a list of notes by status
+      description: Return a list of notes by status. A maximum of 1000 notes can be returned per request.
       operationId: getNoteCollectionByLink
       tags:
         - notes
