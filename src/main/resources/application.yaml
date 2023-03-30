@@ -46,6 +46,8 @@ folio:
             - href
             - rel
             - target
+    response:
+      limit: ${MAX_RECORDS_COUNT:1000}
 
 # Spring properties
 spring:
