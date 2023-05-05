@@ -1,7 +1,7 @@
 ## v5.1.0 in progress
 ### Dependencies
 * Bump `folio-spring-base` from `6.0.2` to `7.0.0`
-* Add  `folio-spring-base` with groupId `org.folio` & version `7.0.0`
+* Add  `folio-spring-cql` with groupId `org.folio` & version `7.0.0`
 
 ### Tech Dept
 * Migrate to folio-spring-support v7.0.0 ([MODNOTES-261](https://issues.folio.org/browse/MODNOTES-261))
