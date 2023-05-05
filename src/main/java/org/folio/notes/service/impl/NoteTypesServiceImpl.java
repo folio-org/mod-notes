@@ -35,7 +35,7 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   public NoteTypeCollection getNoteTypeCollection(String query, Integer offset, Integer limit) {
     log.debug("getNoteTypeCollection:: trying to load note types by query: {}, offset: {}, limit: {}",
       query, offset, limit);
-    var noteTypes = repository.findByCQL(query, OffsetRequest.of(offset, limit));
+    var noteTypes = repository.findByCql(query, OffsetRequest.of(offset, limit));
     var noteTypeUsage = getAllNoteTypeUsage();
     log.info("getNoteTypeCollection:: note types loaded by query: {}, offset: {}, limit: {}",
       query, offset, limit);

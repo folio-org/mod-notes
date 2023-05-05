@@ -85,7 +85,7 @@ public class NotesServiceImpl implements NotesService {
   public NoteCollection getNoteCollection(String query, Integer offset, Integer limit) {
     log.debug("getNoteCollection:: trying to get Note collection by query: {}, offset: {} and limit: {}",
       query, offset, limit);
-    var noteEntities = noteRepository.findByCQL(query, OffsetRequest.of(offset, limit));
+    var noteEntities = noteRepository.findByCql(query, OffsetRequest.of(offset, limit));
     log.info("getNoteCollection:: result size: {}", noteEntities.getContent().size());
     return noteCollectionMapper.toDtoCollection(noteEntities);
   }
