@@ -1,10 +1,16 @@
-## v5.1.0 in progress
-### Dependencies
-* Bump `folio-spring-base` from `6.0.2` to `7.0.0`
-* Add  `folio-spring-cql` with groupId `org.folio` & version `7.0.0`
-
+## v5.1.0 2023-10-11
 ### Tech Dept
-* Migrate to folio-spring-support v7.0.0 ([MODNOTES-261](https://issues.folio.org/browse/MODNOTES-261))
+* Migrate to new version folio-spring-support ([MODNOTES-261](https://issues.folio.org/browse/MODNOTES-261))
+* Changed maximum records limit value ([MODNOTES-261](https://issues.folio.org/browse/MODNOTES-255))
+
+### Dependencies
+* Bump `folio-spring-base` from `6.0.2` to `7.2.0`
+* Bump `spring-boot-starter-parent` from `3.0.5` to `3.1.1`
+* Bump `mapstruct` from `1.5.3.Final` to `1.5.5.Final`
+* Bump `jsoup` from `1.15.3` to `1.16.1`
+* Bump `lombok` from `1.18.26` to `1.18.30`
+* Bump `maven-openapi-generator` from `6.2.1` to `7.0.1`
+* Add  `folio-spring-cql` `7.2.0`
 
 ## v5.0.1 2023-03-09
 ### Dependencies
