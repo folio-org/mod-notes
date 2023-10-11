@@ -444,7 +444,7 @@
     <url>https://github.com/folio-org/mod-notes</url>
     <connection>scm:git:git://github.com/folio-org/mod-notes</connection>
     <developerConnection>scm:git:git@github.com:folio-org/mod-notes.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>release/v5.1</tag>
   </scm>
 
 </project>
