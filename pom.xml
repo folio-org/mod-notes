@@ -33,7 +33,7 @@
 
     <!-- Test properties -->
     <wiremock.version>3.0.1</wiremock.version>
-    <testcontainers.version>1.19.1</testcontainers.version>
+    <testcontainers.version>1.19.4</testcontainers.version>
 
     <!-- Plugin properties-->
     <openapi.input.file>${project.basedir}/src/main/resources/swagger.api/notes.yml</openapi.input.file>
