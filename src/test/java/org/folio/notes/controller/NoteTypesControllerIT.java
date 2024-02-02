@@ -48,7 +48,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @Log4j2
-class NoteTypesControllerTest extends TestApiBase {
+class NoteTypesControllerIT extends TestApiBase {
 
   private static final String BASE_URL = "/note-types";
   private static final String NOTE_URL = "/notes";
@@ -400,6 +400,23 @@ class NoteTypesControllerTest extends TestApiBase {
       .andExpect(errorMessageMatch(containsString("was not found")));
   }
 
+  void generateNoteType(List<Note> notes) throws Exception {
+    var noteType = new NoteType().name(RandomStringUtils.randomAlphabetic(100));
+    var contentAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
+    var existingNoteType = OBJECT_MAPPER.readValue(contentAsString, NoteType.class);
+    notes.forEach(note -> {
+      note.setDomain("Domain");
+      note.setTypeId(existingNoteType.getId());
+      try {
+        mockMvc.perform(postNote(note))
+          .andExpect(status().isCreated())
+          .andExpect(jsonPath("$.title", is(note.getTitle())));
+      } catch (Exception ex) {
+        log.warn("Exception caught: ", ex);
+      }
+    });
+  }
+
   private NoteTypeEntity createNoteType(String name) {
     NoteTypeEntity noteType = new NoteTypeEntity();
     noteType.setId(UUID.randomUUID());
@@ -440,23 +457,6 @@ class NoteTypesControllerTest extends TestApiBase {
   private MockHttpServletRequestBuilder deleteById(UUID id) {
     return delete(BASE_URL + "/{id}", id)
       .headers(okapiHeaders());
-  }
-
-  void generateNoteType(List<Note> notes) throws Exception {
-    var noteType = new NoteType().name(RandomStringUtils.randomAlphabetic(100));
-    var contentAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
-    var existingNoteType = OBJECT_MAPPER.readValue(contentAsString, NoteType.class);
-    notes.forEach(note -> {
-      note.setDomain("Domain");
-      note.setTypeId(existingNoteType.getId());
-      try {
-        mockMvc.perform(postNote(note))
-          .andExpect(status().isCreated())
-          .andExpect(jsonPath("$.title", is(note.getTitle())));
-      } catch (Exception ex) {
-        log.warn("Exception caught: ", ex);
-      }
-    });
   }
 
   private MockHttpServletRequestBuilder postNote(Note note) {

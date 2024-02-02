@@ -3,20 +3,12 @@ package org.folio.notes.migration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.folio.notes.support.TestBase;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.folio.spring.testing.extension.EnablePostgres;
+import org.folio.spring.testing.type.IntegrationTest;
 
+@IntegrationTest
+@EnablePostgres
 abstract class MigrationTestBase extends TestBase {
-
-  @BeforeAll
-  static void beforeAll() {
-    postgreDBContainer.start();
-  }
-
-  @AfterAll
-  static void afterAll() {
-    postgreDBContainer.stop();
-  }
 
   protected void assertTableExist(String tableName) {
     assertTableExistence(tableName, Boolean.TRUE);
