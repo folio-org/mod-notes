@@ -28,7 +28,7 @@
 
     <folio-spring-support.version>7.2.0</folio-spring-support.version>
     <mapstruct.version>1.5.5.Final</mapstruct.version>
-    <jsoup.version>1.16.1</jsoup.version>
+    <jsoup.version>1.17.2</jsoup.version>
     <lombok.version>1.18.30</lombok.version>
 
     <!-- Test properties -->
