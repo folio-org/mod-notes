@@ -3,7 +3,7 @@ package org.folio.notes.migration;
 import liquibase.exception.LiquibaseException;
 import org.junit.jupiter.api.Test;
 
-class EmptyDatabaseMigrationTest extends MigrationTestBase {
+class EmptyDatabaseMigrationIT extends MigrationTestBase {
 
   @Test
   void testMigrationOnEmptyDatabase() throws LiquibaseException {
