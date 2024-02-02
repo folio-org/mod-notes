@@ -25,13 +25,10 @@ import org.folio.notes.domain.repository.NoteRepository;
     @NamedAttributeNode(value = "links")
   },
   subgraphs = {
-    @NamedSubgraph(
-      name = "type-subgraph",
-      attributeNodes = {
-        @NamedAttributeNode("id"),
-        @NamedAttributeNode("name")
-      }
-    )
+    @NamedSubgraph(name = "type-subgraph", attributeNodes = {
+      @NamedAttributeNode("id"),
+      @NamedAttributeNode("name")
+    })
   }
 )
 @Table(name = "note", indexes = {
@@ -65,8 +62,8 @@ public class NoteEntity extends AuditableEntity {
   private NoteTypeEntity type;
 
   @JoinTable(name = "note_link",
-    joinColumns = @JoinColumn(name = "note_id", referencedColumnName = "id"),
-    inverseJoinColumns = @JoinColumn(name = "link_id", referencedColumnName = "id"))
+             joinColumns = @JoinColumn(name = "note_id", referencedColumnName = "id"),
+             inverseJoinColumns = @JoinColumn(name = "link_id", referencedColumnName = "id"))
   @ManyToMany
   private Set<LinkEntity> links;
 
