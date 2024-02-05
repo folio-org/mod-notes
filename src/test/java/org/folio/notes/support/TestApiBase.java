@@ -27,8 +27,11 @@ import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
 import org.folio.notes.domain.dto.User;
 import org.folio.spring.FolioModuleMetadata;
 import org.folio.spring.integration.XOkapiHeaders;
+import org.folio.spring.testing.extension.EnableOkapi;
+import org.folio.spring.testing.extension.EnablePostgres;
+import org.folio.spring.testing.extension.impl.OkapiConfiguration;
+import org.folio.spring.testing.type.IntegrationTest;
 import org.folio.tenant.domain.dto.TenantAttributes;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,18 +44,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@DirtiesContext
-@ContextConfiguration(initializers = {WireMockInitializer.class})
+@EnableOkapi
+@EnablePostgres
 @AutoConfigureMockMvc
 @SpringBootTest
+@ContextConfiguration
 @ActiveProfiles("test")
+@IntegrationTest
 public abstract class TestApiBase extends TestBase {
 
   protected static final String TENANT = "test";
@@ -60,8 +62,9 @@ public abstract class TestApiBase extends TestBase {
 
   protected static final ObjectMapper OBJECT_MAPPER;
 
+  protected static OkapiConfiguration OKAPI;
+
   static {
-    postgreDBContainer.start();
     OBJECT_MAPPER = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL)
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
       .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
@@ -74,26 +77,16 @@ public abstract class TestApiBase extends TestBase {
   protected MockMvc mockMvc;
   @Autowired
   protected DatabaseHelper databaseHelper;
-  @Autowired
-  protected WireMockServer okapiServer;
-  @Value("${x-okapi-url}")
+  protected WireMockServer okapiServer = OKAPI.wireMockServer();
+  @Value("${folio.okapi-url}")
   protected String okapiUrl;
   @Autowired
   private CacheManager cacheManager;
 
-  @BeforeAll
-  static void beforeAll(@Autowired MockMvc mockMvc) {
-    setUpTenant(mockMvc);
-  }
-
-  @AfterAll
-  static void afterAll() {
-    postgreDBContainer.stop();
-  }
-
-  @AfterEach
-  void cleanupCache() {
-    cacheManager.getCacheNames().forEach(name -> requireNonNull(cacheManager.getCache(name)).clear());
+  public HttpHeaders okapiHeaders() {
+    final HttpHeaders httpHeaders = defaultHeaders();
+    httpHeaders.add(XOkapiHeaders.URL, okapiUrl);
+    return httpHeaders;
   }
 
   @SneakyThrows
@@ -102,27 +95,6 @@ public abstract class TestApiBase extends TestBase {
         .headers(defaultHeaders())
         .contentType(APPLICATION_JSON))
       .andExpect(status().isNoContent());
-  }
-
-  @SneakyThrows
-  public static String asJsonString(Object value) {
-    return OBJECT_MAPPER.writeValueAsString(value);
-  }
-
-  public static HttpHeaders defaultHeaders() {
-    final HttpHeaders httpHeaders = new HttpHeaders();
-
-    httpHeaders.setContentType(APPLICATION_JSON);
-    httpHeaders.add(XOkapiHeaders.TENANT, TENANT);
-    httpHeaders.add(XOkapiHeaders.USER_ID, USER_ID.toString());
-
-    return httpHeaders;
-  }
-
-  public HttpHeaders okapiHeaders() {
-    final HttpHeaders httpHeaders = defaultHeaders();
-    httpHeaders.add(XOkapiHeaders.URL, okapiUrl);
-    return httpHeaders;
   }
 
   @SneakyThrows
@@ -156,6 +128,31 @@ public abstract class TestApiBase extends TestBase {
   protected void stubUserClientError(int status) {
     okapiServer.stubFor(get(urlPathMatching("/users/.*"))
       .willReturn(aResponse().withBody("random message").withStatus(status)));
+  }
+
+  @BeforeAll
+  static void beforeAll(@Autowired MockMvc mockMvc) {
+    setUpTenant(mockMvc);
+  }
+
+  @AfterEach
+  void cleanupCache() {
+    cacheManager.getCacheNames().forEach(name -> requireNonNull(cacheManager.getCache(name)).clear());
+  }
+
+  @SneakyThrows
+  public static String asJsonString(Object value) {
+    return OBJECT_MAPPER.writeValueAsString(value);
+  }
+
+  public static HttpHeaders defaultHeaders() {
+    final HttpHeaders httpHeaders = new HttpHeaders();
+
+    httpHeaders.setContentType(APPLICATION_JSON);
+    httpHeaders.add(XOkapiHeaders.TENANT, TENANT);
+    httpHeaders.add(XOkapiHeaders.USER_ID, USER_ID.toString());
+
+    return httpHeaders;
   }
 
   @TestConfiguration

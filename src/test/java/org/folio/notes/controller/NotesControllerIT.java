@@ -63,7 +63,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-class NotesControllerTest extends TestApiBase {
+class NotesControllerIT extends TestApiBase {
 
   private static final String NOTE_URL = "/notes";
   private static final String NOTE_TYPE_URL = "/note-types";
