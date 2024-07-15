@@ -59,16 +59,16 @@ public class NotesServiceImpl implements NotesService {
       Map.of(
         NotesOrderBy.TITLE, Sort.Direction.ASC,
         NotesOrderBy.CONTENT, Sort.Direction.ASC,
-        NotesOrderBy.NOTETYPE, Sort.Direction.ASC,
-        NotesOrderBy.UPDATEDDATE, Sort.Direction.DESC
+        NotesOrderBy.NOTE_TYPE, Sort.Direction.ASC,
+        NotesOrderBy.UPDATED_DATE, Sort.Direction.DESC
       );
 
     DTO_TO_ENTITY_SORT =
       Map.of(
         NotesOrderBy.TITLE, NoteEntity_.TITLE,
         NotesOrderBy.CONTENT, NoteEntity_.INDEXED_CONTENT,
-        NotesOrderBy.NOTETYPE, NoteEntity_.TYPE,
-        NotesOrderBy.UPDATEDDATE, AuditableEntity_.UPDATED_DATE
+        NotesOrderBy.NOTE_TYPE, NoteEntity_.TYPE,
+        NotesOrderBy.UPDATED_DATE, AuditableEntity_.UPDATED_DATE
       );
   }
 
