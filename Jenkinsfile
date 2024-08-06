@@ -2,7 +2,7 @@ buildMvn {
   publishModDescriptor = true
   mvnDeploy = true
   doKubeDeploy = true
-  buildNode = 'jenkins-agent-java-17'
+  buildNode = 'jenkins-agent-java17'
 
   doDocker = {
     buildDocker {
