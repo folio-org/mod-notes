@@ -1,3 +1,7 @@
+## tbd
+### Dependencies
+* Fix scope of `folio-spring-testing` from default (compile) to test ([MODNOTES-268](https://folio-org.atlassian.net/browse/MODNOTES-268))
+
 ## v5.2.0 2024-03-18
 ### Dependencies
 * Bump `spring-boot` from `3.1.1` to `3.2.3`
