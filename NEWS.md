@@ -1,6 +1,16 @@
-## tbd
+## v6.0.0 In Progress
+### Breaking changes
+* Remove `notes.domain.all` permission
+* Rename `notes.collection.get.by.status` permission to `note.links.collection.get`
+
+### New APIs versions
+* Provides `notes v4.0`
+
 ### Dependencies
 * Fix scope of `folio-spring-testing` from default (compile) to test ([MODNOTES-268](https://folio-org.atlassian.net/browse/MODNOTES-268))
+
+### Tech Dept
+* Review and cleanup permissions ([MODNOTES-269](https://folio-org.atlassian.net/browse/MODNOTES-269))
 
 ## v5.2.0 2024-03-18
 ### Dependencies
