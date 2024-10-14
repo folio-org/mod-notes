@@ -14,7 +14,7 @@
   "provides": [
     {
       "id": "notes",
-      "version": "3.0",
+      "version": "4.0",
       "handlers": [
         {
           "methods": [
@@ -22,8 +22,7 @@
           ],
           "pathPattern": "/notes",
           "permissionsRequired": [
-            "notes.collection.get",
-            "notes.domain.all"
+            "notes.collection.get"
           ]
         },
         {
@@ -32,8 +31,7 @@
           ],
           "pathPattern": "/notes",
           "permissionsRequired": [
-            "notes.item.post",
-            "notes.domain.all"
+            "notes.item.post"
           ],
           "modulePermissions": [
             "users.item.get"
@@ -45,8 +43,7 @@
           ],
           "pathPattern": "/notes/{id}",
           "permissionsRequired": [
-            "notes.item.get",
-            "notes.domain.all"
+            "notes.item.get"
           ]
         },
         {
@@ -55,8 +52,7 @@
           ],
           "pathPattern": "/notes/{id}",
           "permissionsRequired": [
-            "notes.item.put",
-            "notes.domain.all"
+            "notes.item.put"
           ],
           "modulePermissions": [
             "users.item.get"
@@ -68,8 +64,7 @@
           ],
           "pathPattern": "/notes/{id}",
           "permissionsRequired": [
-            "notes.item.delete",
-            "notes.domain.all"
+            "notes.item.delete"
           ]
         },
         {
@@ -95,7 +90,9 @@
             "POST"
           ],
           "pathPattern": "/note-types",
-          "permissionsRequired": ["note.types.item.post"],
+          "permissionsRequired": [
+            "note.types.item.post"
+          ],
           "modulePermissions": [
             "configuration.entries.collection.get",
             "users.item.get"
@@ -106,8 +103,12 @@
             "PUT"
           ],
           "pathPattern": "/note-types/{id}",
-          "permissionsRequired": ["note.types.item.put"],
-          "modulePermissions": ["users.item.get"]
+          "permissionsRequired": [
+            "note.types.item.put"
+          ],
+          "modulePermissions": [
+            "users.item.get"
+          ]
         },
         {
           "methods": [
@@ -133,7 +134,7 @@
           ],
           "pathPattern": "/note-links/domain/{domain}/type/{type}/id/{id}",
           "permissionsRequired": [
-            "notes.collection.get.by.status"
+            "note.links.collection.get"
           ]
         }
       ]
@@ -186,11 +187,6 @@
       "description": "Delete note"
     },
     {
-      "permissionName": "notes.domain.all",
-      "displayName": "Notes - allow access to all domains",
-      "description": "All domains"
-    },
-    {
       "permissionName": "note.types.collection.get",
       "displayName": "Note types - get note types collection",
       "description": "Get note types collection"
@@ -221,9 +217,12 @@
       "description": "Update note links"
     },
     {
-      "permissionName": "notes.collection.get.by.status",
+      "permissionName": "note.links.collection.get",
       "displayName": "Notes - get notes collection sorted by status",
-      "description": "Get notes collection by status and domain"
+      "description": "Get notes collection by status and domain",
+      "replaces": [
+        "notes.collection.get.by.status"
+      ]
     },
     {
       "permissionName": "notes.allops",
@@ -236,7 +235,7 @@
         "notes.item.put",
         "notes.item.delete",
         "note.links.collection.put",
-        "notes.collection.get.by.status"
+        "note.links.collection.get"
       ],
       "visible": false
     },
@@ -259,7 +258,6 @@
       "description": "Entire set of permissions needed to use the notes modules on any domain",
       "subPermissions": [
         "notes.allops",
-        "notes.domain.all",
         "note.types.allops"
       ],
       "visible": false
