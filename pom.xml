@@ -11,7 +11,7 @@
 
   <groupId>org.folio</groupId>
   <artifactId>mod-notes</artifactId>
-  <version>6.0.0-SNAPSHOT</version>
+  <version>6.0.0</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -455,7 +455,7 @@
     <url>https://github.com/folio-org/mod-notes</url>
     <connection>scm:git:git://github.com/folio-org/mod-notes</connection>
     <developerConnection>scm:git:git@github.com:folio-org/mod-notes.git</developerConnection>
-    <tag>release/v6.0</tag>
+    <tag>v6.0.0</tag>
   </scm>
 
 </project>
