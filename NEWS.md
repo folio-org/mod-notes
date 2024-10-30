@@ -1,4 +1,4 @@
-## v6.0.0 In Progress
+## v6.0.0 2024-10-30
 ### Breaking changes
 * Remove `notes.domain.all` permission
 * Rename `notes.collection.get.by.status` permission to `note.links.collection.get`
@@ -11,6 +11,12 @@
 
 ### Tech Dept
 * Review and cleanup permissions ([MODNOTES-269](https://folio-org.atlassian.net/browse/MODNOTES-269))
+
+### Dependencies
+* Bump `spring-boot` from `3.2.3` to `3.3.5`
+* Bump `folio-spring-support` from `8.1.0` to `8.2.0`
+* Bump `jsoup` from `1.17.2` to `1.18.1`
+* Bump `lombok` from `1.18.30` to `1.18.34`
 
 ## v5.2.0 2024-03-18
 ### Dependencies

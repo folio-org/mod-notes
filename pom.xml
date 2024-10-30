@@ -11,7 +11,7 @@
 
   <groupId>org.folio</groupId>
   <artifactId>mod-notes</artifactId>
-  <version>6.0.0-SNAPSHOT</version>
+  <version>6.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -26,10 +26,10 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <folio-spring-support.version>8.2.0</folio-spring-support.version>
+    <folio-spring-support.version>8.3.0-SNAPSHOT</folio-spring-support.version>
     <mapstruct.version>1.6.2</mapstruct.version>
     <jsoup.version>1.18.1</jsoup.version>
-    <lombok.version>1.18.30</lombok.version>
+    <lombok.version>1.18.34</lombok.version>
 
     <!-- Plugin properties-->
     <openapi.input.file>${project.basedir}/src/main/resources/swagger.api/notes.yml</openapi.input.file>
