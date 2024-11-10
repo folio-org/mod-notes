@@ -27,23 +27,23 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <folio-spring-support.version>8.3.0-SNAPSHOT</folio-spring-support.version>
-    <mapstruct.version>1.6.2</mapstruct.version>
+    <mapstruct.version>1.6.3</mapstruct.version>
     <jsoup.version>1.18.1</jsoup.version>
     <lombok.version>1.18.34</lombok.version>
 
     <!-- Plugin properties-->
     <openapi.input.file>${project.basedir}/src/main/resources/swagger.api/notes.yml</openapi.input.file>
-    <folio-module-descriptor-validator.version>1.0.0</folio-module-descriptor-validator.version>
+    <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
     <maven-openapi-generator.version>7.9.0</maven-openapi-generator.version>
     <copy-rename-maven-plugin.version>1.0.1</copy-rename-maven-plugin.version>
     <versions-maven-plugin.version>2.17.1</versions-maven-plugin.version>
     <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
     <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-    <maven-surefire-plugin.version>3.5.1</maven-surefire-plugin.version>
+    <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
     <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
     <lombok.mapstruct-binding.version>0.2.0</lombok.mapstruct-binding.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
-    <checkstyle.version>10.19.0</checkstyle.version>
+    <checkstyle.version>10.20.1</checkstyle.version>
   </properties>
 
   <dependencies>
