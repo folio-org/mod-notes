@@ -17,7 +17,7 @@ import org.springframework.data.domain.Page;
 )
 public interface NoteCollectionMapper {
 
-  @Mapping(target = "metadata", source = ".", qualifiedByName = "BaseMetadataMapper")
+  @Mapping(target = "metadata", source = "entity", qualifiedByName = "BaseMetadataMapper")
   @Mapping(target = "typeId", expression = "java(entity.getType().getId())")
   @Mapping(target = "type", expression = "java(entity.getType().getName())")
   Note toDto(NoteEntity entity);

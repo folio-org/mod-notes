@@ -14,7 +14,7 @@ import org.mapstruct.NullValueCheckStrategy;
   })
 public interface NotesMapper {
 
-  @Mapping(target = "metadata", source = ".", qualifiedByName = "UserMetadataMapper")
+  @Mapping(target = "metadata", source = "entity", qualifiedByName = "UserMetadataMapper")
   @Mapping(target = "typeId", expression = "java(entity.getType().getId())")
   @Mapping(target = "type", expression = "java(entity.getType().getName())")
   Note toDto(NoteEntity entity);

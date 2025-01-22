@@ -1,20 +1,8 @@
 package org.folio.notes.domain.dto;
 
 import java.util.UUID;
-import lombok.Value;
 
-@Value
-public class User {
+public record User(UUID id, String username, org.folio.notes.domain.dto.User.UserPersonal personal) {
 
-  UUID id;
-  String username;
-  UserPersonal personal;
-
-  @Value
-  public static class UserPersonal {
-
-    String firstName;
-    String lastName;
-    String middleName;
-  }
+  public record UserPersonal(String firstName, String lastName, String middleName) { }
 }
