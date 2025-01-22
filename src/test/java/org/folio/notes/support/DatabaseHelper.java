@@ -35,7 +35,7 @@ public class DatabaseHelper {
   }
 
   public NoteTypeEntity getNoteTypeById(UUID id, String tenant) {
-    return jdbcTemplate.query("SELECT * FROM " + getTable(tenant, TYPE) + " WHERE id = ?", new Object[] {id}, rs -> {
+    return jdbcTemplate.query("SELECT * FROM " + getTable(tenant, TYPE) + " WHERE id = ?", rs -> {
       if (rs.next()) {
         var noteTypeEntity = new NoteTypeEntity();
         noteTypeEntity.setId(UUID.fromString(rs.getString("id")));
@@ -44,7 +44,7 @@ public class DatabaseHelper {
       } else {
         return null;
       }
-    });
+    }, id);
   }
 
   public void saveNoteType(NoteTypeEntity noteType, String tenant) {

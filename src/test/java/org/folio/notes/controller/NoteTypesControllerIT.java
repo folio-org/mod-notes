@@ -401,7 +401,7 @@ class NoteTypesControllerIT extends TestApiBase {
   }
 
   void generateNoteType(List<Note> notes) throws Exception {
-    var noteType = new NoteType().name(RandomStringUtils.randomAlphabetic(100));
+    var noteType = new NoteType().name(RandomStringUtils.insecure().nextAlphabetic(100));
     var contentAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
     var existingNoteType = OBJECT_MAPPER.readValue(contentAsString, NoteType.class);
     notes.forEach(note -> {

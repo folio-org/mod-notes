@@ -30,6 +30,7 @@
     <mapstruct.version>1.6.3</mapstruct.version>
     <jsoup.version>1.18.3</jsoup.version>
     <lombok.version>1.18.34</lombok.version>
+    <hibernate.version>6.5.3.Final</hibernate.version> <!-- remove when issue will be fixed https://hibernate.atlassian.net/browse/HHH-18936 -->
 
     <!-- Plugin properties-->
     <openapi.input.file>${project.basedir}/src/main/resources/swagger.api/notes.yml</openapi.input.file>
@@ -212,7 +213,8 @@
             </goals>
             <configuration>
               <sources>
-                <source>${project.build.directory}/generated-sources</source>
+                <source>${project.build.directory}/generated-sources/annotations</source>
+                <source>${project.build.directory}/generated-sources/src/main/java</source>
               </sources>
             </configuration>
           </execution>

@@ -1,6 +1,7 @@
 package org.folio.notes.util;
 
 import java.util.List;
+import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import org.folio.tenant.domain.dto.Error;
 import org.folio.tenant.domain.dto.Errors;
@@ -34,6 +35,7 @@ public class ErrorsHelper {
     return createErrors(createError(message, ErrorType.FOLIO_EXTERNAL_OR_UNDEFINED, errorCode));
   }
 
+  @Getter
   public enum ErrorType {
     INTERNAL("-1"),
     FOLIO_EXTERNAL_OR_UNDEFINED("-2"),
@@ -46,9 +48,6 @@ public class ErrorsHelper {
       this.typeCode = typeCode;
     }
 
-    public String getTypeCode() {
-      return typeCode;
-    }
   }
 
   public enum ErrorCode {

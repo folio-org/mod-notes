@@ -50,16 +50,16 @@ public abstract class MetadataMapper {
     if (createdByUserId != null) {
       usersService.getUser(createdByUserId)
         .ifPresent(user -> {
-          target.setCreatedByUsername(user.getUsername());
-          target.setCreatedBy(toUserDto(user.getPersonal()));
+          target.setCreatedByUsername(user.username());
+          target.setCreatedBy(toUserDto(user.personal()));
         });
     }
     UUID updatedByUserId = source.getUpdatedBy();
     if (updatedByUserId != null) {
       usersService.getUser(updatedByUserId)
         .ifPresent(user -> {
-          target.setUpdatedByUsername(user.getUsername());
-          target.setUpdatedBy(toUserDto(user.getPersonal()));
+          target.setUpdatedByUsername(user.username());
+          target.setUpdatedBy(toUserDto(user.personal()));
         });
     }
   }

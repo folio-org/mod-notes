@@ -17,7 +17,8 @@ import org.springframework.data.domain.Page;
 @Mapper(componentModel = "spring", nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS, uses = MetadataMapper.class)
 public interface NoteTypesMapper {
 
-  @Mapping(target = "metadata", source = ".", qualifiedByName = "BaseMetadataMapper")
+  @Mapping(target = "usage", ignore = true)
+  @Mapping(target = "metadata", source = "entity", qualifiedByName = "BaseMetadataMapper")
   NoteType toDto(NoteTypeEntity entity);
 
   @Mapping(target = "createdDate", ignore = true)
