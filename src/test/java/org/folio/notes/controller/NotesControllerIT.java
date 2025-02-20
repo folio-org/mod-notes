@@ -119,7 +119,7 @@ class NotesControllerIT extends TestApiBase {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.notes.[0]", not(emptyOrNullString())))
       .andExpect(jsonPath("$.notes.[1]", not(emptyOrNullString())))
-      .andExpect(jsonPath("$.notes.[0].title", is(notes.get(0).getTitle())))
+      .andExpect(jsonPath("$.notes.[0].title", is(notes.getFirst().getTitle())))
       .andExpect(jsonPath("$.notes.[1].title", is(notes.get(1).getTitle())))
       .andExpect(jsonPath("$.totalRecords").value(notes.size()));
   }
@@ -631,7 +631,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(firstNote.getTitle(), notes.getFirst().getTitle());
     assertEquals(secondNote.getTitle(), notes.get(1).getTitle());
   }
 
@@ -652,7 +652,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(secondNote.getTitle(), notes.getFirst().getTitle());
     assertEquals(firstNote.getTitle(), notes.get(1).getTitle());
   }
 
@@ -672,7 +672,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(firstNote.getType().getId(), notes.get(0).getTypeId());
+    assertEquals(firstNote.getType().getId(), notes.getFirst().getTypeId());
     assertEquals(secondNote.getType().getId(), notes.get(1).getTypeId());
   }
 
@@ -692,7 +692,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(firstNote.getType().getId(), notes.get(0).getTypeId());
+    assertEquals(firstNote.getType().getId(), notes.getFirst().getTypeId());
     assertEquals(secondNote.getType().getId(), notes.get(1).getTypeId());
   }
 
@@ -741,7 +741,7 @@ class NotesControllerIT extends TestApiBase {
 
     assertEquals(2, notes.size());
 
-    var actualFirstNoteId = notes.get(0).getId();
+    var actualFirstNoteId = notes.getFirst().getId();
     if (sortDirection.equals("asc")) {
       assertEquals(firstNote.getId(), actualFirstNoteId);
     } else {
@@ -766,7 +766,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertTrue(notes.get(0).getMetadata().getUpdatedDate().isBefore(notes.get(1).getMetadata().getUpdatedDate()));
+    assertTrue(notes.getFirst().getMetadata().getUpdatedDate().isBefore(notes.get(1).getMetadata().getUpdatedDate()));
   }
 
   @Test
@@ -786,7 +786,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertTrue(notes.get(0).getMetadata().getUpdatedDate().isAfter(notes.get(1).getMetadata().getUpdatedDate()));
+    assertTrue(notes.getFirst().getMetadata().getUpdatedDate().isAfter(notes.get(1).getMetadata().getUpdatedDate()));
   }
 
   @Test
@@ -823,7 +823,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(firstNote.getTitle(), notes.getFirst().getTitle());
     assertEquals(secondNote.getTitle(), notes.get(1).getTitle());
   }
 
@@ -838,7 +838,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(1, notes.size());
-    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(firstNote.getTitle(), notes.getFirst().getTitle());
   }
 
   @Test
@@ -860,7 +860,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(firstNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(firstNote.getTitle(), notes.getFirst().getTitle());
   }
 
   @Test
@@ -882,7 +882,7 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertEquals(2, notes.size());
-    assertEquals(secondNote.getTitle(), notes.get(0).getTitle());
+    assertEquals(secondNote.getTitle(), notes.getFirst().getTitle());
   }
 
   @Test
@@ -929,13 +929,13 @@ class NotesControllerIT extends TestApiBase {
     var contentWithUnAssignedLink = getNoteLinks(url + LinkStatus.UNASSIGNED);
     var notesWithUnAssignedLink = OBJECT_MAPPER.readValue(contentWithUnAssignedLink, NoteCollection.class).getNotes();
 
-    assertEquals(secondNote.getId(), notesWithUnAssignedLink.get(0).getId());
+    assertEquals(secondNote.getId(), notesWithUnAssignedLink.getFirst().getId());
     assertEquals(1, notesWithUnAssignedLink.size());
 
     var contentWithAssignedLink = getNoteLinks(url + LinkStatus.ASSIGNED);
     var notesWithAssignedLink = OBJECT_MAPPER.readValue(contentWithAssignedLink, NoteCollection.class).getNotes();
 
-    assertEquals(firstNote.getId(), notesWithAssignedLink.get(0).getId());
+    assertEquals(firstNote.getId(), notesWithAssignedLink.getFirst().getId());
     assertEquals(1, notesWithAssignedLink.size());
   }
 
@@ -955,8 +955,8 @@ class NotesControllerIT extends TestApiBase {
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
     assertThat(notes.size(), equalTo(1));
-    assertThat(notes.get(0).getTypeId(), equalTo(UUID.fromString(NOTE_TYPE_ID_2)));
-    assertThat(notes.get(0).getTitle(), equalTo(noteTitle));
+    assertThat(notes.getFirst().getTypeId(), equalTo(UUID.fromString(NOTE_TYPE_ID_2)));
+    assertThat(notes.getFirst().getTitle(), equalTo(noteTitle));
   }
 
   @Test

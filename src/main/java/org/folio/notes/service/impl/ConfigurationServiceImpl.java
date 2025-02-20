@@ -24,7 +24,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
       var configurations = client.getConfiguration(String.format(CONFIG_QUERY, MODULE_NAME, configName));
 
       if (configurations != null && configurations.totalRecords() > 0) {
-        ConfigurationEntry configuration = configurations.configs().get(0);
+        ConfigurationEntry configuration = configurations.configs().getFirst();
         log.info("getConfigValue:: configValue loaded by configName: {}", configName);
         return configuration.value();
       }

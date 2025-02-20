@@ -1,3 +1,7 @@
+## v7.0.0 In Progress
+### Breaking changes
+* Upgrade to Java 21 ([MODNOTES-273](https://issues.folio.org/browse/MODNOTES-273))
+
 ## v6.0.0 2024-10-30
 ### Breaking changes
 * Remove `notes.domain.all` permission
