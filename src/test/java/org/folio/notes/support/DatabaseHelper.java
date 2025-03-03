@@ -2,7 +2,6 @@ package org.folio.notes.support;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.folio.notes.domain.entity.NoteEntity;
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.spring.FolioModuleMetadata;
@@ -62,17 +61,17 @@ public class DatabaseHelper {
     var sql = "INSERT INTO " + getTable(tenant, TYPE) + " (name) VALUES (?)";
     var args = noteTypes.stream()
       .map(noteType -> new Object[] {noteType.getName()})
-      .collect(Collectors.toList());
+      .toList();
     jdbcTemplate.batchUpdate(sql, args);
   }
 
   public void saveNotes(List<NoteEntity> noteTypes, String tenant) {
     var sql = "INSERT INTO " + getTable(tenant, NOTE) + " (id, title, domain, content, type_id, created_by) "
-      + "VALUES (?,?,?,?,?,?)";
+              + "VALUES (?,?,?,?,?,?)";
     var args = noteTypes.stream()
       .map(noteType -> new Object[] {noteType.getId(), noteType.getTitle(), noteType.getDomain(),
                                      noteType.getContent(), noteType.getType().getId(), noteType.getCreatedBy()})
-      .collect(Collectors.toList());
+      .toList();
     jdbcTemplate.batchUpdate(sql, args);
   }
 }

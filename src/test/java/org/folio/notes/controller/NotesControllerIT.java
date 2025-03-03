@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.http.HttpStatus;
 import org.folio.notes.domain.dto.Link;
@@ -1088,7 +1087,7 @@ class NotesControllerIT extends TestApiBase {
       .notes(
         Arrays.stream(ids)
           .map(id -> createNoteLink(id, status))
-          .collect(Collectors.toList())
+          .toList()
       );
   }
 

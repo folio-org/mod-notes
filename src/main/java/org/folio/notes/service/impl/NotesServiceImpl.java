@@ -154,7 +154,7 @@ public class NotesServiceImpl implements NotesService {
     var linkUpdates = noteLinkUpdateCollection.getNotes();
     var noteIds = linkUpdates.stream()
       .map(NoteLinkUpdate::getId)
-      .collect(Collectors.toList());
+      .toList();
 
     var noteEntities = noteRepository.findAllById(noteIds);
     log.info("updateLinks:: updating note entities' links: {}", noteEntities.size());

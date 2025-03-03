@@ -62,7 +62,7 @@ public abstract class TestApiBase extends TestBase {
 
   protected static final ObjectMapper OBJECT_MAPPER;
 
-  protected static OkapiConfiguration OKAPI;
+  protected static OkapiConfiguration okapi;
 
   static {
     OBJECT_MAPPER = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL)
@@ -77,7 +77,7 @@ public abstract class TestApiBase extends TestBase {
   protected MockMvc mockMvc;
   @Autowired
   protected DatabaseHelper databaseHelper;
-  protected WireMockServer okapiServer = OKAPI.wireMockServer();
+  protected WireMockServer okapiServer = okapi.wireMockServer();
   @Value("${folio.okapi-url}")
   protected String okapiUrl;
   @Autowired
