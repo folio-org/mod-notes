@@ -26,7 +26,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <folio-spring-support.version>9.0.0-SNAPSHOT</folio-spring-support.version>
+    <folio-spring-support.version>9.0.0</folio-spring-support.version>
     <mapstruct.version>1.6.3</mapstruct.version>
     <jsoup.version>1.18.3</jsoup.version>
     <lombok.version>1.18.36</lombok.version>
@@ -35,7 +35,7 @@
     <!-- Plugin properties-->
     <openapi.input.file>${project.basedir}/src/main/resources/swagger.api/notes.yml</openapi.input.file>
     <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
-    <maven-openapi-generator.version>7.11.0</maven-openapi-generator.version>
+    <maven-openapi-generator.version>7.12.0</maven-openapi-generator.version>
     <copy-rename-maven-plugin.version>1.0.1</copy-rename-maven-plugin.version>
     <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
     <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
@@ -198,6 +198,7 @@
         <version>${versions-maven-plugin.version}</version>
         <configuration>
           <generateBackupPoms>false</generateBackupPoms>
+          <ignoredVersions>(?i).*-(alpha|beta|m|rc)(-?\d+)?</ignoredVersions>
         </configuration>
       </plugin>
 
