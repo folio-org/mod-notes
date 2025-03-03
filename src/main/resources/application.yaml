@@ -95,6 +95,6 @@ management:
       enabled: true
   endpoint:
     loggers:
-      enabled: true
+      access: unrestricted
 server:
   port: 8081
