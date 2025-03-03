@@ -1,6 +1,39 @@
-## v7.0.0 In Progress
+## v7.1.0 YYYY-mm-DD
+### Breaking changes
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### New APIs versions
+* Provides `API_NAME vX.Y`
+* Requires `API_NAME vX.Y`
+
+### Features
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### Bug fixes
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### Tech Dept
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### Dependencies
+* Bump `LIB_NAME` from `OLD_VERSION` to `NEW_VERSION`
+* Add `LIB_NAME VERSION`
+* Remove `LIB_NAME`
+
+---
+
+## v7.0.0 2025-03-03
 ### Breaking changes
 * Upgrade to Java 21 ([MODNOTES-273](https://issues.folio.org/browse/MODNOTES-273))
+
+### Dependencies
+* Bump `java` from `17` to `21`
+* Bump `spring-boot` from `3.3.5` to `3.4.3`
+* Bump `folio-spring-support` from `8.2.0` to `9.0.0`
+* Bump `jsoup` from `1.18.1` to `1.18.3`
+* Bump `lombok` from `1.18.34` to `1.18.36`
+
+---
 
 ## v6.0.0 2024-10-30
 ### Breaking changes
