@@ -78,9 +78,6 @@
   <changeSet id="MODNOTES-182@@drop-set-note-data-md-json-function" author="Pavlo_Smahin" runOnChange="true">
     <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.set_note_data_md_json CASCADE</sql>
   </changeSet>
-  <changeSet id="MODNOTES-182@@drop-f-unaccent-function" author="Pavlo_Smahin" runOnChange="true">
-    <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.f_unaccent CASCADE</sql>
-  </changeSet>
   <changeSet id="MODNOTES-182@@drop-upsert-function" author="Pavlo_Smahin" runOnChange="true">
     <sql dbms="postgresql">DROP FUNCTION IF EXISTS ${database.defaultSchemaName}.upsert</sql>
   </changeSet>
