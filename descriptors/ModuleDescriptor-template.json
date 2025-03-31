@@ -5,10 +5,6 @@
     {
       "id": "users",
       "version": "15.1 16.0"
-    },
-    {
-      "id": "configuration",
-      "version": "2.0"
     }
   ],
   "provides": [
@@ -94,7 +90,6 @@
             "note.types.item.post"
           ],
           "modulePermissions": [
-            "configuration.entries.collection.get",
             "users.item.get"
           ]
         },
@@ -314,6 +309,10 @@
       {
         "name": "DB_MAXPOOLSIZE",
         "value": "5"
+      },
+      {
+        "name": "NOTES_TYPES_DEFAULTS_LIMIT",
+        "value": "25"
       }
     ]
   }
