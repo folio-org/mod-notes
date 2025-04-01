@@ -2,7 +2,7 @@
 folio:
   tenant:
     validation:
-      enabled: false
+      enabled: true
   logging:
     request:
       enabled: true
@@ -17,13 +17,10 @@ folio:
           initialCapacity: 20
           maximumSize: 100
           expireAfterWrite: 60
-    configuration:
-      module:
-        name: NOTES
     types:
       defaults:
         name: General note
-        limit: 25
+        limit: ${NOTES_TYPES_DEFAULTS_LIMIT:25}
     content:
       allowed:
         tags:

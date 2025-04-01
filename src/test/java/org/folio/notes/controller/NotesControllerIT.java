@@ -57,11 +57,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+@TestPropertySource(properties = {"folio.notes.types.defaults.limit=5"})
 class NotesControllerIT extends TestApiBase {
 
   private static final String NOTE_URL = "/notes";
@@ -93,7 +95,6 @@ class NotesControllerIT extends TestApiBase {
   void setUp() {
     var user = new User(USER_ID, "test_user", null);
     stubUser(user);
-    stubConfigurationLimit(defaultNoteTypeLimit);
     databaseHelper.clearTable(TENANT, NOTE);
     databaseHelper.clearTable(TENANT, TYPE);
     databaseHelper.clearTable(TENANT, LINK);
@@ -1037,7 +1038,8 @@ class NotesControllerIT extends TestApiBase {
 
   private Note generateNote() throws Exception {
     var noteType = new NoteType().name(insecure().nextAlphabetic(100));
-    var notyTypeAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
+    var notyTypeAsString = mockMvc.perform(postNoteType(noteType)).andExpect(status().isCreated())
+      .andReturn().getResponse().getContentAsString();
     var existingNoteType = OBJECT_MAPPER.readValue(notyTypeAsString, NoteType.class);
     var link = new Link().id(UUID.randomUUID().toString()).type(DOMAIN);
     var note = new Note().title(NOTE_TITLES[0]).domain(DOMAIN).typeId(existingNoteType.getId())
