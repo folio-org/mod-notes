@@ -19,6 +19,6 @@ public class NoteTypesProperties {
 
     private String name;
 
-    private String limit;
+    private Integer limit = 25;
   }
 }

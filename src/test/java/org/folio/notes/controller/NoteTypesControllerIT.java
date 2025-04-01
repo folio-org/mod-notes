@@ -1,5 +1,6 @@
 package org.folio.notes.controller;
 
+import static org.apache.commons.lang3.RandomStringUtils.insecure;
 import static org.folio.notes.support.DatabaseHelper.TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -173,8 +174,6 @@ class NoteTypesControllerIT extends TestApiBase {
   @Test
   @DisplayName("Create new note-type")
   void createNewNoteType() throws Exception {
-    stubConfigurationLimit(defaultNoteTypeLimit);
-
     String name = "First";
     NoteType noteType = new NoteType().name(name);
 
@@ -194,27 +193,6 @@ class NoteTypesControllerIT extends TestApiBase {
   @Test
   @DisplayName("Create new note-type with use default limit if config doesn't exist")
   void createNewNoteTypeWithUseDefaultLimit() throws Exception {
-    stubConfigurationLimit(" ");
-
-    String name = "First";
-    NoteType noteType = new NoteType().name(name);
-
-    mockMvc.perform(postNoteType(noteType))
-      .andExpect(status().isCreated())
-      .andExpect(jsonPath("$.name", is(name)))
-      .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID.toString()))
-      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty());
-
-    int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
-    assertEquals(1, rowsInTable);
-  }
-
-  @ParameterizedTest
-  @ValueSource(ints = {HttpStatus.SC_BAD_REQUEST, HttpStatus.SC_FORBIDDEN, HttpStatus.SC_INTERNAL_SERVER_ERROR})
-  @DisplayName("Create new note-type with use default limit if config returns error")
-  void createNewNoteTypeWithUseDefaultLimitIfConfigReturnsError(int configErrorStatus) throws Exception {
-    stubConfigurationClientError(configErrorStatus);
-
     String name = "First";
     NoteType noteType = new NoteType().name(name);
 
@@ -231,7 +209,6 @@ class NoteTypesControllerIT extends TestApiBase {
   @Test
   @DisplayName("Return 422 on post note-type with duplicate name")
   void return422OnPostWithDuplicateName() throws Exception {
-    stubConfigurationLimit(defaultNoteTypeLimit);
     NoteTypeEntity existNoteType = createNoteType("DuplicateName");
 
     NoteType duplicateNoteType = new NoteType().name(existNoteType.getName());
@@ -245,21 +222,22 @@ class NoteTypesControllerIT extends TestApiBase {
   @Test
   @DisplayName("Return 422 on post note-type with limit reached")
   void return422OnPostWithLimitReached() throws Exception {
-    String limit = "1";
-    stubConfigurationLimit(limit);
+    // NOTES_TYPES_DEFAULTS_LIMIT is set to 3 in application.properties. Create 3 note types, to have 4th one failed.
+    var random = insecure();
+    createNoteType(random.nextAlphabetic(10));
+    createNoteType(random.nextAlphabetic(10));
+    createNoteType(random.nextAlphabetic(10));
 
-    NoteTypeEntity existNoteType = createNoteType("LimitReached");
-
-    NoteType duplicateNoteType = new NoteType().name(existNoteType.getName());
+    NoteType duplicateNoteType = new NoteType().name(random.nextAlphabetic(10));
 
     mockMvc.perform(postNoteType(duplicateNoteType))
       .andDo(log())
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(NoteTypesLimitReached.class))
-      .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is " + limit)));
+      .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is 3")));
 
     int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
-    assertEquals(Integer.parseInt(limit), rowsInTable);
+    assertEquals(3, rowsInTable);
   }
 
   // Tests for GET by id

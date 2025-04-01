@@ -14,7 +14,6 @@ import org.folio.notes.domain.mapper.NoteTypesMapper;
 import org.folio.notes.domain.repository.NoteTypesRepository;
 import org.folio.notes.exception.NoteTypeNotFoundException;
 import org.folio.notes.exception.NoteTypesLimitReached;
-import org.folio.notes.service.ConfigurationService;
 import org.folio.notes.service.NoteTypesService;
 import org.folio.spring.data.OffsetRequest;
 import org.springframework.stereotype.Service;
@@ -24,9 +23,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class NoteTypesServiceImpl implements NoteTypesService {
 
-  private static final String NOTE_TYPE_LIMIT_CONFIG = "note-type-limit";
-
-  private final ConfigurationService configurationService;
   private final NoteTypesRepository repository;
   private final NoteTypesMapper mapper;
   private final NoteTypesProperties noteTypesProperties;
@@ -111,8 +107,7 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   }
 
   private void validateNoteTypeLimit() {
-    var defaultLimit = noteTypesProperties.getDefaults().getLimit();
-    var limit = Integer.parseInt(configurationService.getConfigValue(NOTE_TYPE_LIMIT_CONFIG, defaultLimit));
+    var limit = noteTypesProperties.getDefaults().getLimit();
 
     if (repository.count() >= limit) {
       throw new NoteTypesLimitReached(limit);

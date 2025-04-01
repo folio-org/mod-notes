@@ -1,10 +1,7 @@
 package org.folio.notes.support;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.util.Objects.requireNonNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -17,13 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.tomakehurst.wiremock.WireMockServer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import lombok.SneakyThrows;
 import org.apache.http.HttpStatus;
-import org.folio.notes.client.ConfigurationClient.ConfigurationEntry;
-import org.folio.notes.client.ConfigurationClient.ConfigurationEntryCollection;
 import org.folio.notes.domain.dto.User;
 import org.folio.spring.FolioModuleMetadata;
 import org.folio.spring.integration.XOkapiHeaders;
@@ -83,6 +76,21 @@ public abstract class TestApiBase extends TestBase {
   @Autowired
   private CacheManager cacheManager;
 
+  @SneakyThrows
+  public static String asJsonString(Object value) {
+    return OBJECT_MAPPER.writeValueAsString(value);
+  }
+
+  public static HttpHeaders defaultHeaders() {
+    final HttpHeaders httpHeaders = new HttpHeaders();
+
+    httpHeaders.setContentType(APPLICATION_JSON);
+    httpHeaders.add(XOkapiHeaders.TENANT, TENANT);
+    httpHeaders.add(XOkapiHeaders.USER_ID, USER_ID.toString());
+
+    return httpHeaders;
+  }
+
   public HttpHeaders okapiHeaders() {
     final HttpHeaders httpHeaders = defaultHeaders();
     httpHeaders.add(XOkapiHeaders.URL, okapiUrl);
@@ -98,31 +106,11 @@ public abstract class TestApiBase extends TestBase {
   }
 
   @SneakyThrows
-  protected void stubConfigurationLimit(String limit) {
-    List<ConfigurationEntry> configurations = new ArrayList<>();
-    if (!limit.isBlank()) {
-      var configuration = new ConfigurationEntry("1", "NOTES", "note-type-limit", limit);
-      configurations.add(configuration);
-    }
-    var configs = new ConfigurationEntryCollection(configurations, configurations.size());
-    okapiServer.stubFor(get(urlPathEqualTo("/configurations/entries"))
-      .withQueryParam("query", equalTo("module==NOTES and configName==note-type-limit"))
-      .willReturn(aResponse().withBody(OBJECT_MAPPER.writeValueAsString(configs))
-        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-        .withStatus(HttpStatus.SC_OK)));
-  }
-
-  @SneakyThrows
   protected void stubUser(User user) {
     okapiServer.stubFor(get(urlPathMatching("/users/.*"))
       .willReturn(aResponse().withBody(OBJECT_MAPPER.writeValueAsString(user))
         .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .withStatus(HttpStatus.SC_OK)));
-  }
-
-  protected void stubConfigurationClientError(int status) {
-    okapiServer.stubFor(get(urlEqualTo("/configurations/entries"))
-      .willReturn(aResponse().withBody("random message").withStatus(status)));
   }
 
   protected void stubUserClientError(int status) {
@@ -138,21 +126,6 @@ public abstract class TestApiBase extends TestBase {
   @AfterEach
   void cleanupCache() {
     cacheManager.getCacheNames().forEach(name -> requireNonNull(cacheManager.getCache(name)).clear());
-  }
-
-  @SneakyThrows
-  public static String asJsonString(Object value) {
-    return OBJECT_MAPPER.writeValueAsString(value);
-  }
-
-  public static HttpHeaders defaultHeaders() {
-    final HttpHeaders httpHeaders = new HttpHeaders();
-
-    httpHeaders.setContentType(APPLICATION_JSON);
-    httpHeaders.add(XOkapiHeaders.TENANT, TENANT);
-    httpHeaders.add(XOkapiHeaders.USER_ID, USER_ID.toString());
-
-    return httpHeaders;
   }
 
   @TestConfiguration
