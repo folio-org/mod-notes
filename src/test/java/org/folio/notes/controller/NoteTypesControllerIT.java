@@ -2,6 +2,7 @@ package org.folio.notes.controller;
 
 import static org.apache.commons.lang3.RandomStringUtils.insecure;
 import static org.folio.notes.support.DatabaseHelper.TYPE;
+import static org.folio.notes.util.ErrorsHelper.ErrorCode.NOTE_TYPES_LIMIT_REACHED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -234,7 +235,10 @@ class NoteTypesControllerIT extends TestApiBase {
       .andDo(log())
       .andExpect(status().isUnprocessableEntity())
       .andExpect(exceptionMatch(NoteTypesLimitReached.class))
-      .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is 3")));
+      .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is 3")))
+      .andExpect(jsonPath("$.errors.[0].code", is(NOTE_TYPES_LIMIT_REACHED.name())))
+      .andExpect(jsonPath("$.errors.[0].parameters[0].key", is("limit")))
+      .andExpect(jsonPath("$.errors.[0].parameters[0].value", is(defaultNoteTypeLimit)));
 
     int rowsInTable = databaseHelper.countRowsInTable(TENANT, TYPE);
     assertEquals(3, rowsInTable);
