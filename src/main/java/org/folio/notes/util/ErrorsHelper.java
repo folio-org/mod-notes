@@ -53,6 +53,7 @@ public class ErrorsHelper {
   public enum ErrorCode {
     VALIDATION_ERROR,
     NOT_FOUND_ERROR,
-    INTERACTION_ERROR
+    INTERACTION_ERROR,
+    NOTE_TYPES_LIMIT_REACHED
   }
 }
