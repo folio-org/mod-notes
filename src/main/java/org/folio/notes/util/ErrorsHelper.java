@@ -47,7 +47,6 @@ public class ErrorsHelper {
     ErrorType(String typeCode) {
       this.typeCode = typeCode;
     }
-
   }
 
   public enum ErrorCode {

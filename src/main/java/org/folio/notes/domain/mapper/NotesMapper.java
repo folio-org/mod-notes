@@ -36,5 +36,4 @@ public interface NotesMapper {
   @Mapping(target = "createdBy", ignore = true)
   @Mapping(target = "type", ignore = true)
   NoteEntity updateNote(Note dto, @MappingTarget NoteEntity entity);
-
 }

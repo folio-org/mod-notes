@@ -50,5 +50,4 @@ public class NoteTypeEntity extends AuditableEntity {
   @ToString.Include
   @Column(name = "name", nullable = false)
   private String name;
-
 }

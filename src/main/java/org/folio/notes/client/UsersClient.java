@@ -12,5 +12,4 @@ public interface UsersClient {
 
   @GetMapping(value = "/{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE})
   Optional<User> fetchUserById(@PathVariable("id") String id);
-
 }

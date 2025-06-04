@@ -14,5 +14,4 @@ class EmptyDatabaseMigrationIT extends MigrationTestBase {
     assertTableExist("type");
     assertRowsCount("type", 1);
   }
-
 }

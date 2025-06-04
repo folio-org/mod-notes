@@ -49,5 +49,4 @@ public interface NoteTypesMapper {
     var isAssigned = noteTypeUsage.getOrDefault(id, false);
     return new NoteTypeUsage().isAssigned(isAssigned);
   }
-
 }

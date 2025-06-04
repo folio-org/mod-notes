@@ -17,5 +17,4 @@ public abstract class BaseEntity {
   @GeneratedValue
   @Column(name = "id", updatable = false, nullable = false)
   private UUID id;
-
 }
