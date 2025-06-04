@@ -123,5 +123,4 @@ public class NoteTypesServiceImpl implements NoteTypesService {
     return repository.findNoteTypeUsage(noteTypeId).stream()
       .collect(Collectors.toMap(NoteTypeCount::getTypeId, NoteTypeCount::getIsAssigned));
   }
-
 }

@@ -29,5 +29,4 @@ public interface NoteCollectionMapper {
   }
 
   List<Note> toDtoList(List<NoteEntity> entityList);
-
 }

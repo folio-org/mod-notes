@@ -16,5 +16,4 @@ public abstract class TestBase {
   protected FolioSpringLiquibase liquibase;
   @Autowired
   protected JdbcTemplate jdbc;
-
 }

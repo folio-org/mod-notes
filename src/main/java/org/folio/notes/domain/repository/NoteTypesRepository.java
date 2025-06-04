@@ -16,5 +16,4 @@ public interface NoteTypesRepository extends JpaCqlRepository<NoteTypeEntity, UU
 
   @Query(name = NoteTypeEntity.FIND_NOTE_TYPE_USAGE_QUERY_NAME)
   Optional<NoteTypeCount> findNoteTypeUsage(@Param("noteTypeId") UUID noteTypeId);
-
 }

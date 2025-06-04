@@ -69,5 +69,4 @@ public abstract class MetadataMapper {
   OffsetDateTime map(Timestamp value) {
     return OffsetDateTime.from(value.toInstant().atZone(ZoneId.systemDefault()));
   }
-
 }

@@ -75,6 +75,5 @@ public interface NoteRepository extends JpaCqlRepository<NoteEntity, UUID>, JpaS
   @NonNull
   @EntityGraph(value = NOTE_COLLECTION_GRAPH, type = EntityGraph.EntityGraphType.LOAD)
   Page<NoteEntity> findAll(@Nullable Specification<NoteEntity> spec, @NonNull Pageable pageable);
-
 }
 
