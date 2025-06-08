@@ -38,7 +38,7 @@
     <maven-openapi-generator.version>7.13.0</maven-openapi-generator.version>
     <copy-rename-maven-plugin.version>1.0.1</copy-rename-maven-plugin.version>
     <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
-    <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
+    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
     <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
     <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
     <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
