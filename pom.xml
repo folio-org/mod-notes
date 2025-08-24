@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.4</version>
+    <version>3.5.5</version>
     <relativePath /> <!-- lookup parent from repository -->
   </parent>
 
@@ -35,7 +35,7 @@
     <!-- Plugin properties-->
     <openapi.input.file>${project.basedir}/src/main/resources/swagger.api/notes.yml</openapi.input.file>
     <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
-    <maven-openapi-generator.version>7.14.0</maven-openapi-generator.version>
+    <maven-openapi-generator.version>7.15.0</maven-openapi-generator.version>
     <copy-rename-maven-plugin.version>1.0.1</copy-rename-maven-plugin.version>
     <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
     <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
