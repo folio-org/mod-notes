@@ -67,6 +67,14 @@ docker build -t dev.folio/mod-notes .
 See the built `target/ModuleDescriptor.json` for the interfaces that this module
 requires and provides, the permissions, and the additional module metadata.
 
+### Environment variables
+
+Use `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` to configure the PostgreSQL database.
+
+`NOTES_TYPES_DEFAULTS_LIMIT` defaults to 25.
+
+`MAX_RECORDS_COUNT` defaults to 1000.
+
 ## Additional information
 
 ### Other documentation
