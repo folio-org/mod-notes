@@ -35,7 +35,7 @@
     <!-- Plugin properties-->
     <openapi.input.file>${project.basedir}/src/main/resources/swagger.api/notes.yml</openapi.input.file>
     <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
-    <maven-openapi-generator.version>7.16.0</maven-openapi-generator.version>
+    <maven-openapi-generator.version>7.17.0</maven-openapi-generator.version>
     <copy-rename-maven-plugin.version>1.0.1</copy-rename-maven-plugin.version>
     <versions-maven-plugin.version>2.19.1</versions-maven-plugin.version>
     <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
@@ -44,7 +44,7 @@
     <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
     <lombok.mapstruct-binding.version>0.2.0</lombok.mapstruct-binding.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
-    <folio-java-checkstyle.version>1.1.0</folio-java-checkstyle.version>
+    <folio-java-checkstyle.version>1.2.0</folio-java-checkstyle.version>
     <checkstyle.version>12.1.1</checkstyle.version>
   </properties>
 
@@ -262,6 +262,9 @@
           <logViolationsToConsole>true</logViolationsToConsole>
           <configLocation>folio-checkstyle/checkstyle.xml</configLocation>
           <cacheFile>${basedir}/target/cachefile</cacheFile>
+          <propertyExpansion>
+            checkstyle.method-length.max=150
+          </propertyExpansion>
         </configuration>
       </plugin>
 
