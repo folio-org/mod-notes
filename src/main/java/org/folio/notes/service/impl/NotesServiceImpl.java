@@ -5,7 +5,6 @@ import static org.folio.notes.domain.repository.NoteRepository.domainEq;
 import static org.folio.notes.domain.repository.NoteRepository.linkIs;
 import static org.folio.notes.domain.repository.NoteRepository.linkIsNot;
 import static org.folio.notes.domain.repository.NoteRepository.typeNameIn;
-import static org.springframework.data.jpa.domain.Specification.where;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,6 @@ import org.folio.notes.util.HtmlSanitizer;
 import org.folio.spring.data.OffsetRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -95,18 +93,9 @@ public class NotesServiceImpl implements NotesService {
                                           List<String> noteTypes, LinkStatusFilter status, NotesOrderBy orderBy,
                                           OrderDirection order, Integer offset,
                                           Integer limit) {
-    Specification<NoteEntity> spec = domainEq(domain);
+    var spec = domainEq(domain);
 
-    switch (status) {
-      case ASSIGNED:
-        spec = spec.and(linkIs(objectId, objectType));
-        break;
-      case UNASSIGNED:
-        spec = spec.and(linkIsNot(objectId, objectType));
-        break;
-      default:
-        break;
-    }
+    spec = andLinkStatusFilter(spec, status, objectType, objectId);
 
     if (StringUtils.isNotBlank(search)) {
       spec = spec.and(contentLike(search));
@@ -117,13 +106,22 @@ public class NotesServiceImpl implements NotesService {
     }
 
     log.debug("getNoteCollection:: trying to get Note collection by spec: {}, order: {}", spec, order);
-    Sort sort = getSort(orderBy, order);
+    var sort = getSort(orderBy, order);
     var actualLimit = Math.min(limit, responseLimit);
 
-    Page<NoteEntity> t = noteRepository.findAll(where(spec), OffsetRequest.of(offset, actualLimit, sort));
+    var t = noteRepository.findAll(spec, OffsetRequest.of(offset, actualLimit, sort));
     log.info("getNoteCollection:: loaded Note collection by spec: {}, offset: {}, limit: {}, sort: {}",
       spec, offset, actualLimit, sort);
     return noteCollectionMapper.toDtoCollection(t);
+  }
+
+  private Specification<NoteEntity> andLinkStatusFilter(
+    Specification<NoteEntity> spec, LinkStatusFilter status, String objectType, String objectId) {
+    return switch (status) {
+      case ASSIGNED -> spec.and(linkIs(objectId, objectType));
+      case UNASSIGNED -> spec.and(linkIsNot(objectId, objectType));
+      default -> spec;
+    };
   }
 
   @Override
@@ -165,16 +163,20 @@ public class NotesServiceImpl implements NotesService {
         .map(NoteLinkUpdate::getStatus)
         .orElseThrow();
 
-      if (linkStatusChange == LinkStatus.UNASSIGNED) {
-        noteEntity.deleteLink(linkEntity);
-      } else {
-        noteEntity.addLink(linkEntity);
-      }
-      if (noteEntity.getLinks().isEmpty()) {
-        noteRepository.delete(noteEntity);
-      } else {
-        noteRepository.save(noteEntity);
-      }
+      handleLinkStatusChange(linkStatusChange, linkEntity, noteEntity);
+    }
+  }
+
+  private void handleLinkStatusChange(LinkStatus linkStatusChange, LinkEntity linkEntity, NoteEntity noteEntity) {
+    if (linkStatusChange == LinkStatus.UNASSIGNED) {
+      noteEntity.deleteLink(linkEntity);
+    } else {
+      noteEntity.addLink(linkEntity);
+    }
+    if (noteEntity.getLinks().isEmpty()) {
+      noteRepository.delete(noteEntity);
+    } else {
+      noteRepository.save(noteEntity);
     }
   }
 
