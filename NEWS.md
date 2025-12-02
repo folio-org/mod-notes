@@ -14,7 +14,7 @@
 * Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
 
 ### Tech Dept
-* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+* Refactor code to comply with Checkstyle method length limit (max 25 lines) ([MODNOTES-283](https://folio-org.atlassian.net/browse/MODNOTES-283))
 
 ### Dependencies
 * Bump `LIB_NAME` from `OLD_VERSION` to `NEW_VERSION`
