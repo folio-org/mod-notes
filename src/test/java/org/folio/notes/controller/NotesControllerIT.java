@@ -178,7 +178,7 @@ class NotesControllerIT extends TestApiBase {
     var cqlQuery = "!invalid-cql!";
     mockMvc.perform(get(NOTE_URL + "?query={cql}", cqlQuery)
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(CqlQueryValidationException.class))
       .andExpect(errorMessageMatch(containsString("Not implemented yet node type")));
   }
@@ -188,7 +188,7 @@ class NotesControllerIT extends TestApiBase {
   void return422OnGetCollectionWithInvalidOffset() throws Exception {
     mockMvc.perform(get(NOTE_URL + "?offset={offset}", -1)
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(ConstraintViolationException.class))
       .andExpect(errorMessageMatch(containsString("must be greater than or equal to 0")));
   }
@@ -198,7 +198,7 @@ class NotesControllerIT extends TestApiBase {
   void return422OnGetCollectionWithInvalidLimit() throws Exception {
     mockMvc.perform(get(NOTE_URL + "?limit={limit}", -1)
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(ConstraintViolationException.class))
       .andExpect(errorMessageMatch(containsString("must be greater than or equal to 1")));
   }
@@ -236,7 +236,7 @@ class NotesControllerIT extends TestApiBase {
     var note = new Note().title("First").domain("Domain");
 
     mockMvc.perform(postNote(note))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(MethodArgumentNotValidException.class))
       .andExpect(
         errorMessageMatch(containsString("Field error in object 'note' on field 'typeId': rejected value [null]")));
@@ -248,7 +248,7 @@ class NotesControllerIT extends TestApiBase {
     var note = new Note().title("First").typeId(randomUUID());
 
     mockMvc.perform(postNote(note))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(MethodArgumentNotValidException.class))
       .andExpect(
         errorMessageMatch(containsString("Field error in object 'note' on field 'domain': rejected value [null]")));
@@ -301,7 +301,7 @@ class NotesControllerIT extends TestApiBase {
   @DisplayName("Return 422 on get note by ID when id is invalid")
   void return422OnGetByIdWhenIdIsInvalid() throws Exception {
     mockMvc.perform(getById("invalid-uuid"))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(MethodArgumentTypeMismatchException.class))
       .andExpect(errorMessageMatch(containsString("Failed to convert value of type")));
   }
@@ -354,7 +354,7 @@ class NotesControllerIT extends TestApiBase {
     var updatedNote = new Note().title("Updated").domain(DOMAIN).typeId(UUID.randomUUID()).links(links);
 
     mockMvc.perform(putById(existNote.getId(), updatedNote))
-      .andExpect(status().isUnprocessableEntity());
+      .andExpect(status().isUnprocessableContent());
 
     mockMvc.perform(getById(existNote.getId()))
       .andExpect(status().isOk())
@@ -705,7 +705,7 @@ class NotesControllerIT extends TestApiBase {
     mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
                         + "?orderBy=noteype&order=desc")
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' to required "
                                                   + "type 'org.folio.notes.domain.dto.NotesOrderBy'")));
   }
@@ -798,7 +798,7 @@ class NotesControllerIT extends TestApiBase {
     mockMvc.perform(get("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1 + 1
                         + "?orderBy=u&order=desc")
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' "
                                                   + "to required type 'org.folio.notes.domain.dto.NotesOrderBy'")));
   }
@@ -985,7 +985,7 @@ class NotesControllerIT extends TestApiBase {
         "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
         + "/id/" + PACKAGE_ID_1 + "?order=wrong")
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(errorMessageMatch(containsString("Failed to convert value of type 'java.lang.String' "
                                                   + "to required type 'org.folio.notes.domain.dto.OrderDirection")));
   }
@@ -1000,7 +1000,7 @@ class NotesControllerIT extends TestApiBase {
         "/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE
         + "/id/" + PACKAGE_ID_1 + "?limit=-1&offset=-1")
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.offset: must be greater "
                                                   + "than or equal to 0")))
       .andExpect(errorMessageMatch(containsString("getNoteCollectionByLink.limit: must be greater "

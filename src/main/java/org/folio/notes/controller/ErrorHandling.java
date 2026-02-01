@@ -37,7 +37,7 @@ public class ErrorHandling {
     return createInternalError(e.getMessage(), NOT_FOUND_ERROR);
   }
 
-  @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   @ExceptionHandler(NoteTypesLimitReached.class)
   public Errors handleConstraintViolationException(NoteTypesLimitReached e) {
     var error = createError(e.getMessage(), ErrorsHelper.ErrorType.INTERNAL, NOTE_TYPES_LIMIT_REACHED);
@@ -45,13 +45,13 @@ public class ErrorHandling {
     return createErrors(error);
   }
 
-  @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   @ExceptionHandler(ConstraintViolationException.class)
   public Errors handleConstraintViolationException(ConstraintViolationException e) {
     return createInternalError(e.getMessage(), VALIDATION_ERROR);
   }
 
-  @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   @ExceptionHandler(DataIntegrityViolationException.class)
   public Errors handleDataIntegrityViolationException(DataIntegrityViolationException e) {
     var localizedMessage = e.getMostSpecificCause().getLocalizedMessage();
@@ -59,7 +59,7 @@ public class ErrorHandling {
     return createInternalError(message, VALIDATION_ERROR);
   }
 
-  @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   @ExceptionHandler({
     MissingServletRequestParameterException.class,
     MethodArgumentTypeMismatchException.class,

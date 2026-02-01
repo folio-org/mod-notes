@@ -1,6 +1,6 @@
-## v7.1.0 YYYY-mm-DD
+## v8.0.0 YYYY-mm-DD
 ### Breaking changes
-* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+* Migrate to Spring Boot v4.x ([MODNOTES-282](https://folio-org.atlassian.net/browse/MODNOTES-282))
 
 ### New APIs versions
 * Provides `API_NAME vX.Y`

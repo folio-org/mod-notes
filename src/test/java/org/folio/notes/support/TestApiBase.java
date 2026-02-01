@@ -9,10 +9,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import java.util.UUID;
 import lombok.SneakyThrows;
@@ -29,9 +25,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
@@ -40,6 +36,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 @EnableOkapi
 @EnablePostgres
@@ -53,17 +51,16 @@ public abstract class TestApiBase extends TestBase {
   protected static final String TENANT = "test";
   protected static final UUID USER_ID = UUID.randomUUID();
 
-  protected static final ObjectMapper OBJECT_MAPPER;
+  protected static final JsonMapper OBJECT_MAPPER;
 
   protected static OkapiConfiguration okapi;
 
   static {
-    OBJECT_MAPPER = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    OBJECT_MAPPER = JsonMapper.builder()
+      .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL))
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
       .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
-      .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-      .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-      .registerModule(new JavaTimeModule());
+      .build();
   }
 
   @Autowired

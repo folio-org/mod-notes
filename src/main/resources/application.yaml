@@ -1,5 +1,7 @@
 # Module properties
 folio:
+  exchange:
+    enabled: true
   tenant:
     validation:
       enabled: true
@@ -7,7 +9,7 @@ folio:
     request:
       enabled: true
       level: basic
-    feign:
+    exchange:
       enabled: true
       level: basic
   notes:
@@ -69,16 +71,10 @@ spring:
   liquibase:
     changeLog: classpath:db/changelog/changelog-master.xml
     enabled: true
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration
   jackson:
     default-property-inclusion: NON_NULL
   cache:
     type: caffeine
-  cloud:
-    openfeign:
-      okhttp:
-        enabled: true
 management:
   endpoints:
     web:
@@ -95,3 +91,7 @@ management:
       access: unrestricted
 server:
   port: 8081
+
+logging:
+  level:
+    org.folio.spring.filter.IncomingRequestLoggingFilter: DEBUG
