@@ -145,7 +145,7 @@ class NoteTypesControllerIT extends TestApiBase {
     var cqlQuery = "!invalid-cql!";
     mockMvc.perform(get(BASE_URL + "?query={cql}", cqlQuery)
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(CqlQueryValidationException.class))
       .andExpect(errorMessageMatch(containsString("Not implemented yet node type")));
   }
@@ -155,7 +155,7 @@ class NoteTypesControllerIT extends TestApiBase {
   void return422OnGetCollectionWithInvalidOffset() throws Exception {
     mockMvc.perform(get(BASE_URL + "?offset={offset}", -1)
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(ConstraintViolationException.class))
       .andExpect(errorMessageMatch(containsString("must be greater than or equal to 0")));
   }
@@ -165,7 +165,7 @@ class NoteTypesControllerIT extends TestApiBase {
   void return422OnGetCollectionWithInvalidLimit() throws Exception {
     mockMvc.perform(get(BASE_URL + "?limit={limit}", -1)
         .headers(okapiHeaders()))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(ConstraintViolationException.class))
       .andExpect(errorMessageMatch(containsString("must be greater than or equal to 1")));
   }
@@ -215,7 +215,7 @@ class NoteTypesControllerIT extends TestApiBase {
     NoteType duplicateNoteType = new NoteType().name(existNoteType.getName());
 
     mockMvc.perform(postNoteType(duplicateNoteType))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(DataIntegrityViolationException.class))
       .andExpect(errorMessageMatch(containsString("Key (name)=(DuplicateName) already exists")));
   }
@@ -233,7 +233,7 @@ class NoteTypesControllerIT extends TestApiBase {
 
     mockMvc.perform(postNoteType(duplicateNoteType))
       .andDo(log())
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(NoteTypesLimitReached.class))
       .andExpect(errorMessageMatch(containsString("Maximum number of note types allowed is 3")))
       .andExpect(jsonPath("$.errors.[0].code", is(NOTE_TYPES_LIMIT_REACHED.name())))
@@ -311,7 +311,7 @@ class NoteTypesControllerIT extends TestApiBase {
   @DisplayName("Return 422 on get note-type by ID when id is invalid")
   void return422OnGetByIdWhenIdIsInvalid() throws Exception {
     mockMvc.perform(getById("invalid-uuid"))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(MethodArgumentTypeMismatchException.class))
       .andExpect(errorMessageMatch(containsString("Failed to convert value of type")));
   }
@@ -345,7 +345,7 @@ class NoteTypesControllerIT extends TestApiBase {
 
     NoteType duplicateNoteType = new NoteType().name(existNoteType.getName());
     mockMvc.perform(putById(noteTypeToUpdate.getId(), duplicateNoteType))
-      .andExpect(status().isUnprocessableEntity())
+      .andExpect(status().isUnprocessableContent())
       .andExpect(exceptionMatch(DataIntegrityViolationException.class))
       .andExpect(errorMessageMatch(containsString("Key (name)=(DuplicateName) already exists")));
   }

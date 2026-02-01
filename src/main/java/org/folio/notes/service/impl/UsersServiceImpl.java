@@ -2,7 +2,6 @@ package org.folio.notes.service.impl;
 
 import static org.folio.notes.config.CacheConfig.CACHE_USERS_BY_ID;
 
-import feign.FeignException;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +11,7 @@ import org.folio.notes.domain.dto.User;
 import org.folio.notes.service.UsersService;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +27,7 @@ public class UsersServiceImpl implements UsersService {
     log.debug("getUser:: trying to get user with id: {}", id);
     try {
       return id == null ? Optional.empty() : client.fetchUserById(id.toString());
-    } catch (FeignException e) {
+    } catch (HttpStatusCodeException e) {
       log.warn("getUser:: error while getting user with id: {}: {}", id, e.getMessage());
       return Optional.empty();
     }

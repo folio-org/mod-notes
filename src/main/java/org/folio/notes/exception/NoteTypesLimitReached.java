@@ -1,5 +1,8 @@
 package org.folio.notes.exception;
 
+import lombok.Getter;
+
+@Getter
 public class NoteTypesLimitReached extends RuntimeException {
 
   private static final String MESSAGE = "Maximum number of note types allowed is ";
@@ -8,9 +11,5 @@ public class NoteTypesLimitReached extends RuntimeException {
   public NoteTypesLimitReached(int limit) {
     super(MESSAGE + limit);
     this.limit = limit;
-  }
-
-  public int getLimit() {
-    return limit;
   }
 }

@@ -36,7 +36,6 @@ import org.folio.notes.service.NotesService;
 import org.folio.notes.util.HtmlSanitizer;
 import org.folio.spring.data.OffsetRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -70,14 +69,13 @@ public class NotesServiceImpl implements NotesService {
       );
   }
 
-  @Value("${folio.notes.response.limit}")
-  private Integer responseLimit;
-
   private final NoteRepository noteRepository;
   private final LinkRepository linkRepository;
   private final NotesMapper notesMapper;
   private final NoteCollectionMapper noteCollectionMapper;
   private final HtmlSanitizer sanitizer;
+  @Value("${folio.notes.response.limit}")
+  private Integer responseLimit;
 
   @Override
   public NoteCollection getNoteCollection(String query, Integer offset, Integer limit) {
@@ -113,15 +111,6 @@ public class NotesServiceImpl implements NotesService {
     log.info("getNoteCollection:: loaded Note collection by spec: {}, offset: {}, limit: {}, sort: {}",
       spec, offset, actualLimit, sort);
     return noteCollectionMapper.toDtoCollection(t);
-  }
-
-  private Specification<NoteEntity> andLinkStatusFilter(
-    Specification<NoteEntity> spec, LinkStatusFilter status, String objectType, String objectId) {
-    return switch (status) {
-      case ASSIGNED -> spec.and(linkIs(objectId, objectType));
-      case UNASSIGNED -> spec.and(linkIsNot(objectId, objectType));
-      default -> spec;
-    };
   }
 
   @Override
@@ -167,26 +156,13 @@ public class NotesServiceImpl implements NotesService {
     }
   }
 
-  private void handleLinkStatusChange(LinkStatus linkStatusChange, LinkEntity linkEntity, NoteEntity noteEntity) {
-    if (linkStatusChange == LinkStatus.UNASSIGNED) {
-      noteEntity.deleteLink(linkEntity);
-    } else {
-      noteEntity.addLink(linkEntity);
-    }
-    if (noteEntity.getLinks().isEmpty()) {
-      noteRepository.delete(noteEntity);
-    } else {
-      noteRepository.save(noteEntity);
-    }
-  }
-
   @Transactional
   @Override
   public void updateNote(UUID id, Note dto) {
     log.debug("updateNote:: trying to update note by id: {}", id);
     if (dto.getLinks().isEmpty()) {
       log.warn("updateNote:: note has no links, thus delete note id: {}", id);
-      deleteNote(id);
+      delete(id);
     } else {
       noteRepository.findById(id)
         .ifPresentOrElse(entity -> {
@@ -200,11 +176,37 @@ public class NotesServiceImpl implements NotesService {
   @Override
   public void deleteNote(UUID id) {
     log.debug("deleteNote:: trying to delete note with id: {}", id);
+    delete(id);
+  }
+
+  private void delete(UUID id) {
     noteRepository.findById(id)
       .ifPresentOrElse(entity -> {
         noteRepository.deleteById(id);
         log.info("deleteNote:: deleted note with id: {}", id);
       }, throwNotFoundById(id, "deleteNote"));
+  }
+
+  private Specification<NoteEntity> andLinkStatusFilter(
+    Specification<NoteEntity> spec, LinkStatusFilter status, String objectType, String objectId) {
+    return switch (status) {
+      case ASSIGNED -> spec.and(linkIs(objectId, objectType));
+      case UNASSIGNED -> spec.and(linkIsNot(objectId, objectType));
+      default -> spec;
+    };
+  }
+
+  private void handleLinkStatusChange(LinkStatus linkStatusChange, LinkEntity linkEntity, NoteEntity noteEntity) {
+    if (linkStatusChange == LinkStatus.UNASSIGNED) {
+      noteEntity.deleteLink(linkEntity);
+    } else {
+      noteEntity.addLink(linkEntity);
+    }
+    if (noteEntity.getLinks().isEmpty()) {
+      noteRepository.delete(noteEntity);
+    } else {
+      noteRepository.save(noteEntity);
+    }
   }
 
   private Sort getSort(NotesOrderBy orderBy, OrderDirection order) {
@@ -243,7 +245,9 @@ public class NotesServiceImpl implements NotesService {
 
   private void manageNoteLinks(NoteEntity noteEntity) {
     if (noteEntity.getLinks() != null) {
-      var linkEntities = noteEntity.getLinks().stream()
+      var transientLinks = noteEntity.getLinks();
+      noteEntity.setLinks(null); // Detach transient links to avoid auto-flush issues
+      var linkEntities = transientLinks.stream()
         .map(this::fetchOrSaveLink)
         .collect(Collectors.toSet());
       noteEntity.setLinks(linkEntities);
@@ -251,16 +255,17 @@ public class NotesServiceImpl implements NotesService {
   }
 
   private LinkEntity fetchOrSaveLink(String objectId, String objectType) {
-    LinkEntity linkEntity = new LinkEntity();
-    linkEntity.setObjectId(objectId);
-    linkEntity.setObjectType(objectType);
-    return fetchOrSaveLink(linkEntity);
+    return linkRepository.findByObjectIdAndObjectType(objectId, objectType)
+      .orElseGet(() -> {
+        LinkEntity linkEntity = new LinkEntity();
+        linkEntity.setObjectId(objectId);
+        linkEntity.setObjectType(objectType);
+        return linkRepository.save(linkEntity);
+      });
   }
 
   private LinkEntity fetchOrSaveLink(LinkEntity linkEntity) {
-    var linkEntityExample = Example.of(linkEntity);
-    var one = linkRepository.findOne(linkEntityExample);
-    return one.orElseGet(() -> linkRepository.save(linkEntity));
+    return fetchOrSaveLink(linkEntity.getObjectId(), linkEntity.getObjectType());
   }
 
   private NoteNotFoundException notFoundException(UUID id) {
