@@ -21,6 +21,7 @@ public interface NoteTypesMapper {
   @Mapping(target = "metadata", source = "entity", qualifiedByName = "BaseMetadataMapper")
   NoteType toDto(NoteTypeEntity entity);
 
+  @Mapping(target = "new", ignore = true)
   @Mapping(target = "createdDate", ignore = true)
   @Mapping(target = "updatedDate", ignore = true)
   @Mapping(target = "createdBy", ignore = true)
@@ -37,6 +38,7 @@ public interface NoteTypesMapper {
 
   List<NoteType> toDtoList(List<NoteTypeEntity> entityList);
 
+  @Mapping(target = "new", ignore = true)
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdDate", ignore = true)
   @Mapping(target = "updatedDate", ignore = true)

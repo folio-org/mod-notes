@@ -5,7 +5,6 @@ import static org.apache.commons.lang3.RandomStringUtils.insecure;
 import static org.folio.notes.support.DatabaseHelper.LINK;
 import static org.folio.notes.support.DatabaseHelper.NOTE;
 import static org.folio.notes.support.DatabaseHelper.TYPE;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.equalTo;
@@ -47,6 +46,7 @@ import org.folio.notes.exception.NoteNotFoundException;
 import org.folio.notes.support.TestApiBase;
 import org.folio.spring.cql.CqlQueryValidationException;
 import org.hamcrest.Matcher;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -214,6 +214,35 @@ class NotesControllerIT extends TestApiBase {
     var existingNoteType = OBJECT_MAPPER.readValue(contentAsString, NoteType.class);
 
     note.setDomain("Domain");
+    note.setTypeId(existingNoteType.getId());
+
+    mockMvc.perform(postNote(note))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.title", is(title)))
+      .andExpect(jsonPath("$.metadata.createdByUserId").value(USER_ID.toString()))
+      .andExpect(jsonPath("$.metadata.createdDate").isNotEmpty())
+      .andExpect(header().string(HttpHeaders.LOCATION,
+        matchesRegex(
+          NOTE_URL + "/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")));
+    var rowsInTable = databaseHelper.countRowsInTable(TENANT, NOTE);
+    assertEquals(1, rowsInTable);
+  }
+
+  @Test
+  @DisplayName("Create new note with links and id")
+  void createNewNoteWithLinksAndId() throws Exception {
+    String title = "First";
+    var note = new Note()
+      .id(UUID.randomUUID())
+      .title(title)
+      .domain("eholdings")
+      .content("<p>This is test content</p>")
+      .links(List.of(new Link("18-3207206", "package")));
+
+    var noteType = new NoteType().name(insecure().nextAlphabetic(100));
+    var contentAsString = mockMvc.perform(postNoteType(noteType)).andReturn().getResponse().getContentAsString();
+    var existingNoteType = OBJECT_MAPPER.readValue(contentAsString, NoteType.class);
+
     note.setTypeId(existingNoteType.getId());
 
     mockMvc.perform(postNote(note))
@@ -509,7 +538,7 @@ class NotesControllerIT extends TestApiBase {
         .type(PACKAGE_TYPE)
       ));
 
-    mockMvc.perform(postNote(note)).andExpect(status().isCreated());
+    mockMvc.perform(putById(note.getId(), note)).andExpect(status().isNoContent());
     removeLinks(note.getId());
     List<Note> notes = getNotes();
 
@@ -755,8 +784,8 @@ class NotesControllerIT extends TestApiBase {
     var firstNote = generateNote();
     var secondNote = generateNote();
 
-    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
-    mockMvc.perform(postNote(secondNote)).andExpect(status().isCreated());
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
 
     createLinks(firstNote.getId());
     createLinks(secondNote.getId());
@@ -775,8 +804,8 @@ class NotesControllerIT extends TestApiBase {
     var firstNote = generateNote();
     var secondNote = generateNote();
 
-    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
-    mockMvc.perform(postNote(secondNote)).andExpect(status().isCreated());
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
 
     createLinks(firstNote.getId());
     createLinks(secondNote.getId());
@@ -831,7 +860,7 @@ class NotesControllerIT extends TestApiBase {
   @DisplayName("Should interpret special regex characters literally")
   void shouldInterpretSpecialRegexCharactersLiterally() throws Exception {
     var firstNote = generateNote().title("a[abc1}{]z");
-    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
 
     var content = getNoteLinks("/note-links/domain/" + DOMAIN + "/type/" + PACKAGE_TYPE + "/id/" + PACKAGE_ID_1
                                + "?search=a[abc1}{]z");
@@ -848,9 +877,9 @@ class NotesControllerIT extends TestApiBase {
     var secondNote = generateNote().title("Title ZZZ ABC");
     var thirdNote = generateNote().title("Title BBB");
 
-    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
-    mockMvc.perform(postNote(secondNote)).andExpect(status().isCreated());
-    mockMvc.perform(postNote(thirdNote)).andExpect(status().isCreated());
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(thirdNote.getId(), thirdNote)).andExpect(status().isNoContent());
 
     createLinks(firstNote.getId());
     createLinks(secondNote.getId());
@@ -870,9 +899,9 @@ class NotesControllerIT extends TestApiBase {
     var secondNote = generateNote().title("Title ZZZ ABC");
     var thirdNote = generateNote().title("Title BBB");
 
-    mockMvc.perform(postNote(firstNote)).andExpect(status().isCreated());
-    mockMvc.perform(postNote(secondNote)).andExpect(status().isCreated());
-    mockMvc.perform(postNote(thirdNote)).andExpect(status().isCreated());
+    mockMvc.perform(putById(firstNote.getId(), firstNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(secondNote.getId(), secondNote)).andExpect(status().isNoContent());
+    mockMvc.perform(putById(thirdNote.getId(), thirdNote)).andExpect(status().isNoContent());
 
     createLinks(firstNote.getId());
     createLinks(secondNote.getId());
@@ -954,9 +983,9 @@ class NotesControllerIT extends TestApiBase {
       + "?search=" + noteTitle + "&noteType=" + NOTE_TYPE_NAME_1 + "&order=ASC");
     var notes = OBJECT_MAPPER.readValue(content, NoteCollection.class).getNotes();
 
-    assertThat(notes.size(), equalTo(1));
-    assertThat(notes.getFirst().getTypeId(), equalTo(UUID.fromString(NOTE_TYPE_ID_2)));
-    assertThat(notes.getFirst().getTitle(), equalTo(noteTitle));
+    MatcherAssert.assertThat(notes.size(), equalTo(1));
+    MatcherAssert.assertThat(notes.getFirst().getTypeId(), equalTo(UUID.fromString(NOTE_TYPE_ID_2)));
+    MatcherAssert.assertThat(notes.getFirst().getTitle(), equalTo(noteTitle));
   }
 
   @Test
@@ -1178,7 +1207,7 @@ class NotesControllerIT extends TestApiBase {
   }
 
   private <T> ResultMatcher exceptionMatch(Class<T> type) {
-    return result -> assertThat(result.getResolvedException(), instanceOf(type));
+    return result -> MatcherAssert.assertThat(result.getResolvedException(), instanceOf(type));
   }
 }
 

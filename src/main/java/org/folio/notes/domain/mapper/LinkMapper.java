@@ -15,6 +15,8 @@ public interface LinkMapper {
   Link toDtoLink(LinkEntity entity);
 
   @Mapping(target = "id", ignore = true)
+  @Mapping(target = "notes", ignore = true)
+  @Mapping(target = "new", ignore = true)
   @InheritInverseConfiguration
   LinkEntity toEntityLink(Link dto);
 }

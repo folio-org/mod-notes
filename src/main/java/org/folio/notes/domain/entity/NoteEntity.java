@@ -2,6 +2,7 @@ package org.folio.notes.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -57,7 +58,7 @@ public class NoteEntity extends AuditableEntity {
   @Column(name = "pop_up_on_check_out")
   private boolean popUpOnCheckOut;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "type_id", nullable = false)
   private NoteTypeEntity type;
 
