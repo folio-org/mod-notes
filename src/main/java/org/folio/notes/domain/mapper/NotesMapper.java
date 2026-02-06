@@ -19,6 +19,7 @@ public interface NotesMapper {
   @Mapping(target = "type", expression = "java(entity.getType().getName())")
   Note toDto(NoteEntity entity);
 
+  @Mapping(target = "new", ignore = true)
   @Mapping(target = "type.id", source = "typeId")
   @Mapping(target = "indexedContent", ignore = true)
   @Mapping(target = "createdDate", ignore = true)
@@ -27,6 +28,7 @@ public interface NotesMapper {
   @Mapping(target = "updatedBy", ignore = true)
   NoteEntity toEntity(Note dto);
 
+  @Mapping(target = "new", ignore = true)
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "type.id", source = "typeId")
   @Mapping(target = "indexedContent", ignore = true)

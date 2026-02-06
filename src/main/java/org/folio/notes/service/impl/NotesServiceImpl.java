@@ -5,6 +5,7 @@ import static org.folio.notes.domain.repository.NoteRepository.domainEq;
 import static org.folio.notes.domain.repository.NoteRepository.linkIs;
 import static org.folio.notes.domain.repository.NoteRepository.linkIsNot;
 import static org.folio.notes.domain.repository.NoteRepository.typeNameIn;
+import static org.folio.notes.util.JpaUtils.initNewEntity;
 
 import java.util.List;
 import java.util.Map;
@@ -26,11 +27,11 @@ import org.folio.notes.domain.entity.AuditableEntity_;
 import org.folio.notes.domain.entity.LinkEntity;
 import org.folio.notes.domain.entity.NoteEntity;
 import org.folio.notes.domain.entity.NoteEntity_;
-import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.domain.mapper.NoteCollectionMapper;
 import org.folio.notes.domain.mapper.NotesMapper;
 import org.folio.notes.domain.repository.LinkRepository;
 import org.folio.notes.domain.repository.NoteRepository;
+import org.folio.notes.domain.repository.NoteTypesRepository;
 import org.folio.notes.exception.NoteNotFoundException;
 import org.folio.notes.service.NotesService;
 import org.folio.notes.util.HtmlSanitizer;
@@ -71,6 +72,7 @@ public class NotesServiceImpl implements NotesService {
 
   private final NoteRepository noteRepository;
   private final LinkRepository linkRepository;
+  private final NoteTypesRepository noteTypesRepository;
   private final NotesMapper notesMapper;
   private final NoteCollectionMapper noteCollectionMapper;
   private final HtmlSanitizer sanitizer;
@@ -126,7 +128,7 @@ public class NotesServiceImpl implements NotesService {
   public Note createNote(Note note) {
     log.debug("createNote:: trying to create note by title: {}, domain: {}, type: {}",
       note.getTitle(), note.getDomain(), note.getType());
-    NoteEntity entity = saveNote(note, notesMapper::toEntity);
+    NoteEntity entity = saveNote(note, dto -> initNewEntity(notesMapper.toEntity(dto)));
     log.info("createNote:: created note by title: {}, domain: {}, type: {}",
       note.getTitle(), note.getDomain(), note.getType());
     return notesMapper.toDto(entity);
@@ -230,7 +232,9 @@ public class NotesServiceImpl implements NotesService {
 
   private Function<Note, NoteEntity> noteMapFunction(Note dto, NoteEntity noteEntity) {
     if (!dto.getTypeId().equals(noteEntity.getType().getId())) {
-      noteEntity.setType(new NoteTypeEntity());
+      var noteType = noteTypesRepository.findById(dto.getTypeId())
+        .orElseThrow(() -> new IllegalArgumentException("Note type with ID [" + dto.getTypeId() + "] was not found"));
+      noteEntity.setType(noteType);
     }
 
     return noteDto -> notesMapper.updateNote(noteDto, noteEntity);
@@ -254,18 +258,18 @@ public class NotesServiceImpl implements NotesService {
     }
   }
 
+  private LinkEntity fetchOrSaveLink(LinkEntity linkEntity) {
+    return fetchOrSaveLink(linkEntity.getObjectId(), linkEntity.getObjectType());
+  }
+
   private LinkEntity fetchOrSaveLink(String objectId, String objectType) {
     return linkRepository.findByObjectIdAndObjectType(objectId, objectType)
       .orElseGet(() -> {
         LinkEntity linkEntity = new LinkEntity();
         linkEntity.setObjectId(objectId);
         linkEntity.setObjectType(objectType);
-        return linkRepository.save(linkEntity);
+        return linkRepository.save(initNewEntity(linkEntity));
       });
-  }
-
-  private LinkEntity fetchOrSaveLink(LinkEntity linkEntity) {
-    return fetchOrSaveLink(linkEntity.getObjectId(), linkEntity.getObjectType());
   }
 
   private NoteNotFoundException notFoundException(UUID id) {

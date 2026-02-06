@@ -15,6 +15,7 @@ import org.folio.notes.domain.repository.NoteTypesRepository;
 import org.folio.notes.exception.NoteTypeNotFoundException;
 import org.folio.notes.exception.NoteTypesLimitReached;
 import org.folio.notes.service.NoteTypesService;
+import org.folio.notes.util.JpaUtils;
 import org.folio.spring.data.OffsetRequest;
 import org.springframework.stereotype.Service;
 
@@ -58,7 +59,7 @@ public class NoteTypesServiceImpl implements NoteTypesService {
   public NoteType createNoteType(NoteType noteType) {
     log.debug("createNoteType:: trying to create note type with name: {}", noteType.getName());
     validateNoteTypeLimit();
-    NoteTypeEntity entity = repository.save(mapper.toEntity(noteType));
+    NoteTypeEntity entity = repository.save(JpaUtils.initNewEntity(mapper.toEntity(noteType)));
     log.info("createNoteType:: created note type with name: {}", entity.getName());
     return mapper.toDto(entity);
   }
