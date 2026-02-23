@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.0.2</version>
+    <version>4.0.3</version>
     <relativePath /> <!-- lookup parent from repository -->
   </parent>
 
@@ -28,7 +28,7 @@
 
     <folio-spring-support.version>10.0.0-RC1</folio-spring-support.version>
     <mapstruct.version>1.6.3</mapstruct.version>
-    <jsoup.version>1.21.2</jsoup.version>
+    <jsoup.version>1.22.1</jsoup.version>
     <lombok.version>1.18.36</lombok.version>
 
     <!-- Plugin properties-->
@@ -44,7 +44,7 @@
     <lombok.mapstruct-binding.version>0.2.0</lombok.mapstruct-binding.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
     <folio-java-checkstyle.version>1.2.0</folio-java-checkstyle.version>
-    <checkstyle.version>12.1.2</checkstyle.version>
+    <checkstyle.version>13.2.0</checkstyle.version>
   </properties>
 
   <dependencies>
