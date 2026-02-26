@@ -1,0 +1,123 @@
+# Development profile for local development with Spring Boot Docker Compose support
+# Activate this profile with: --spring.profiles.active=dev or SPRING_PROFILES_ACTIVE=dev
+
+spring:
+  application:
+    name: mod-notes
+  profiles:
+    default: "dev"
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_DATABASE:modules}
+    username: ${DB_USERNAME:folio_admin}
+    password: ${DB_PASSWORD:folio_admin}
+    hikari:
+      connectionTimeout: ${DB_CONNECTION_TIMEOUT:30000}
+      idleTimeout: ${DB_IDLE_TIMEOUT:600000}
+      keepaliveTime: ${DB_KEEPALIVE_TIME:0}
+      maxLifetime: ${DB_MAX_LIFETIME:1800000}
+      validationTimeout: ${DB_VALIDATION_TIMEOUT:5000}
+      maximumPoolSize: ${DB_MAXPOOLSIZE:10}
+      minimumIdle: ${DB_MINIMUM_IDLE:10}
+      initializationFailTimeout: ${DB_INITIALIZATION_FAIL_TIMEOUT:30000}
+      leakDetectionThreshold: ${DB_LEAK_DETECTION_THRESHOLD:60000}
+  liquibase:
+    changeLog: classpath:db/changelog/changelog-master.xml
+    enabled: true
+  jpa:
+    open-in-view: true
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  jackson:
+    default-property-inclusion: NON_NULL
+    deserialization:
+      fail-on-unknown-properties: false
+      accept-single-value-as-array: true
+  cache:
+    type: caffeine
+  sql:
+    init:
+      continue-on-error: true
+  docker:
+    compose:
+      enabled: true
+      file: ./docker/infra-docker-compose.yml
+
+folio:
+  okapi-url: ${OKAPI_URL:http://localhost:9130}
+  exchange:
+    enabled: true
+  tenant:
+    validation:
+      enabled: true
+  logging:
+    request:
+      enabled: true
+      level: basic
+    exchange:
+      enabled: true
+      level: basic
+  notes:
+    cache:
+      configs:
+        users-by-id:
+          initialCapacity: 20
+          maximumSize: 100
+          expireAfterWrite: 60
+    types:
+      defaults:
+        name: General note
+        limit: ${NOTES_TYPES_DEFAULTS_LIMIT:25}
+    content:
+      allowed:
+        tags:
+          - p
+          - strong
+          - em
+          - a
+          - u
+          - ol
+          - ul
+          - li
+          - h1
+          - h2
+          - h3
+          - br
+        attributes:
+          all:
+            - class
+          a:
+            - href
+            - rel
+            - target
+    response:
+      limit: ${MAX_RECORDS_COUNT:1000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info,health,env,httptrace,loggers
+      base-path: /admin
+  health:
+    defaults:
+      enabled: false
+    readinessstate:
+      enabled: true
+  endpoint:
+    loggers:
+      access: unrestricted
+
+server:
+  port: 8081
+
+logging:
+  level:
+    org.folio.spring.filter.IncomingRequestLoggingFilter: DEBUG
