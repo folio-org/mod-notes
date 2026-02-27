@@ -4,8 +4,6 @@
 spring:
   application:
     name: mod-notes
-  profiles:
-    default: "dev"
   threads:
     virtual:
       enabled: true
