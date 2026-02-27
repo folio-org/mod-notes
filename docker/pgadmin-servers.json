@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "mod-notes (local)",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "modules",
+      "Username": "folio_admin",
+      "SSLMode": "prefer"
+    }
+  }
+}
+
