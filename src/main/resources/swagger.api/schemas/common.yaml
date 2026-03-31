@@ -11,28 +11,66 @@ metadata:
       type: string
       format: date-time
       description: Date and time when the record was created
+      x-fqm-value-getter: to_char(${source}.created_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+      x-fqm-visibility: "all"
+      x-fqm-visible-by-default: true
+      x-fqm-essential: true
     createdByUserId:
       $ref: '#/uuid'
       description: ID of the user who created the record
+      x-fqm-value-getter: ${source}.created_by
+      x-fqm-visibility: "all"
+      x-fqm-visible-by-default: false
+      x-fqm-essential: true
+      x-fqm-joins-to-raw:
+        - targetId: bb058933-cd06-4539-bd3a-6f248ff98ee2
+          targetField: id
+          direction: left
+          type: equality-cast-uuid
+        - targetId: f2615ea6-450b-425d-804d-6a495afd9308
+          targetField: id
+          direction: left
+          type: equality-cast-uuid
     createdByUsername:
       type: string
       description: Username of the user who created the record (when available)
+      x-fqm-ignore: true
     createdBy:
       $ref: '#/userInfo'
       description: Additional information of the user who created the record (when available)
+      x-fqm-ignore: true
     updatedDate:
       type: string
       format: date-time
       description: Date and time when the record was last updated
+      x-fqm-value-getter: to_char(${source}.updated_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+      x-fqm-visibility: "all"
+      x-fqm-visible-by-default: false
+      x-fqm-essential: true
     updatedByUserId:
       $ref: '#/uuid'
       description: ID of the user who last updated the record
+      x-fqm-value-getter: ${source}.updated_by
+      x-fqm-visibility: "all"
+      x-fqm-visible-by-default: false
+      x-fqm-essential: true
+      x-fqm-joins-to-raw:
+        - targetId: bb058933-cd06-4539-bd3a-6f248ff98ee2
+          targetField: id
+          direction: left
+          type: equality-cast-uuid
+        - targetId: f2615ea6-450b-425d-804d-6a495afd9308
+          targetField: id
+          direction: left
+          type: equality-cast-uuid
     updatedByUsername:
       type: string
       description: Username of the user who updated the record (when available)
+      x-fqm-ignore: true
     updatedBy:
       $ref: '#/userInfo'
       description: Additional information of the user who updated the record (when available)
+      x-fqm-ignore: true
   required:
     - createdDate
 

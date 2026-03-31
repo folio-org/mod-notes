@@ -1,0 +1,35 @@
+# Unlike the other wrappers, note_link has no runtime schema to point at, so this
+# file defines the FQM-only association shape directly.
+type: object
+title: Note-link association
+description: Association between a note and a link record
+properties:
+  noteId:
+    $ref: '../../swagger.api/schemas/common.yaml#/uuid'
+    description: UUID of the associated note
+    x-fqm-value-getter: ${source}.note_id
+    x-fqm-is-id-column: true # There are 2 ID columns here, matching the table's primary key.
+    x-fqm-visibility: "hidden"
+    x-fqm-essential: true
+    x-fqm-visible-by-default: false
+    x-fqm-joins-to:
+      - targetModule: mod-notes
+        targetEntity: note
+        targetField: id
+        type: equality-cast-uuid
+  linkId:
+    $ref: '../../swagger.api/schemas/common.yaml#/uuid'
+    description: UUID of the associated link
+    x-fqm-value-getter: ${source}.link_id
+    x-fqm-is-id-column: true # There are 2 ID columns here, matching the table's primary key.
+    x-fqm-visibility: "hidden"
+    x-fqm-essential: true
+    x-fqm-visible-by-default: false
+    x-fqm-joins-to:
+      - targetModule: mod-notes
+        targetEntity: link
+        targetField: link_id
+        type: equality-cast-uuid
+required:
+  - noteId
+  - linkId

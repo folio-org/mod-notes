@@ -6,14 +6,30 @@ noteType:
     id:
       $ref: 'common.yaml#/uuid'
       description: A UUID identifying this note type
+      x-fqm-value-getter: ${source}.id
+      x-fqm-visibility: "hidden"
+      x-fqm-essential: true
     name:
       type: string
       description: The unique name of this type
       maxLength: 255
+      x-fqm-value-getter: ${source}.name
+      x-fqm-visibility: "all"
+      x-fqm-essential: true
+      x-fqm-id-column-name: id
+      x-fqm-source:
+        entityTypeId: 5cba8da3-3203-59a4-ad79-f91401850d9f
+        columnName: name
+      x-fqm-value-source-api:
+        path: note-types
+        valueJsonPath: $.noteTypes.*.id
+        labelJsonPath: $.noteTypes.*.name
+      x-fqm-visible-by-default: true
     usage:
       type: object
       readOnly: true
       description: Type usage statistics
+      x-fqm-ignore: true
       properties:
         isAssigned:
           type: boolean

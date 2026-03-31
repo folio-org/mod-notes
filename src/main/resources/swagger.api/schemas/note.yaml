@@ -5,27 +5,58 @@ note:
     id:
       $ref: 'common.yaml#/uuid'
       description: Unique generated identifier for the note
+      x-fqm-value-getter: ${source}.id
+      x-fqm-filter-value-getter: ${source}.id
+      x-fqm-visibility: "all"
+      x-fqm-visible-by-default: false
+      x-fqm-essential: true
     typeId:
       $ref: 'common.yaml#/uuid'
       description: Type id of note
+      x-fqm-value-getter: ${source}.type_id
+      x-fqm-filter-value-getter: ${source}.type_id
+      x-fqm-visibility: "hidden"
+      x-fqm-essential: true
+      x-fqm-joins-to:
+        - targetModule: mod-notes
+          targetEntity: note_type
+          targetField: id
+          type: equality-cast-uuid
     type:
       type: string
       description: Type of note (configured in settings)
     title:
       type: string
       description: Note title
+      x-fqm-value-getter: ${source}.title
+      x-fqm-visibility: "all"
+      x-fqm-visible-by-default: true
+      x-fqm-essential: true
     domain:
       type: string
       description: Domain associated with this note
+      x-fqm-value-getter: ${source}.domain
+      x-fqm-visibility: "all"
+      x-fqm-visible-by-default: true
+      x-fqm-essential: true
     content:
       type: string
       description: Content of the note
+      x-fqm-value-getter: ${source}.content
+      x-fqm-visibility: "all"
+      x-fqm-essential: true
     popUpOnCheckOut:
       type: boolean
       description: Flag that specify need of pop-up on check-out app
+      x-fqm-value-getter: ${source}.pop_up_on_check_out
+      x-fqm-visibility: "all"
+      x-fqm-essential: true
     popUpOnUser:
       type: boolean
       description: Flag that specify need of pop-up on users app
+      x-fqm-value-getter: ${source}.pop_up_on_user
+      x-fqm-visibility: "all"
+      x-fqm-essential: true
     links:
       type: array
       description: Collection of links to associated objects

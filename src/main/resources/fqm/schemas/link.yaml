@@ -1,0 +1,27 @@
+# This wrapper defines the FQM-only link shape directly so the runtime schema can
+# stay focused on the API object exposed by mod-notes.
+type: object
+title: Note link
+description: Link record for FQM
+properties:
+  linkId:
+    $ref: '../../swagger.api/schemas/common.yaml#/uuid'
+    description: UUID primary key of the link row; used by note_link.link_id
+    x-fqm-value-getter: ${source}.id
+    x-fqm-is-id-column: true
+    x-fqm-visibility: "hidden"
+    x-fqm-visible-by-default: true
+    x-fqm-essential: true
+    x-fqm-joins-to:
+      - targetModule: mod-notes
+        targetEntity: link
+        targetField: link_id
+        type: equality-cast-uuid
+  objectId:
+    $ref: '../../swagger.api/schemas/link.yaml#/link/properties/id'
+  type:
+    $ref: '../../swagger.api/schemas/link.yaml#/link/properties/type'
+required:
+  - linkId
+  - objectId
+  - type

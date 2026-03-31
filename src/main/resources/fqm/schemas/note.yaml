@@ -1,0 +1,3 @@
+# fqm-tools only accepts a file path in `schema = ...`; it cannot target a nested
+# schema fragment there, so this wrapper bridges to the real runtime schema.
+$ref: '../../swagger.api/schemas/note.yaml#/note'
