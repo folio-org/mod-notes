@@ -9,6 +9,7 @@
 ### Features
 * Use static value for note types limit ([MODNOTES-274](https://folio-org.atlassian.net/browse/MODNOTES-274))
 * Update an error message for note types limit reached ([MODNOTES-277](https://folio-org.atlassian.net/browse/MODNOTES-277))
+* Add support for FQM entity type generation based on the mod-notes data schema ([MODNOTES-294](https://folio-org.atlassian.net/browse/MODNOTES-294))
 
 ### Bug fixes
 * Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))

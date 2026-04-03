@@ -1,0 +1,69 @@
+[metadata]
+team = "spitfire"
+domain = "other"
+module = "mod-notes"
+
+[[sources]]
+name = "note"
+table = "note"
+
+[[sources]]
+name = "link"
+table = "link"
+
+[[sources]]
+name = "note_link"
+table = "note_link"
+
+[[sources]]
+name = "note_type"
+table = "type"
+
+[[entityTypes]]
+name = "note"
+source = "note"
+schema = "src/main/resources/fqm/schemas/note.yaml"
+permissions = ["notes.collection.get"]
+sort = ["id", "ASC"]
+includeJsonbField = false
+fieldExclusions = ["type", "links"]
+
+[[entityTypes]]
+name = "link"
+source = "link"
+schema = "src/main/resources/fqm/schemas/link.yaml"
+permissions = ["note.links.collection.get"]
+sort = ["id", "ASC"]
+includeJsonbField = false
+
+[[entityTypes]]
+name = "note_link"
+source = "note_link"
+schema = "src/main/resources/fqm/schemas/noteLink.yaml"
+permissions = ["note.links.collection.get"]
+sort = ["note_id", "ASC"]
+includeJsonbField = false
+
+[[entityTypes]]
+name = "note_type"
+source = "note_type"
+schema = "src/main/resources/fqm/schemas/noteType.yaml"
+permissions = ["note.types.collection.get"]
+sort = ["id", "ASC"]
+includeJsonbField = false
+
+[entityTypes.fieldOverrides.metadata_created_date]
+x-fqm-visible-by-default = false
+x-fqm-essential = false
+
+[entityTypes.fieldOverrides.metadata_created_by_user_id]
+x-fqm-visible-by-default = false
+x-fqm-essential = false
+
+[entityTypes.fieldOverrides.metadata_updated_date]
+x-fqm-visible-by-default = false
+x-fqm-essential = false
+
+[entityTypes.fieldOverrides.metadata_updated_by_user_id]
+x-fqm-visible-by-default = false
+x-fqm-essential = false

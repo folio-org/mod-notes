@@ -6,9 +6,25 @@ link:
     id:
       type: string
       description: Id of object linked to note
+      x-fqm-value-getter: ${source}.object_id
+      x-fqm-is-id-column: false # Despite the name, this is not the unique ID for the link record.
+      x-fqm-visibility: "hidden"
+      x-fqm-essential: true
+      x-fqm-joins-to-raw:
+        - targetId: bb058933-cd06-4539-bd3a-6f248ff98ee2
+          targetField: id
+          direction: left
+          type: equality-cast-uuid
+        - targetId: f2615ea6-450b-425d-804d-6a495afd9308
+          targetField: id
+          direction: left
+          type: equality-cast-uuid
     type:
       type: string
       description: Type of object linked to note
+      x-fqm-value-getter: ${source}.object_type
+      x-fqm-visibility: "hidden"
+      x-fqm-essential: true
   required:
     - id
     - type
