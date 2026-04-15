@@ -1,27 +1,51 @@
-## v8.0.0 YYYY-mm-DD
+## v8.1.0 YYYY-mm-DD
 ### Breaking changes
-* Migrate to Spring Boot v4.x ([MODNOTES-282](https://folio-org.atlassian.net/browse/MODNOTES-282)), ([MODNOTES-293](https://folio-org.atlassian.net/browse/MODNOTES-293))
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
 
 ### New APIs versions
 * Provides `API_NAME vX.Y`
 * Requires `API_NAME vX.Y`
 
 ### Features
-* Use static value for note types limit ([MODNOTES-274](https://folio-org.atlassian.net/browse/MODNOTES-274))
-* Update an error message for note types limit reached ([MODNOTES-277](https://folio-org.atlassian.net/browse/MODNOTES-277))
-* Add support for FQM entity type generation based on the mod-notes data schema ([MODNOTES-294](https://folio-org.atlassian.net/browse/MODNOTES-294))
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
 
 ### Bug fixes
 * Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### Tech Dept
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### Dependencies
+* Bump `LIB_NAME` from `OLD_VERSION` to `NEW_VERSION`
+* Add `LIB_NAME VERSION`
+* Remove `LIB_NAME`
+
+## v8.0.0 2026-04-15
+### Breaking changes
+* Migrate to Spring Boot v4.x ([MODNOTES-282](https://folio-org.atlassian.net/browse/MODNOTES-282)), ([MODNOTES-293](https://folio-org.atlassian.net/browse/MODNOTES-293))
+
+### New APIs versions
+* Remove `configuration v2.0` from required interfaces
+
+### Features
+* Use static value for note types limit ([MODNOTES-274](https://folio-org.atlassian.net/browse/MODNOTES-274))
+* Update an error message for note types limit reached ([MODNOTES-277](https://folio-org.atlassian.net/browse/MODNOTES-277))
+* Add support for FQM entity type generation based on the mod-notes data schema ([MODNOTES-294](https://folio-org.atlassian.net/browse/MODNOTES-294))
 
 ### Tech Dept
 * Refactor code to comply with Checkstyle method length limit (max 25 lines) ([MODNOTES-283](https://folio-org.atlassian.net/browse/MODNOTES-283))
 * Use GitHub workflow for CI/CD ([MODNOTES-291](https://folio-org.atlassian.net/browse/MODNOTES-291))
 
 ### Dependencies
-* Bump `LIB_NAME` from `OLD_VERSION` to `NEW_VERSION`
-* Add `LIB_NAME VERSION`
-* Remove `LIB_NAME`
+* Bump `spring-boot` from `3.4.3` to `4.0.5`
+* Bump `folio-spring-support` from `9.0.0` to `10.0.0`
+* Bump `jsoup` from `1.18.3` to `1.22.1`
+* Bump `lombok` from `1.18.36` to `1.18.44`
+* Add `spring-boot-docker-compose`
+* Add `spring-boot-devtools`
+* Remove `jackson-module-jaxb-annotations`
+* Remove `jackson-datatype-jdk8`
+* Replace `hibernate-validator` with `spring-boot-starter-validation`
 
 ---
 
