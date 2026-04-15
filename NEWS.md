@@ -1,3 +1,25 @@
+## v8.1.0 YYYY-mm-DD
+### Breaking changes
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### New APIs versions
+* Provides `API_NAME vX.Y`
+* Requires `API_NAME vX.Y`
+
+### Features
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### Bug fixes
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### Tech Dept
+* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+
+### Dependencies
+* Bump `LIB_NAME` from `OLD_VERSION` to `NEW_VERSION`
+* Add `LIB_NAME VERSION`
+* Remove `LIB_NAME`
+
 ## v8.0.0 2026-04-15
 ### Breaking changes
 * Migrate to Spring Boot v4.x ([MODNOTES-282](https://folio-org.atlassian.net/browse/MODNOTES-282)), ([MODNOTES-293](https://folio-org.atlassian.net/browse/MODNOTES-293))
@@ -9,9 +31,6 @@
 * Use static value for note types limit ([MODNOTES-274](https://folio-org.atlassian.net/browse/MODNOTES-274))
 * Update an error message for note types limit reached ([MODNOTES-277](https://folio-org.atlassian.net/browse/MODNOTES-277))
 * Add support for FQM entity type generation based on the mod-notes data schema ([MODNOTES-294](https://folio-org.atlassian.net/browse/MODNOTES-294))
-
-### Bug fixes
-* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
 
 ### Tech Dept
 * Refactor code to comply with Checkstyle method length limit (max 25 lines) ([MODNOTES-283](https://folio-org.atlassian.net/browse/MODNOTES-283))
