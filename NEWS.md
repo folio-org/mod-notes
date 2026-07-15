@@ -7,6 +7,7 @@
 * Requires `API_NAME vX.Y`
 
 ### Features
+* Add third-party license notes to README ([MODNOTES-297](https://folio-org.atlassian.net/browse/MODNOTES-297))
 * Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
 
 ### Bug fixes
