@@ -39,7 +39,7 @@ quite do yet.
 
 ### Compiling
 
-Compile with 
+Compile with
 ```shell
 mvn clean install
 ```
@@ -70,6 +70,10 @@ requires and provides, the permissions, and the additional module metadata.
 ### Environment variables
 
 Use `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` to configure the PostgreSQL database.
+
+Use `KAFKA_HOST` (default `localhost`) and `KAFKA_PORT` (default `9092`) to configure the Kafka broker the module
+publishes domain events to. `ENV` (default `folio`) is the environment prefix used when building the tenant-scoped topic
+name `{ENV}.{tenant}.notes.note`.
 
 `NOTES_TYPES_DEFAULTS_LIMIT` defaults to 25.
 
