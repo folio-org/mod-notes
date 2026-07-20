@@ -33,6 +33,7 @@ import org.folio.notes.domain.repository.LinkRepository;
 import org.folio.notes.domain.repository.NoteRepository;
 import org.folio.notes.domain.repository.NoteTypesRepository;
 import org.folio.notes.exception.NoteNotFoundException;
+import org.folio.notes.service.DomainEventPublisherService;
 import org.folio.notes.service.NotesService;
 import org.folio.notes.util.HtmlSanitizer;
 import org.folio.spring.data.OffsetRequest;
@@ -76,6 +77,7 @@ public class NotesServiceImpl implements NotesService {
   private final NotesMapper notesMapper;
   private final NoteCollectionMapper noteCollectionMapper;
   private final HtmlSanitizer sanitizer;
+  private final DomainEventPublisherService domainEventPublisherService;
   @Value("${folio.notes.response.limit}")
   private Integer responseLimit;
 
@@ -131,7 +133,9 @@ public class NotesServiceImpl implements NotesService {
     NoteEntity entity = saveNote(note, dto -> initNewEntity(notesMapper.toEntity(dto)));
     log.info("createNote:: created note by title: {}, domain: {}, type: {}",
       note.getTitle(), note.getDomain(), note.getType());
-    return notesMapper.toDto(entity);
+    Note newSnapshot = notesMapper.toDto(entity);
+    domainEventPublisherService.publishNoteCreatedEvent(newSnapshot);
+    return newSnapshot;
   }
 
   @Transactional
