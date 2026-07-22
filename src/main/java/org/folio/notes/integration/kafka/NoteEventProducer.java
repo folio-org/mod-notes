@@ -72,5 +72,4 @@ public class NoteEventProducer {
   private Header header(String key, String value) {
     return new RecordHeader(key, value == null ? null : value.getBytes(StandardCharsets.UTF_8));
   }
-
 }
