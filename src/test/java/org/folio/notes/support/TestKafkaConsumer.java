@@ -31,8 +31,8 @@ import org.springframework.kafka.listener.MessageListener;
  * buffers every received record. Integration tests use it to assert on the JSON payload of published domain events.
  *
  * <p>The consumer owns its listener container and the record buffer; callers only need to
- * {@link #subscribe(String, KafkaProperties)} it, {@link #poll(Duration)} the buffered records, and {@link #close()} it when
- * done (it is {@link Closeable}, so it also works with try-with-resources or an {@code @AfterEach} hook).</p>
+ * {@link #subscribe(String, KafkaProperties)} it, {@link #poll(Duration)} the buffered records, and {@link #close()}
+ * it when done (it is {@link Closeable}, so it also works with try-with-resources or an {@code @AfterEach} hook).</p>
  */
 public final class TestKafkaConsumer implements Closeable {
 
