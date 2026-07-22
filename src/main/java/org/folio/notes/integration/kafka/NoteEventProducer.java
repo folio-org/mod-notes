@@ -3,6 +3,7 @@ package org.folio.notes.integration.kafka;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -30,7 +31,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class NoteEventProducer {
 
-  private static final String EVENT_TYPE_HEADER = "domain-event-type";
+  private static final String EVENT_TYPE_HEADER = "eventType";
+  private static final String EVENT_DOMAIN_HEADER = "domain";
 
   private final KafkaTemplate<UUID, DomainEvent<Note>> kafkaTemplate;
   private final FolioExecutionContext context;
@@ -65,11 +67,19 @@ public class NoteEventProducer {
   private List<Header> buildHeaders(DomainEvent<Note> event) {
     var headers = new ArrayList<Header>();
     headers.add(header(EVENT_TYPE_HEADER, event.getType().name()));
+    headers.add(header(EVENT_DOMAIN_HEADER, extractDomain(event)));
     context.getAllHeaders().forEach((key, value) -> headers.add(header(key, value.iterator().next())));
     return headers;
   }
 
   private Header header(String key, String value) {
     return new RecordHeader(key, value == null ? null : value.getBytes(StandardCharsets.UTF_8));
+  }
+
+  private String extractDomain(DomainEvent<Note> event) {
+    return Optional.ofNullable(event.getNewEntity())
+      .or(() -> Optional.ofNullable(event.getOldEntity()))
+      .map(Note::getDomain)
+      .orElse(null);
   }
 }
