@@ -50,7 +50,9 @@ folio:
       limit: ${MAX_RECORDS_COUNT:1000}
   kafka:
     topics:
-      note: notes.note
+      - name: notes.note
+        numPartitions: ${KAFKA_NOTE_TOPIC_PARTITIONS:1}
+        replicationFactor: ${KAFKA_NOTE_TOPIC_REPLICATION_FACTOR:}
 
 # Spring properties
 spring:

@@ -14,6 +14,8 @@ import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -44,6 +46,7 @@ import org.folio.notes.domain.entity.NoteEntity;
 import org.folio.notes.domain.entity.NoteTypeEntity;
 import org.folio.notes.exception.NoteNotFoundException;
 import org.folio.notes.support.TestApiBase;
+import org.folio.notes.support.TestKafkaConsumer;
 import org.folio.spring.cql.CqlQueryValidationException;
 import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
@@ -55,13 +58,16 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import tools.jackson.databind.JsonNode;
 
 @TestPropertySource(properties = {"folio.notes.types.defaults.limit=5"})
 class NotesControllerIT extends TestApiBase {
@@ -88,8 +94,15 @@ class NotesControllerIT extends TestApiBase {
   private static final UUID[] TYPE_IDS = new UUID[] {randomUUID(), randomUUID()};
   private static final int DEFAULT_LINK_AMOUNT = 1;
 
+  private static final String NOTE_EVENT_TOPIC = "folio.test.notes.note";
+  private static final String ORDER_LINE_TYPE = "order-line";
+  private static final UUID EVENT_NOTE_TYPE_ID = UUID.fromString("2af21797-d25b-46dc-8427-1759d1db2057");
+  private static final String EVENT_NOTE_TYPE_NAME = "General note";
+
   @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
+  @Autowired
+  private KafkaProperties kafkaProperties;
 
   @BeforeEach
   void setUp() {
@@ -1063,6 +1076,64 @@ class NotesControllerIT extends TestApiBase {
     noteEntity.setType(noteType);
     databaseHelper.saveNote(noteEntity, TENANT);
     return noteEntity;
+  }
+
+  // Tests for domain events
+  @Test
+  @DisplayName("create publishes a CREATE event with the full snapshot and no 'old' field")
+  void createNote_publishesCreateEvent() throws Exception {
+    saveEventNoteType();
+    var link = new Link().id(UUID.randomUUID().toString()).type(ORDER_LINE_TYPE);
+    var note = new Note()
+      .title("Kafka title")
+      .content("Kafka details")
+      .domain("orders")
+      .typeId(EVENT_NOTE_TYPE_ID)
+      .links(List.of(link));
+
+    try (var consumer = TestKafkaConsumer.subscribe(NOTE_EVENT_TOPIC, kafkaProperties)) {
+      var response = mockMvc.perform(postNote(note))
+        .andExpect(status().isCreated())
+        .andReturn().getResponse().getContentAsString();
+      var newNoteId = OBJECT_MAPPER.readTree(response).get("id").asString();
+
+      var event = consumer.poll(newNoteId);
+      assertNotNull(event);
+
+      var envelope = OBJECT_MAPPER.readTree(event.value());
+      assertEventEnvelope(envelope, event.value());
+      assertEventPayload(envelope.get("new"), newNoteId, link);
+    }
+  }
+
+  private void saveEventNoteType() {
+    var noteType = new NoteTypeEntity();
+    noteType.setId(EVENT_NOTE_TYPE_ID);
+    noteType.setName(EVENT_NOTE_TYPE_NAME);
+    noteType.setCreatedBy(USER_ID);
+    databaseHelper.saveNoteType(noteType, TENANT);
+  }
+
+  private void assertEventEnvelope(JsonNode envelope, String rawJson) {
+    assertNotNull(envelope.get("id"), "eventId (id) must be present");
+    assertEquals("CREATE", envelope.get("type").asString());
+    assertEquals(TENANT, envelope.get("tenant").asString());
+    assertNull(envelope.get("old"), "CREATE event must not carry an 'old' field");
+    assertFalse(rawJson.contains("\"old\""), "JSON must not contain an 'old' field");
+  }
+
+  private void assertEventPayload(JsonNode newNode, String createdId, Link link) {
+    assertNotNull(newNode);
+    assertEquals(createdId, newNode.get("id").asString());
+    assertEquals("Kafka title", newNode.get("title").asString());
+    assertEquals("Kafka details", newNode.get("content").asString());
+    assertEquals(EVENT_NOTE_TYPE_ID.toString(), newNode.get("typeId").asString());
+    assertEquals(USER_ID.toString(), newNode.get("metadata").get("createdByUserId").asString());
+
+    var links = newNode.get("links");
+    assertEquals(1, links.size());
+    assertEquals(ORDER_LINE_TYPE, links.get(0).get("type").asString());
+    assertEquals(link.getId(), links.get(0).get("id").asString());
   }
 
   private Note generateNote() throws Exception {

@@ -3,17 +3,17 @@ package org.folio.notes.support;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.Closeable;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -31,7 +31,7 @@ import org.springframework.kafka.listener.MessageListener;
  * buffers every received record. Integration tests use it to assert on the JSON payload of published domain events.
  *
  * <p>The consumer owns its listener container and the record buffer; callers only need to
- * {@link #subscribe(String, KafkaProperties)} it, {@link #poll()} the buffered records, and {@link #close()} it when
+ * {@link #subscribe(String, KafkaProperties)} it, {@link #poll(Duration)} the buffered records, and {@link #close()} it when
  * done (it is {@link Closeable}, so it also works with try-with-resources or an {@code @AfterEach} hook).</p>
  */
 public final class TestKafkaConsumer implements Closeable {
@@ -96,8 +96,10 @@ public final class TestKafkaConsumer implements Closeable {
    *
    * @return the received record
    */
-  public ConsumerRecord<String, String> poll() {
-    return poll(DEFAULT_POLL_TIMEOUT);
+  public ConsumerRecord<String, String> poll(String key) {
+    return poll(DEFAULT_POLL_TIMEOUT).stream()
+      .filter(e -> Objects.equals(e.key(), key)).findFirst()
+      .orElse(null);
   }
 
   /**
@@ -106,31 +108,15 @@ public final class TestKafkaConsumer implements Closeable {
    * @param timeout the maximum time to wait
    * @return the received record
    */
-  public ConsumerRecord<String, String> poll(Duration timeout) {
-    var holder = new AtomicReference<ConsumerRecord<String, String>>();
+  public List<ConsumerRecord<String, String>> poll(Duration timeout) {
+    var holder = new AtomicReference<List<ConsumerRecord<String, String>>>();
     await().pollInterval(POLL_INTERVAL).atMost(timeout)
       .untilAsserted(() -> {
-        var record = records.poll();
-        assertNotNull(record, "Expected a record on the topic");
-        holder.set(record);
+        List<ConsumerRecord<String, String>> events = new ArrayList<>();
+        records.drainTo(events);
+        holder.set(events);
       });
     return holder.get();
-  }
-
-  /**
-   * Returns the next record if one arrives within {@code timeout}, or {@code null} otherwise (no assertion). Useful for
-   * verifying that no event was published.
-   *
-   * @param timeout the maximum time to wait
-   * @return the received record, or {@code null} if none arrived
-   */
-  public ConsumerRecord<String, String> pollNullable(Duration timeout) {
-    try {
-      return records.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted while polling for records", e);
-    }
   }
 
   @Override

@@ -133,9 +133,9 @@ public class NotesServiceImpl implements NotesService {
     NoteEntity entity = saveNote(note, dto -> initNewEntity(notesMapper.toEntity(dto)));
     log.info("createNote:: created note by title: {}, domain: {}, type: {}",
       note.getTitle(), note.getDomain(), note.getType());
-    Note newSnapshot = notesMapper.toDto(entity);
-    domainEventPublisherService.publishNoteCreatedEvent(newSnapshot);
-    return newSnapshot;
+    Note createdNote = notesMapper.toDto(entity);
+    domainEventPublisherService.publishNoteCreatedEvent(createdNote);
+    return createdNote;
   }
 
   @Transactional

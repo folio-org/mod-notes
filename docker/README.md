@@ -39,8 +39,6 @@ Configuration is managed via the `.env` file in this directory.
 | `KAFKA_PORT`              | Broker port (in-cluster)      | `9093`                 |
 | `KAFKA_EXTERNAL_PORT`     | Broker port from host/IDE     | `9092`                 |
 | `KAFKA_UI_PORT`           | Kafka UI web port             | `8090`                 |
-| `KAFKA_INIT_TENANTS`      | Tenants to pre-create topics  | `diku,test`            |
-| `KAFKA_TOPIC_PARTITIONS`  | Partitions per topic          | `1`                    |
 
 ## 🚀 Services
 
@@ -66,7 +64,7 @@ Configuration is managed via the `.env` file in this directory.
 - **Image**: `apache/kafka-native` (KRaft mode, no Zookeeper)
 - **Access (host/IDE)**: `localhost:9092` (configurable via `KAFKA_EXTERNAL_PORT`)
 - **Access (in-cluster)**: `kafka:9093`
-- **Topics**: `{ENV}.{tenant}.notes.note` — e.g. `folio.diku.notes.note`. Pre-created for the tenants in `KAFKA_INIT_TENANTS`; the broker also auto-creates the topic on first publish.
+- **Topics**: `{ENV}.{tenant}.notes.note` — e.g. `folio.diku.notes.note`. The module creates the topic when a tenant is enabled (via the `/_/tenant` API); the broker also auto-creates it on first publish.
 
 ### Kafka UI
 - **Purpose**: Web UI to browse topics and inspect published event messages

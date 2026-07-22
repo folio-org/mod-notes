@@ -78,21 +78,6 @@ services:
     depends_on:
       - kafka
 
-  kafka-topic-init:
-    image: apache/kafka:latest
-    depends_on:
-      - kafka
-    environment:
-      KAFKA_HOST: kafka
-      KAFKA_PORT: 9093
-      ENV: ${ENV}
-      TENANTS: ${KAFKA_INIT_TENANTS}
-      KAFKA_TOPIC_PARTITIONS: ${KAFKA_TOPIC_PARTITIONS}
-    volumes:
-      - ./kafka-init.sh:/usr/bin/kafka-init.sh
-    entrypoint: ["bash", "/usr/bin/kafka-init.sh"]
-    networks:
-      - mod-notes-local
 
 networks:
   mod-notes-local:
