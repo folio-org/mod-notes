@@ -313,6 +313,49 @@
       {
         "name": "NOTES_TYPES_DEFAULTS_LIMIT",
         "value": "25"
+      },
+      {
+        "name": "KAFKA_HOST",
+        "value": "kafka"
+      },
+      {
+        "name": "KAFKA_PORT",
+        "value": "9092"
+      },
+      {
+        "name": "KAFKA_SECURITY_PROTOCOL",
+        "value": "PLAINTEXT",
+        "description": "Kafka security protocol used to communicate with brokers (SSL or PLAINTEXT)"
+      },
+      {
+        "name": "KAFKA_SSL_KEYSTORE_LOCATION",
+        "description": "The location of the Kafka key store file. This is optional for client and can be used for two-way authentication for client."
+      },
+      {
+        "name": "KAFKA_SSL_KEYSTORE_PASSWORD",
+        "description": "The store password for the Kafka key store file. This is optional for client and only needed if 'ssl.keystore.location' is configured."
+      },
+      {
+        "name": "KAFKA_SSL_TRUSTSTORE_LOCATION",
+        "description": "The location of the Kafka trust store file."
+      },
+      {
+        "name": "KAFKA_SSL_TRUSTSTORE_PASSWORD",
+        "description": "The password for the Kafka trust store file. If a password is not set, trust store file configured will still be used, but integrity checking is disabled."
+      },
+      {
+        "name": "KAFKA_NOTE_TOPIC_PARTITIONS",
+        "value": "1",
+        "description": "Number of partitions for the `notes.note` topic."
+      },
+      {
+        "name": "KAFKA_NOTE_TOPIC_REPLICATION_FACTOR",
+        "description": "Replication factor for the `notes.note` topic. When not set, the broker default is used."
+      },
+      {
+        "name": "ENV",
+        "value": "folio",
+        "description": "The logical name of the deployment, must be unique across all environments using the same shared Kafka/Elasticsearch clusters, `a-z (any case)`, `0-9`, `-`, `_` symbols only allowed"
       }
     ]
   }
