@@ -15,7 +15,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -44,6 +43,8 @@ import org.folio.notes.domain.dto.NoteType;
 import org.folio.notes.domain.dto.User;
 import org.folio.notes.domain.entity.NoteEntity;
 import org.folio.notes.domain.entity.NoteTypeEntity;
+import org.folio.notes.domain.event.DomainEvent;
+import org.folio.notes.domain.event.DomainEventType;
 import org.folio.notes.exception.NoteNotFoundException;
 import org.folio.notes.support.TestApiBase;
 import org.folio.notes.support.TestKafkaConsumer;
@@ -67,7 +68,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import tools.jackson.databind.JsonNode;
+import tools.jackson.core.type.TypeReference;
 
 @TestPropertySource(properties = {"folio.notes.types.defaults.limit=5"})
 class NotesControllerIT extends TestApiBase {
@@ -98,6 +99,7 @@ class NotesControllerIT extends TestApiBase {
   private static final String ORDER_LINE_TYPE = "order-line";
   private static final UUID EVENT_NOTE_TYPE_ID = UUID.fromString("2af21797-d25b-46dc-8427-1759d1db2057");
   private static final String EVENT_NOTE_TYPE_NAME = "General note";
+  private static final TypeReference<DomainEvent<Note>> NOTE_EVENT_CLASS = new TypeReference<>() {};
 
   @Value("${folio.notes.types.defaults.limit}")
   private String defaultNoteTypeLimit;
@@ -1085,25 +1087,131 @@ class NotesControllerIT extends TestApiBase {
     saveEventNoteType();
     var link = new Link().id(UUID.randomUUID().toString()).type(ORDER_LINE_TYPE);
     var note = new Note()
-      .title("Kafka title")
-      .content("Kafka details")
+      .title("Kafka title").content("Kafka details").domain("orders")
+      .typeId(EVENT_NOTE_TYPE_ID).links(List.of(link));
+
+    var response = mockMvc.perform(postNote(note))
+      .andExpect(status().isCreated())
+      .andReturn().getResponse().getContentAsString();
+    var newNoteId = OBJECT_MAPPER.readTree(response).get("id").asString();
+
+    var event = pollNoteEvent(newNoteId, DomainEventType.CREATE);
+    assertNotNull(event);
+    var eventNote = event.getNewEntity();
+    assertNotNull(eventNote);
+    assertEquals("Kafka title", eventNote.getTitle());
+    assertEquals("Kafka details", eventNote.getContent());
+    assertEquals(EVENT_NOTE_TYPE_ID.toString(), eventNote.getTypeId().toString());
+    assertEquals(USER_ID.toString(), eventNote.getMetadata().getCreatedByUserId().toString());
+    var links = eventNote.getLinks();
+    assertEquals(1, links.size());
+    assertEquals(ORDER_LINE_TYPE, links.getFirst().getType());
+    assertEquals(link.getId(), links.getFirst().getId());
+  }
+
+  @Test
+  @DisplayName("update publishes an UPDATE event carrying both old and new snapshots")
+  void updateNote_publishesUpdateEventWithOldAndNew() throws Exception {
+    saveEventNoteType();
+    var link = new Link().id(UUID.randomUUID().toString()).type(ORDER_LINE_TYPE);
+    var created = createNote(new Note()
+      .title("A")
+      .content("Original")
       .domain("orders")
       .typeId(EVENT_NOTE_TYPE_ID)
-      .links(List.of(link));
+      .links(List.of(link)));
 
-    try (var consumer = TestKafkaConsumer.subscribe(NOTE_EVENT_TOPIC, kafkaProperties)) {
-      var response = mockMvc.perform(postNote(note))
-        .andExpect(status().isCreated())
-        .andReturn().getResponse().getContentAsString();
-      var newNoteId = OBJECT_MAPPER.readTree(response).get("id").asString();
+    created.title("B").content("Updated");
+    mockMvc.perform(put(NOTE_URL + "/" + created.getId()).headers(okapiHeaders()).content(asJsonString(created)))
+      .andExpect(status().isNoContent());
 
-      var event = consumer.poll(newNoteId);
-      assertNotNull(event);
+    var event = pollNoteEvent(created.getId().toString(), DomainEventType.UPDATE);
+    var oldNote = event.getOldEntity();
+    var newNote = event.getNewEntity();
+    assertNotNull(oldNote, "UPDATE event must carry an 'old' snapshot");
+    assertNotNull(newNote, "UPDATE event must carry a 'new' snapshot");
+    assertEquals(created.getId().toString(), oldNote.getId().toString());
+    assertEquals(created.getId().toString(), newNote.getId().toString());
+    assertEquals("A", oldNote.getTitle());
+    assertEquals("Original", oldNote.getContent());
+    assertEquals("B", newNote.getTitle());
+    assertEquals("Updated", newNote.getContent());
+  }
 
-      var envelope = OBJECT_MAPPER.readTree(event.value());
-      assertEventEnvelope(envelope, event.value());
-      assertEventPayload(envelope.get("new"), newNoteId, link);
-    }
+  @Test
+  @DisplayName("update preserves creation metadata across old and new snapshots")
+  void updateNote_preservesCreationMetadata() throws Exception {
+    saveEventNoteType();
+    var link = new Link().id(UUID.randomUUID().toString()).type(ORDER_LINE_TYPE);
+    var created = createNote(new Note()
+      .title("A")
+      .content("Original")
+      .domain("orders")
+      .typeId(EVENT_NOTE_TYPE_ID)
+      .links(List.of(link)));
+
+    created.content("Updated");
+    mockMvc.perform(put(NOTE_URL + "/" + created.getId()).headers(okapiHeaders()).content(asJsonString(created)))
+      .andExpect(status().isNoContent());
+
+    var event = pollNoteEvent(created.getId().toString(), DomainEventType.UPDATE);
+    var oldMetadata = event.getOldEntity().getMetadata();
+    var newMetadata = event.getNewEntity().getMetadata();
+
+    assertEquals(USER_ID, oldMetadata.getCreatedByUserId());
+    assertEquals(oldMetadata.getCreatedByUserId(), newMetadata.getCreatedByUserId());
+    assertEquals(oldMetadata.getCreatedDate(), newMetadata.getCreatedDate());
+  }
+
+  @Test
+  @DisplayName("update detects an order-line link change between old and new snapshots")
+  void updateNote_detectsOrderLineLinkChange() throws Exception {
+    saveEventNoteType();
+    var originalLink = new Link().id(UUID.randomUUID().toString()).type(ORDER_LINE_TYPE);
+    var created = createNote(new Note()
+      .title("Linked note")
+      .content("Original")
+      .domain("orders")
+      .typeId(EVENT_NOTE_TYPE_ID)
+      .links(List.of(originalLink)));
+
+    var replacementLink = new Link().id(UUID.randomUUID().toString()).type(ORDER_LINE_TYPE);
+    created.links(List.of(replacementLink));
+    mockMvc.perform(put(NOTE_URL + "/" + created.getId()).headers(okapiHeaders()).content(asJsonString(created)))
+      .andExpect(status().isNoContent());
+
+    var event = pollNoteEvent(created.getId().toString(), DomainEventType.UPDATE);
+    var oldLinks = event.getOldEntity().getLinks();
+    var newLinks = event.getNewEntity().getLinks();
+
+    assertEquals(1, oldLinks.size());
+    assertEquals(1, newLinks.size());
+    assertEquals(originalLink.getId(), oldLinks.getFirst().getId());
+    assertEquals(replacementLink.getId(), newLinks.getFirst().getId());
+    assertEquals(ORDER_LINE_TYPE, newLinks.getFirst().getType());
+  }
+
+  @Test
+  @DisplayName("delete publishes an DELETE event carrying old snapshot")
+  void deleteNote_publishesDeleteEvent() throws Exception {
+    saveEventNoteType();
+    var link = new Link().id(UUID.randomUUID().toString()).type(ORDER_LINE_TYPE);
+    var created = createNote(new Note()
+      .title("A")
+      .content("Original")
+      .domain("orders")
+      .typeId(EVENT_NOTE_TYPE_ID)
+      .links(List.of(link)));
+
+    mockMvc.perform(delete(NOTE_URL + "/" + created.getId()).headers(okapiHeaders()).content(asJsonString(created)))
+      .andExpect(status().isNoContent());
+
+    var event = pollNoteEvent(created.getId().toString(), DomainEventType.DELETE);
+    var oldNote = event.getOldEntity();
+    assertNotNull(oldNote, "DELETE event must carry an 'old' snapshot");
+    assertEquals(created.getId().toString(), oldNote.getId().toString());
+    assertEquals("A", oldNote.getTitle());
+    assertEquals("Original", oldNote.getContent());
   }
 
   private void saveEventNoteType() {
@@ -1114,26 +1222,14 @@ class NotesControllerIT extends TestApiBase {
     databaseHelper.saveNoteType(noteType, TENANT);
   }
 
-  private void assertEventEnvelope(JsonNode envelope, String rawJson) {
-    assertNotNull(envelope.get("id"), "eventId (id) must be present");
-    assertEquals("CREATE", envelope.get("type").asString());
-    assertEquals(TENANT, envelope.get("tenant").asString());
-    assertNull(envelope.get("old"), "CREATE event must not carry an 'old' field");
-    assertFalse(rawJson.contains("\"old\""), "JSON must not contain an 'old' field");
-  }
-
-  private void assertEventPayload(JsonNode newNode, String createdId, Link link) {
-    assertNotNull(newNode);
-    assertEquals(createdId, newNode.get("id").asString());
-    assertEquals("Kafka title", newNode.get("title").asString());
-    assertEquals("Kafka details", newNode.get("content").asString());
-    assertEquals(EVENT_NOTE_TYPE_ID.toString(), newNode.get("typeId").asString());
-    assertEquals(USER_ID.toString(), newNode.get("metadata").get("createdByUserId").asString());
-
-    var links = newNode.get("links");
-    assertEquals(1, links.size());
-    assertEquals(ORDER_LINE_TYPE, links.get(0).get("type").asString());
-    assertEquals(link.getId(), links.get(0).get("id").asString());
+  private DomainEvent<Note> pollNoteEvent(String noteId, DomainEventType type) {
+    try (var consumer = TestKafkaConsumer.subscribe(NOTE_EVENT_TOPIC, kafkaProperties)) {
+      return consumer.poll(noteId).stream()
+        .map(event -> OBJECT_MAPPER.readValue(event.value(), NOTE_EVENT_CLASS))
+        .filter(event -> event.getType() == type)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("Expected event of type " + type + " for noteId " + noteId));
+    }
   }
 
   private Note generateNote() throws Exception {
@@ -1218,6 +1314,13 @@ class NotesControllerIT extends TestApiBase {
     var noteEntity = prepareNote(0);
     databaseHelper.saveNote(noteEntity, TENANT);
     return noteEntity;
+  }
+
+  private Note createNote(Note note) throws Exception {
+    var response = mockMvc.perform(post(NOTE_URL).headers(okapiHeaders()).content(asJsonString(note)))
+      .andExpect(status().isCreated())
+      .andReturn().getResponse().getContentAsString();
+    return OBJECT_MAPPER.readValue(response, Note.class);
   }
 
   private NoteEntity prepareNote(int noteNum) {

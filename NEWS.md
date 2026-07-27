@@ -7,7 +7,8 @@
 * Requires `API_NAME vX.Y`
 
 ### Features
-* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+* Add Kafka producer foundation and publish Note create domain events ([MODNOTES-295](https://folio-org.atlassian.net/browse/MODNOTES-295))
+* Publish Note update and delete domain events to Kafka ([MODNOTES-296](https://folio-org.atlassian.net/browse/MODNOTES-296))
 
 ### Bug fixes
 * Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
@@ -16,9 +17,9 @@
 * Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
 
 ### Dependencies
-* Bump `LIB_NAME` from `OLD_VERSION` to `NEW_VERSION`
-* Add `LIB_NAME VERSION`
-* Remove `LIB_NAME`
+* Add `folio-service-tools-spring-dev 6.0.0`
+* Add `spring-boot-starter-kafka`
+* Add `spring-boot-starter-kafka-test`
 
 ## v8.0.0 2026-04-15
 ### Breaking changes
