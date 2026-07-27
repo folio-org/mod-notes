@@ -173,7 +173,10 @@ public class NotesServiceImpl implements NotesService {
       noteRepository.findById(id)
         .ifPresentOrElse(entity -> {
           log.info("updateNote:: note loaded with id: {}", id);
-          saveNote(dto, noteMapFunction(dto, entity));
+          Note storedNote = notesMapper.toDto(entity);
+          NoteEntity saved = saveNote(dto, noteMapFunction(dto, entity));
+          Note note = notesMapper.toDto(saved);
+          domainEventPublisherService.publishNoteUpdatedEvent(storedNote, note);
         }, throwNotFoundById(id, "updateNote"));
     }
   }
@@ -190,6 +193,8 @@ public class NotesServiceImpl implements NotesService {
       .ifPresentOrElse(entity -> {
         noteRepository.deleteById(id);
         log.info("deleteNote:: deleted note with id: {}", id);
+        Note storedNote = notesMapper.toDto(entity);
+        domainEventPublisherService.publishNoteDeletedEvent(storedNote);
       }, throwNotFoundById(id, "deleteNote"));
   }
 

@@ -96,10 +96,10 @@ public final class TestKafkaConsumer implements Closeable {
    *
    * @return the received record
    */
-  public ConsumerRecord<String, String> poll(String key) {
+  public List<ConsumerRecord<String, String>> poll(String key) {
     return poll(DEFAULT_POLL_TIMEOUT).stream()
-      .filter(e -> Objects.equals(e.key(), key)).findFirst()
-      .orElse(null);
+      .filter(e -> Objects.equals(e.key(), key))
+      .toList();
   }
 
   /**
