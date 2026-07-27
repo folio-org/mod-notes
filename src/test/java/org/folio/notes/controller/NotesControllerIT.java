@@ -1106,7 +1106,7 @@ class NotesControllerIT extends TestApiBase {
     var links = eventNote.getLinks();
     assertEquals(1, links.size());
     assertEquals(ORDER_LINE_TYPE, links.getFirst().getType());
-    assertEquals(link.getId(), links.getFirst().getId().toString());
+    assertEquals(link.getId(), links.getFirst().getId());
   }
 
   @Test
