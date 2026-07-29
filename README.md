@@ -1,9 +1,30 @@
 # mod-notes
 
-Copyright (C) 2017-2023 The Open Library Foundation
+Copyright (C) 2017-2026 The Open Library Foundation
+
+## License
 
 This software is distributed under the terms of the Apache License,
 Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
+
+### Significantly different licenses
+
+The runtime ships with some third-party libraries with restrictions
+significantly different from those of the Apache License, see the following list.
+Build time libraries (compile only, or test only) are out of scope.
+
+See FOLIO's license policy in the
+[Module Acceptance Criteria](https://github.com/folio-org/tech-council/blob/master/MODULE_ACCEPTANCE_CRITERIA.MD#sharedcommon).
+
+| Library | License | Project URL |
+|---|---|---|
+| `jakarta.annotation:jakarta.annotation-api` | EPL 2.0 or GPL2 w/ CPE | <https://projects.eclipse.org/projects/ee4j.ca> |
+| `jakarta.transaction:jakarta.transaction-api` | EPL 2.0 or GPL2 w/ CPE | <https://projects.eclipse.org/projects/ee4j.ca> |
+| `javax.xml.bind:jaxb-api` | CDDL 1.1 or GPL2 w/ CPE | <https://github.com/javaee/jaxb-spec> |
+| `org.aspectj:aspectjweaver` | Eclipse Public License - v 2.0 | <https://eclipse.dev/aspectj/> |
+| `org.eclipse.sisu:org.eclipse.sisu.plexus` | Eclipse Public License 1.0 | <https://www.eclipse.org/sisu/> |
+| `org.liquibase:liquibase-core` | FSL-1.1-ALv2 | <https://github.com/liquibase/liquibase> |
+| `org.z3950.zing:cql-java` | LGPL-2.1-only | <https://www.indexdata.com/resources/software/cql-java/> |
 
 ## Introduction
 

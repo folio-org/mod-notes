@@ -14,7 +14,7 @@
 * Set "permissions: contents: read" in maven.yml ([FOLIO-4553](https://folio-org.atlassian.net/browse/FOLIO-4553))
 
 ### Tech Dept
-* Description ([ISSUE](https://folio-org.atlassian.net/browse/ISSUE))
+* Add third-party license notes to README ([MODNOTES-297](https://folio-org.atlassian.net/browse/MODNOTES-297))
 
 ### Dependencies
 * Add `folio-service-tools-spring-dev 6.0.0`
