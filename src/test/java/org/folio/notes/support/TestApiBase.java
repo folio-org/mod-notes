@@ -16,6 +16,7 @@ import org.apache.http.HttpStatus;
 import org.folio.notes.domain.dto.User;
 import org.folio.spring.FolioModuleMetadata;
 import org.folio.spring.integration.XOkapiHeaders;
+import org.folio.spring.testing.extension.EnableKafka;
 import org.folio.spring.testing.extension.EnableOkapi;
 import org.folio.spring.testing.extension.EnablePostgres;
 import org.folio.spring.testing.extension.impl.OkapiConfiguration;
@@ -41,6 +42,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @EnableOkapi
 @EnablePostgres
+@EnableKafka
 @AutoConfigureMockMvc
 @SpringBootTest
 @ContextConfiguration

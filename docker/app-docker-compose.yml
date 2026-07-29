@@ -14,6 +14,9 @@ services:
       - "${MODULE_PORT}:8081"
       - "${DEBUG_PORT}:5005"
     environment:
+      ENV: ${ENV}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_DATABASE: ${DB_DATABASE}
@@ -26,6 +29,7 @@ services:
     depends_on:
       - postgres
       - wiremock
+      - kafka
     deploy:
       replicas: ${MODULE_REPLICAS:-1}
       restart_policy:

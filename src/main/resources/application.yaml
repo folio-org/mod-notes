@@ -1,5 +1,6 @@
 # Module properties
 folio:
+  environment: ${ENV:folio}
   exchange:
     enabled: true
   tenant:
@@ -47,11 +48,33 @@ folio:
             - target
     response:
       limit: ${MAX_RECORDS_COUNT:1000}
+  kafka:
+    topics:
+      - name: notes.note
+        numPartitions: ${KAFKA_NOTE_TOPIC_PARTITIONS:1}
+        replicationFactor: ${KAFKA_NOTE_TOPIC_REPLICATION_FACTOR:}
 
 # Spring properties
 spring:
   application:
     name: mod-notes
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9092}
+    producer:
+      client-id: mod-notes
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        max.block.ms: ${KAFKA_PRODUCER_MAX_BLOCK_MS:10000}
+    security:
+      protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+    ssl:
+      key-store-password: ${KAFKA_SSL_KEYSTORE_PASSWORD:}
+      key-store-location: ${KAFKA_SSL_KEYSTORE_LOCATION:}
+      trust-store-password: ${KAFKA_SSL_TRUSTSTORE_PASSWORD:}
+      trust-store-location: ${KAFKA_SSL_TRUSTSTORE_LOCATION:}
   sql:
     init:
       continue-on-error: true

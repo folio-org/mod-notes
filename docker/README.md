@@ -34,6 +34,11 @@ Configuration is managed via the `.env` file in this directory.
 | `PGADMIN_PORT`            | PgAdmin port                  | `5050`                 |
 | `WIREMOCK_PORT`           | WireMock (Okapi mock) port    | `9130`                 |
 | `OKAPI_URL`               | Okapi URL for the module      | `http://wiremock:8080` |
+| `ENV`                     | Kafka topic prefix            | `folio`                |
+| `KAFKA_HOST`              | Broker host (in-cluster)      | `kafka`                |
+| `KAFKA_PORT`              | Broker port (in-cluster)      | `9093`                 |
+| `KAFKA_EXTERNAL_PORT`     | Broker port from host/IDE     | `9092`                 |
+| `KAFKA_UI_PORT`           | Kafka UI web port             | `8090`                 |
 
 ## 🚀 Services
 
@@ -53,6 +58,17 @@ Configuration is managed via the `.env` file in this directory.
 - **Purpose**: Mock Okapi and other FOLIO modules for local testing
 - **Access**: http://localhost:9130 (configurable via `WIREMOCK_PORT`)
 - **Mappings**: Located in `src/test/resources/mappings`
+
+### Kafka
+- **Purpose**: Message broker the module publishes Note domain events to
+- **Image**: `apache/kafka-native` (KRaft mode, no Zookeeper)
+- **Access (host/IDE)**: `localhost:9092` (configurable via `KAFKA_EXTERNAL_PORT`)
+- **Access (in-cluster)**: `kafka:9093`
+- **Topics**: `{ENV}.{tenant}.notes.note` — e.g. `folio.diku.notes.note`. The module creates the topic when a tenant is enabled (via the `/_/tenant` API); the broker also auto-creates it on first publish.
+
+### Kafka UI
+- **Purpose**: Web UI to browse topics and inspect published event messages
+- **Access**: http://localhost:8090 (configurable via `KAFKA_UI_PORT`)
 
 ## 📖 Usage
 
