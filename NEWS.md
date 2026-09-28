@@ -9,6 +9,7 @@
 ### Features
 * Add Kafka producer foundation and publish Note create domain events ([MODNOTES-295](https://folio-org.atlassian.net/browse/MODNOTES-295))
 * Publish Note update and delete domain events to Kafka ([MODNOTES-296](https://folio-org.atlassian.net/browse/MODNOTES-296))
+* Allow saving "style" attribute in notes' content ([MODNOTES-301](https://folio-org.atlassian.net/browse/MODNOTES-301))
 
 ### Bug fixes
 * Set "permissions: contents: read" in maven.yml ([FOLIO-4553](https://folio-org.atlassian.net/browse/FOLIO-4553))

@@ -73,28 +73,6 @@ folio:
       defaults:
         name: General note
         limit: ${NOTES_TYPES_DEFAULTS_LIMIT:25}
-    content:
-      allowed:
-        tags:
-          - p
-          - strong
-          - em
-          - a
-          - u
-          - ol
-          - ul
-          - li
-          - h1
-          - h2
-          - h3
-          - br
-        attributes:
-          all:
-            - class
-          a:
-            - href
-            - rel
-            - target
     response:
       limit: ${MAX_RECORDS_COUNT:1000}
 
