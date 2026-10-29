@@ -1,3 +1,11 @@
+## v8.0.1 2026-10-29
+### Dependencies
+* Bump `spring-boot` from `4.0.2` to `4.1.1`
+* Bump `folio-spring-support` from `10.0.0` to `10.0.1`
+* Bump `liquibase` from `5.0.x` to `4.33.0`
+
+---
+
 ## v8.0.0 2026-04-15
 ### Breaking changes
 * Migrate to Spring Boot v4.x ([MODNOTES-282](https://folio-org.atlassian.net/browse/MODNOTES-282)), ([MODNOTES-293](https://folio-org.atlassian.net/browse/MODNOTES-293))
